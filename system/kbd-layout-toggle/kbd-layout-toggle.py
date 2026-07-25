@@ -10,14 +10,22 @@ kbd-layout-toggle — переключение раскладки по Alt+Shift
 
 Клавиатуры читаются БЕЗ grab() — этот демон не может отобрать или потерять
 ввод, он только слушает. Захваченные кем-то ещё устройства просто молчат.
+
+Архитектура: как в hk-translator — всё блокирующееся вынесено из цикла
+чтения событий. Сканы /dev/input (open узла — это реальные USB-транзакции,
+зависающие на десятки-сотни мс) и вызовы hyprctl (до 5 секунд по таймауту)
+живут в рабочем потоке; цикл чтения только читает события и шлёт задания.
+Каждый путь проверяется один раз за время его жизни — вердикт кэшируется.
 """
 
 import glob
 import os
+import queue
 import selectors
+import socket
 import subprocess
 import sys
-import time
+import threading
 
 import evdev
 from evdev import ecodes
@@ -39,8 +47,11 @@ def hyprctl(*args):
     env = dict(os.environ,
                HYPRLAND_INSTANCE_SIGNATURE=his,
                XDG_RUNTIME_DIR='/run/user/1000')
-    subprocess.run(['hyprctl', *args], env=env,
-                   capture_output=True, timeout=5)
+    try:
+        subprocess.run(['hyprctl', *args], env=env,
+                       capture_output=True, timeout=5)
+    except subprocess.TimeoutExpired:
+        print('hyprctl: таймаут', file=sys.stderr, flush=True)
 
 
 def is_keyboard(dev):
@@ -58,78 +69,152 @@ def is_keyboard(dev):
     return need <= keys
 
 
-def scan():
-    found = {}
-    for path in evdev.list_devices():
+class Worker(threading.Thread):
+    """Сканы устройств, close мёртвых fd и вызовы hyprctl."""
+
+    def __init__(self, post):
+        super().__init__(daemon=True, name='worker')
+        self.post = post            # (kind, obj) → в цикл чтения
+        self.jobs = queue.Queue()   # ('close', path, dev) | ('hyprctl', args)
+        self.lock = threading.Lock()
+        self.active = set()         # пути, отданные циклу чтения
+        self.rejected = set()       # пути с отрицательным вердиктом
+
+    def submit(self, kind, path=None, obj=None):
+        self.jobs.put((kind, path, obj))
+
+    def scan(self):
         try:
-            dev = evdev.InputDevice(path)
+            paths = set(evdev.list_devices())
         except OSError:
-            continue
-        if is_keyboard(dev):
-            found[path] = dev
-        else:
-            dev.close()
-    return found
+            return
+        with self.lock:
+            gone = self.active - paths
+            self.active -= gone
+            self.rejected &= paths
+            fresh = sorted(paths - self.active - self.rejected)
+        for path in gone:
+            self.post('del', path)
+        for path in fresh:
+            try:
+                dev = evdev.InputDevice(path)
+            except OSError:
+                continue
+            if not is_keyboard(dev):
+                try:
+                    dev.close()
+                except Exception:
+                    pass
+                with self.lock:
+                    self.rejected.add(path)
+                continue
+            with self.lock:
+                self.active.add(path)
+            self.post('add', dev)
+
+    def run(self):
+        self.scan()
+        while True:
+            try:
+                kind, path, obj = self.jobs.get(timeout=RESCAN_INTERVAL)
+            except queue.Empty:
+                self.scan()
+                continue
+            if kind == 'close':
+                with self.lock:
+                    if path is not None:
+                        self.active.discard(path)
+                try:
+                    obj.close()
+                except Exception:
+                    pass
+            elif kind == 'hyprctl':
+                hyprctl(*obj)
 
 
 def main():
     sel = selectors.DefaultSelector()
     watched = {}
 
-    def sync_devices():
-        current = scan()
-        for path in list(watched):
-            if path not in current:
-                try:
-                    sel.unregister(watched[path])
-                    watched[path].close()
-                except Exception:
-                    pass
-                del watched[path]
-                print(f'отключилась: {path}', flush=True)
-        for path, dev in current.items():
-            if path in watched:
-                dev.close()
-                continue
-            try:
-                sel.register(dev, selectors.EVENT_READ)
-            except Exception:
-                dev.close()
-                continue
-            watched[path] = dev
-            print(f'слушаю: {path:18s} {dev.name}', flush=True)
+    inbox = queue.Queue()
+    notify_r, notify_w = socket.socketpair()
+    notify_r.setblocking(False)
+    sel.register(notify_r, selectors.EVENT_READ)
 
-    sync_devices()
-    if not watched:
-        print('клавиатур не найдено', file=sys.stderr, flush=True)
+    def post(kind, obj):
+        inbox.put((kind, obj))
+        try:
+            notify_w.send(b'x')
+        except OSError:
+            pass
+
+    worker = Worker(post)
 
     held = set()
     armed = False    # Alt+Shift зажаты прямо сейчас
     tainted = False  # во время удержания нажали ещё клавишу → это хоткей
-    last_scan = time.monotonic()
+
+    def reset_state():
+        held.clear()
+        nonlocal armed, tainted
+        armed = tainted = False
+
+    def eject(path, why):
+        dev = watched.pop(path, None)
+        if dev is not None:
+            try:
+                sel.unregister(dev)
+            except Exception:
+                pass
+            worker.submit('close', path, dev)
+        # Состояние удержания могло остаться от исчезнувшего устройства
+        # (выдернули клавиатуру с зажатым Alt → held навсегда с ALT →
+        # следующий же Shift даёт ложное переключение раскладки).
+        reset_state()
+        print(f'{why}: {path}', flush=True)
+
+    def drain_inbox():
+        try:
+            while True:
+                notify_r.recv(4096)
+        except BlockingIOError:
+            pass
+        while True:
+            try:
+                kind, obj = inbox.get_nowait()
+            except queue.Empty:
+                return
+            if kind == 'add':
+                path = obj.path
+                if path in watched:
+                    eject(path, 'заменена')
+                try:
+                    sel.register(obj, selectors.EVENT_READ)
+                except Exception:
+                    worker.submit('close', path, obj)
+                    continue
+                watched[path] = obj
+                print(f'слушаю: {path:18s} {obj.name}', flush=True)
+            elif kind == 'del':
+                if obj in watched:
+                    eject(obj, 'отключилась')
+
+    worker.start()
 
     while True:
-        for key, _ in sel.select(timeout=RESCAN_INTERVAL):
-            dev = key.fileobj
+        for key, _ in sel.select():
+            fobj = key.fileobj
+            if fobj is notify_r:
+                drain_inbox()
+                continue
+            dev = fobj
             try:
                 events = list(dev.read())
             except OSError:
                 # Устройство исчезло. Мёртвый fd нельзя оставлять в селекторе:
-                # он навсегда «готов к чтению», и до ближайшего пересканирования
-                # цикл крутится вхолостую, съедая ядро CPU.
-                path = dev.path
-                try:
-                    sel.unregister(dev)
-                except Exception:
-                    pass
-                try:
-                    dev.close()
-                except Exception:
-                    pass
-                watched.pop(path, None)
-                held.clear()
-                armed = tainted = False
-                print(f'отключилась: {path}', flush=True)
+                # он навсегда «готов к чтению», и цикл крутился бы вхолостую,
+                # съедая ядро CPU.
+                eject(dev.path, 'ошибка чтения')
                 continue
             for ev in events:
                 if ev.type != ecodes.EV_KEY:
@@ -155,20 +240,9 @@ def main():
                     # вхолостую. Иначе каждый хоткей менял бы язык.
                     armed = False
                     if not tainted:
-                        hyprctl('switchxkblayout', 'all', 'next')
+                        worker.submit('hyprctl',
+                                      obj=('switchxkblayout', 'all', 'next'))
                         print('Alt+Shift → переключил', flush=True)
-
-        if time.monotonic() - last_scan >= RESCAN_INTERVAL:
-            last_scan = time.monotonic()
-            before = set(watched)
-            sync_devices()
-            if set(watched) != before:
-                # Набор клавиатур изменился. Состояние удержания могло остаться
-                # от исчезнувшего устройства (выдернули клавиатуру с зажатым
-                # Alt → held навсегда с ALT → следующий же Shift даёт ложное
-                # переключение раскладки). Сбрасываем.
-                held.clear()
-                armed = tainted = False
 
 
 if __name__ == '__main__':

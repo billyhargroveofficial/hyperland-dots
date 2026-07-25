@@ -56,7 +56,7 @@ alias nrb='npm run build'
 
 # Poetry
 alias pl='poetry lock'
-alias pi='poetry install'
+alias pinstall='poetry install'
 pr() { poetry run "$@" }
 alias pm='poetry run python main.py'
 
@@ -192,3 +192,15 @@ esac
 # Qwen Code PATH block begin
 export PATH='/home/billy/.local/bin':$PATH
 # Qwen Code PATH block end
+
+# Яркость внешнего монитора по DDC/CI (см. ~/.config/hypr/scripts/brightness.sh)
+#   bright 50   выставить 50%      bright up / bright down   шаг 5%
+#   bright      показать текущую
+bright() {
+    local s=~/.config/hypr/scripts/brightness.sh
+    case "${1:-}" in
+        ""|show) cat /sys/class/backlight/ddcci3/brightness 2>/dev/null ;;
+        up|down) "$s" "$1" ;;
+        *)       "$s" set "$1" ;;
+    esac
+}

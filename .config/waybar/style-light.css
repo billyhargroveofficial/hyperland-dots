@@ -50,8 +50,7 @@ window#waybar {
 #pulseaudio,
 #custom-mic-volume,
 #pulseaudio-slider,
-#backlight,
-#backlight-slider,
+#custom-brightness,
 #network,
 #bluetooth,
 #cpu,
@@ -135,8 +134,7 @@ window#waybar {
 }
 
 /* Hide sliders by default */
-#pulseaudio-slider slider,
-#backlight-slider slider {
+#pulseaudio-slider slider {
   min-height: 0px;
   min-width: 0px;
   opacity: 0;
@@ -147,16 +145,14 @@ window#waybar {
   padding: 0;
 }
 
-#pulseaudio-slider trough,
-#backlight-slider trough {
+#pulseaudio-slider trough {
   min-height: 12px;
   min-width: 80px;
   border-radius: 5px;
   background-color: #EFEFEF;
 }
 
-#pulseaudio-slider highlight,
-#backlight-slider highlight {
+#pulseaudio-slider highlight {
   min-width: 12px;
   min-height: 12px;
   border-radius: 9999px;

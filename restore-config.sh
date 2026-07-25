@@ -508,6 +508,9 @@ install_hk_translator() {
     sudo mkdir -p /opt/hk-translator
     sudo install -m 755 "$SCRIPT_DIR/system/hk-translator/hk-translator.py" /opt/hk-translator/
     sudo install -m 644 "$SCRIPT_DIR/system/hk-translator/hk-translator.service" /etc/systemd/system/
+    sudo mkdir -p /etc/systemd/system/hk-translator.service.d
+    sudo install -m 644 "$SCRIPT_DIR/system/hk-translator/service.d/override.conf" \
+        /etc/systemd/system/hk-translator.service.d/
 
     sudo systemctl daemon-reload
     sudo systemctl enable hk-translator
@@ -531,6 +534,9 @@ install_kbd_layout_toggle() {
     sudo mkdir -p /opt/kbd-layout-toggle
     sudo install -m 755 "$SCRIPT_DIR/system/kbd-layout-toggle/kbd-layout-toggle.py" /opt/kbd-layout-toggle/
     sudo install -m 644 "$SCRIPT_DIR/system/kbd-layout-toggle/kbd-layout-toggle.service" /etc/systemd/system/
+    sudo mkdir -p /etc/systemd/system/kbd-layout-toggle.service.d
+    sudo install -m 644 "$SCRIPT_DIR/system/kbd-layout-toggle/service.d/override.conf" \
+        /etc/systemd/system/kbd-layout-toggle.service.d/
 
     sudo systemctl daemon-reload
     sudo systemctl enable kbd-layout-toggle
@@ -554,6 +560,9 @@ install_ddcci_backlight() {
     sudo install -m 644 "$SCRIPT_DIR/system/ddcci/ddcci-bind.service" /etc/systemd/system/
     sudo install -m 644 "$SCRIPT_DIR/system/udev/99-ddcci-backlight.rules" /etc/udev/rules.d/
     sudo install -m 644 "$SCRIPT_DIR/system/modules-load/ddcci.conf" /etc/modules-load.d/
+    # delay=10 вместо дефолтных 60 мс: запись яркости 32 мс вместо 165-380 и без
+    # деградации. Без этого слайдер в панели упирается в очередь на шине.
+    sudo install -m 644 "$SCRIPT_DIR/system/modules-load/ddcci-modprobe.conf" /etc/modprobe.d/ddcci.conf
 
     # Права на запись яркости даёт udev-правило через группу video.
     # ВНИМАНИЕ: членство в группе подхватывается только при следующем логине.

@@ -12,15 +12,32 @@ hk-translator — транслятор хоткеев для Hyprland + нела
 На latin модификаторы синхронизируются лениво — только когда реально
 нужно отправить хоткей (Ctrl+буква и т.д.).
 
-Захватываются ВСЕ настоящие клавиатуры (у пользователя их две), горячее
-подключение подхватывается раз в RESCAN_INTERVAL секунд.
+Архитектура: два потока.
+
+  Горячий поток (main) ТОЛЬКО читает события захваченных клавиатур и пишет
+  их в uinput. Он никогда не открывает, не закрывает и не сканирует
+  устройства: open()/close() узла ввода — это реальные USB-транзакции
+  (первый открывший будит устройство, последний закрывший его глушит),
+  которые блокируются в неприрываемом сне на десятки-сотни мс. Прежняя
+  версия делала полный рескан всех /dev/input/event* каждые 5 секунд прямо
+  в цикле пересылки — клавиатура замирала на ~полсекунды каждые 5 секунд,
+  а при чихе USB — на секунды.
+
+  Рабочий поток (DeviceWorker) делает всё блокирующееся: сканирует,
+  открывает, проверяет, захватывает и закрывает устройства. Готовые
+  (уже захваченные) устройства он передаёт горячему потоку через очередь,
+  мёртвые получает обратно на закрытие. Каждый путь /dev/input/eventX
+  открывается для проверки один раз за время его жизни — вердикт
+  кэшируется, в устоявшемся состоянии сканы не трогают устройства вообще.
 """
 
 import argparse
+import queue
 import selectors
 import signal
+import socket
 import sys
-import time
+import threading
 
 import evdev
 from evdev import UInput, ecodes
@@ -133,11 +150,108 @@ def build_caps(devs):
     return caps
 
 
+# ── Рабочий поток: всё, что может заблокироваться ─────────────────
+
+class DeviceWorker(threading.Thread):
+    """Сканы, open/probe/grab новых устройств и close мёртвых.
+
+    Горячему потоку устройства отдаются уже захваченными (через
+    Translator.post). Обратно мёртвые fd приходят в self.jobs на закрытие.
+    """
+
+    def __init__(self, translator, only_paths=None):
+        super().__init__(daemon=True, name='dev-worker')
+        self.tr = translator
+        self.only = set(only_paths) if only_paths else None
+        self.jobs = queue.Queue()   # ('close', path|None, dev)
+        self.lock = threading.Lock()
+        self.active = set()         # пути, отданные горячему потоку
+        self.rejected = set()       # пути с отрицательным вердиктом
+
+    # вызывается из горячего потока
+    def submit_close(self, path, dev):
+        self.jobs.put(('close', path, dev))
+
+    def _close(self, dev):
+        for m in ('ungrab', 'close'):
+            try:
+                getattr(dev, m)()
+            except Exception:
+                pass
+
+    def scan(self):
+        try:
+            paths = set(evdev.list_devices())
+        except OSError:
+            return
+        if self.only is not None:
+            paths &= self.only
+
+        with self.lock:
+            gone_active = self.active - paths
+            self.active -= gone_active
+            self.rejected &= paths
+            fresh = sorted(paths - self.active - self.rejected)
+
+        # исчезнувшие: горячий поток отпустит зажатые клавиши и вернёт
+        # fd сюда на закрытие
+        for path in gone_active:
+            self.tr.post('del', path)
+
+        for path in fresh:
+            try:
+                dev = evdev.InputDevice(path)
+            except OSError:
+                # узел ещё/уже не открывается — попробуем в следующий скан
+                continue
+            if self.only is not None:
+                # при явном -d фильтр не применяем, но своё виртуальное
+                # устройство не захватываем никогда — иначе петля
+                why = ('своё виртуальное устройство'
+                       if SELF_MARK in dev.name.lower() else None)
+            else:
+                why = reject_reason(dev)
+            if why is not None:
+                try:
+                    dev.close()
+                except Exception:
+                    pass
+                with self.lock:
+                    self.rejected.add(path)
+                continue
+            try:
+                dev.grab()
+            except OSError as e:
+                print(f'не захватить {path} ({dev.name}): {e}',
+                      file=sys.stderr, flush=True)
+                try:
+                    dev.close()
+                except Exception:
+                    pass
+                continue
+            with self.lock:
+                self.active.add(path)
+            self.tr.post('add', dev)
+
+    def run(self):
+        self.scan()
+        while True:
+            try:
+                kind, path, dev = self.jobs.get(timeout=RESCAN_INTERVAL)
+            except queue.Empty:
+                self.scan()
+                continue
+            if kind == 'close':
+                with self.lock:
+                    if path is not None:
+                        self.active.discard(path)
+                self._close(dev)
+
+
 # ── Транслятор ────────────────────────────────────────────────────
 
 class Translator:
-    def __init__(self, caps, only_paths=None):
-        self.only = set(only_paths) if only_paths else None
+    def __init__(self, caps):
         self.sel = selectors.DefaultSelector()
         self.devs = {}            # path → захваченный InputDevice
         self.down = {}            # path → set(зажатых кодов) для чистки
@@ -146,6 +260,14 @@ class Translator:
         self.mods_held = set()
         self.mods_on_latin = set()
         self.closed = False
+        self.worker = None        # назначается в run()
+
+        # канал «рабочий поток → горячий»: сообщение в очереди,
+        # байт в сокете будит select
+        self.inbox = queue.Queue()
+        self.notify_r, self.notify_w = socket.socketpair()
+        self.notify_r.setblocking(False)
+        self.sel.register(self.notify_r, selectors.EVENT_READ)
 
         self.ui_main = UInput(caps, name='hk-translator-main')
         self.ui_latin = UInput(caps, name='hk-translator-latin')
@@ -153,61 +275,53 @@ class Translator:
               f'{self.ui_main.device.path} / {self.ui_latin.device.path}',
               flush=True)
 
+    # ── связь с рабочим потоком ──
+
+    def post(self, kind, obj):
+        """Вызывается из DeviceWorker."""
+        self.inbox.put((kind, obj))
+        try:
+            self.notify_w.send(b'x')
+        except OSError:
+            pass
+
+    def _drain_inbox(self):
+        try:
+            while True:
+                self.notify_r.recv(4096)
+        except BlockingIOError:
+            pass
+        while True:
+            try:
+                kind, obj = self.inbox.get_nowait()
+            except queue.Empty:
+                return
+            if kind == 'add':
+                path = obj.path
+                if path in self.devs:
+                    # тот же путь пере-занят новым устройством:
+                    # старый fd мёртв — отпустить зажатое и закрыть
+                    self.eject(path, 'заменена')
+                try:
+                    self.sel.register(obj, selectors.EVENT_READ)
+                except Exception as e:
+                    print(f'не зарегистрировать {path}: {e}',
+                          file=sys.stderr, flush=True)
+                    self.worker.submit_close(path, obj)
+                    continue
+                self.devs[path] = obj
+                self.down.setdefault(path, set())
+                print(f'захвачена: {path:18s} {obj.name}', flush=True)
+            elif kind == 'del':
+                if obj in self.devs:
+                    self.eject(obj, 'отключилась')
+
     # ── управление набором устройств ──
 
-    def _wanted(self):
-        out = {}
-        for path in sorted(evdev.list_devices()):
-            if self.only is not None and path not in self.only:
-                continue
-            try:
-                dev = evdev.InputDevice(path)
-            except OSError:
-                continue
-            # при явном -d фильтр не применяем, но своё виртуальное
-            # устройство не захватываем никогда — иначе петля
-            ok = (SELF_MARK not in dev.name.lower()
-                  if self.only is not None else is_keyboard(dev))
-            if ok:
-                out[path] = dev
-            else:
-                dev.close()
-        return out
-
-    def sync(self):
-        current = self._wanted()
-
-        for path in list(self.devs):
-            if path not in current:
-                self.drop(path, 'отключилась')
-
-        for path, dev in current.items():
-            if path in self.devs:
-                dev.close()
-                continue
-            try:
-                dev.grab()
-            except OSError as e:
-                print(f'не захватить {path} ({dev.name}): {e}',
-                      file=sys.stderr, flush=True)
-                dev.close()
-                continue
-            try:
-                self.sel.register(dev, selectors.EVENT_READ)
-            except Exception as e:
-                print(f'не зарегистрировать {path}: {e}',
-                      file=sys.stderr, flush=True)
-                try:
-                    dev.ungrab()
-                except Exception:
-                    pass
-                dev.close()
-                continue
-            self.devs[path] = dev
-            self.down[path] = set()
-            print(f'захвачена: {path:18s} {dev.name}', flush=True)
-
-    def drop(self, path, why):
+    def eject(self, path, why):
+        """Убрать устройство из горячего пути. Ничего блокирующегося:
+        отпустить его зажатые клавиши, снять с select и отдать fd
+        рабочему потоку на закрытие."""
         dev = self.devs.pop(path, None)
         # отпустить всё, что осталось зажатым, иначе клавиша залипнет
         stuck = sorted(self.down.pop(path, set()),
@@ -219,14 +333,7 @@ class Translator:
                 self.sel.unregister(dev)
             except Exception:
                 pass
-            try:
-                dev.ungrab()
-            except Exception:
-                pass
-            try:
-                dev.close()
-            except Exception:
-                pass
+            self.worker.submit_close(path, dev)
         print(f'{why}: {path}', flush=True)
 
     # ── обработка событий ──
@@ -297,28 +404,26 @@ class Translator:
     # ── главный цикл ──
 
     def loop(self):
-        last_scan = time.monotonic()
         while True:
-            for key, _ in self.sel.select(timeout=RESCAN_INTERVAL):
-                dev = key.fileobj
-                path = dev.path
+            for key, _ in self.sel.select():
+                fobj = key.fileobj
+                if fobj is self.notify_r:
+                    self._drain_inbox()
+                    continue
+                path = fobj.path
                 try:
-                    events = list(dev.read())
+                    events = list(fobj.read())
                 except OSError as e:
-                    self.drop(path, f'ошибка чтения ({e})')
+                    self.eject(path, f'ошибка чтения ({e})')
                     continue
                 for ev in events:
                     self.handle(path, ev.type, ev.code, ev.value)
-
-            now = time.monotonic()
-            if now - last_scan >= RESCAN_INTERVAL:
-                last_scan = now
-                self.sync()
 
     def close(self):
         if self.closed:
             return
         self.closed = True
+        # процесс завершается — здесь блокировки уже не страшны
         for path in list(self.devs):
             dev = self.devs.pop(path)
             try:
@@ -363,7 +468,8 @@ def run(device_paths=None):
     for d in probe:
         d.close()
 
-    tr = Translator(caps, device_paths)
+    tr = Translator(caps)
+    tr.worker = DeviceWorker(tr, device_paths)
 
     def on_signal(*_):
         raise SystemExit(0)
@@ -372,7 +478,7 @@ def run(device_paths=None):
     signal.signal(signal.SIGTERM, on_signal)
 
     try:
-        tr.sync()
+        tr.worker.start()
         print(f'кандидаты на старте: {names}', flush=True)
         print('перехват запущен', flush=True)
         tr.loop()
