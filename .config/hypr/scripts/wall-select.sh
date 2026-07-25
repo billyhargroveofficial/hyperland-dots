@@ -57,7 +57,7 @@ fi
 echo "$fullpath" > "$CACHE_FILE"
 
 # Set wallpaper with cool animation
-swww img "$fullpath" \
+awww img "$fullpath" \
     --transition-type grow \
     --transition-pos center \
     --transition-duration 0.8 \

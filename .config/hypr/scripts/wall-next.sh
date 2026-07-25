@@ -33,7 +33,7 @@ done
 # Сохраняем новую обоину в кеш
 echo "$NEXT" > "$CACHE_FILE"
 
-# Устанавливаем обоину через swww с переходом "grow" (кружок из центра) и 144 FPS
-swww img "$NEXT" --transition-type grow --transition-duration 1 --transition-fps 144
+# Устанавливаем обоину через awww с переходом "grow" (кружок из центра) и 144 FPS
+awww img "$NEXT" --transition-type grow --transition-duration 1 --transition-fps 144
 
 echo "✅ Установлена обойка: $(basename "$NEXT")"

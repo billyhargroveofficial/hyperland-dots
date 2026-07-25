@@ -19,7 +19,7 @@ if pgrep -x sing-box > /dev/null; then
 else
     # Включаем
     log "Starting sing-box..."
-    sudo sing-box run -c ~/.config/sing-box/config.json >> "$LOG_FILE" 2>&1 &
+    sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.json >> "$LOG_FILE" 2>&1 &
     sleep 2
 
     if pgrep -x sing-box > /dev/null; then

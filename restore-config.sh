@@ -3,7 +3,11 @@
 # Скрипт для полного восстановления системы
 # Устанавливает весь необходимый софт и конфиги
 
-set -e
+# Намеренно НЕ set -e: скрипт качает из десятка внешних источников (GitHub, PyPI,
+# AUR, зеркала шрифтов). При set -e один обрыв сети на шрифтах убивал весь остаток
+# прогона — GPU-вентиляторы, oh-my-zsh, voice input, копирование конфигов. Каждая
+# функция логирует свой результат сама, после прогона искать по логу [WARN].
+set +e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -84,7 +88,7 @@ install_pacman_packages() {
         rofi-wayland
         wofi
         swaync
-        swww
+        awww            # бывший swww: пакет и бинарники переименованы (awww / awww-daemon)
         hyprshot
         wl-clipboard
         cliphist
@@ -108,10 +112,20 @@ install_pacman_packages() {
         alacritty
         fastfetch
 
-        # NVIDIA GPU Fan Control
-        nvidia-settings
+        # NVIDIA GPU Fan Control.
+        # nvidia-settings тут НЕТ намеренно: он конфликтует с nvidia-settings-beta,
+        # который приезжает из AUR вместе с проприетарным драйвером (см. setup_nvidia).
         xorg-server
         xorg-xhost
+
+        # Проприетарные модули NVIDIA собираются через DKMS
+        dkms
+        linux-headers
+
+        # Дисплей-менеджер
+        sddm
+        qt6-svg
+        qt6-declarative
 
         # Dependencies
         gtk3
@@ -307,8 +321,15 @@ setup_gpu_fan() {
         BUS_ID=$(lspci | grep -i nvidia | awk '{print $1}' | head -1)
     fi
 
-    # Конвертируем BusID в формат для xorg (09:00.0 -> PCI:9:0:0)
-    local BUS_ID_XORG=$(echo "$BUS_ID" | awk -F'[:.]' '{printf "PCI:%d:%d:%d", "0x"$1, "0x"$2, $3}')
+    # Конвертируем BusID в формат для xorg (09:00.0 -> PCI:9:0:0).
+    # ВАЖНО: bus и device в выводе lspci шестнадцатеричные. Прежняя реализация делала
+    # awk '{printf "%d", "0x"$1}', но awk по умолчанию не парсит hex-строки — "0x09"
+    # превращалось в 0, в конфиг уезжал BusID "PCI:0:0:0", Xorg падал с
+    # "(EE) No devices detected / no screens found", и сервис вентиляторов молча не
+    # работал вообще. Считаем через арифметику bash с явным основанием 16.
+    local _b _d _f
+    IFS=':.' read -r _b _d _f <<< "$BUS_ID"
+    local BUS_ID_XORG="PCI:$((16#$_b)):$((16#$_d)):$_f"
     log_info "NVIDIA GPU: $BUS_ID -> $BUS_ID_XORG"
 
     # Создаём xorg.conf с Coolbits
@@ -548,29 +569,76 @@ setup_voice_input() {
 }
 
 # ==========================================
-# 8.6. Монтирование NTFS диска (nvme0n1p1)
+# 8.6. Проприетарный драйвер NVIDIA (из AUR) + выключение GSP
 # ==========================================
-mount_ntfs_disk() {
-    log_info "Настройка NTFS диска..."
-
-    sudo modprobe ntfs3
-
-    sudo mkdir -p /media/$USER/Storage
-
-    if ! grep -q "7E68A3DE68A39405" /etc/fstab; then
-        echo "UUID=7E68A3DE68A39405 /media/$USER/Storage ntfs3 uid=1000,gid=1000,dmask=022,fmask=133,force,nofail 0 0" | sudo tee -a /etc/fstab
-        log_info "fstab запись добавлена"
+# Открытые модули (nvidia-open) построены на GSP, а GSP — причина рваных анимаций и
+# просадок FPS на Wayland при высоких частотах обновления (open-gpu-kernel-modules
+# #693, Hyprland #9029). Выключить GSP можно ТОЛЬКО на проприетарных модулях: на
+# открытых NVreg_EnableGpuFirmware не работает в принципе, без GSP они не живут.
+# Arch выкинул проприетарные модули из репозиториев начиная с ветки 590, поэтому AUR.
+setup_nvidia() {
+    if ! lspci | grep -qi 'vga.*nvidia'; then
+        log_warn "NVIDIA GPU не найден, пропускаю драйвер"
+        return
+    fi
+    if pacman -Qq nvidia-beta-dkms &> /dev/null; then
+        log_info "nvidia-beta-dkms уже установлен"
     else
-        log_info "fstab запись уже существует"
+        log_info "Установка проприетарных модулей NVIDIA из AUR..."
+        # Порядок важен: modules зависят от utils ровно той же версии
+        yay -S --noconfirm nvidia-utils-beta || log_warn "nvidia-utils-beta не установился"
+        yay -S --noconfirm nvidia-beta-dkms  || log_warn "nvidia-beta-dkms не установился"
     fi
 
-    if ! mountpoint -q /media/$USER/Storage; then
-        sudo mount -t ntfs3 -o uid=1000,gid=1000,dmask=022,fmask=133,force /dev/nvme0n1p1 /media/$USER/Storage 2>/dev/null && \
-            log_info "NTFS диск смонтирован в /media/$USER/Storage" || \
-            log_warn "Не удалось смонтировать NTFS диск (возможно nvme0n1p1 отсутствует)"
-    else
-        log_info "NTFS диск уже смонтирован"
+    log_info "Выключаю GSP..."
+    sudo tee /etc/modprobe.d/nvidia-gsp.conf > /dev/null <<'EOF'
+# GSP firmware даёт заикания и просадки FPS на Wayland при 144+ Гц.
+# Проверка: nvidia-smi -q | grep 'GSP Firmware'  -> должно быть N/A
+options nvidia NVreg_EnableGpuFirmware=0
+EOF
+
+    log_info "Ранний KMS для Wayland..."
+    sudo sed -i 's/^MODULES=.*/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
+    sudo mkinitcpio -P
+
+    log_warn "Добавь в параметры ядра: nvidia_drm.modeset=1 nvidia_drm.fbdev=1"
+    log_warn "и перезагрузись — только после этого проверяй мониторы"
+}
+
+# ==========================================
+# 8.7. Дисплей-менеджер SDDM
+# ==========================================
+# Тема ставится клоном из upstream, а НЕ из AUR: все обёртки в AUR заброшены с
+# 2024 года и писались под Qt5, а SDDM давно на Qt6 — типовой исход в том, что
+# тема молча не грузится и показывается дефолтный серый greeter.
+setup_sddm() {
+    log_info "Настройка SDDM..."
+    local T=/usr/share/sddm/themes
+    local V="${SDDM_VARIANT:-black_hole}"
+
+    if [[ ! -d "$T/sddm-astronaut-theme" ]]; then
+        sudo git clone -q --depth 1 https://github.com/keyitdev/sddm-astronaut-theme.git \
+            "$T/sddm-astronaut-theme" || { log_warn "тему склонировать не удалось"; return; }
+        sudo find "$T/sddm-astronaut-theme" -maxdepth 1 -iname 'Fonts' \
+            -exec cp -r {}/. /usr/share/fonts/ \; 2>/dev/null
+        sudo fc-cache -f > /dev/null 2>&1
     fi
+
+    if [[ ! -f "$T/sddm-astronaut-theme/Themes/$V.conf" ]]; then
+        V=$(basename "$(ls "$T/sddm-astronaut-theme/Themes/"*.conf | head -1)" .conf)
+        log_warn "выбранного варианта нет, беру $V"
+    fi
+    sudo sed -i "s|^ConfigFile=.*|ConfigFile=Themes/$V.conf|" "$T/sddm-astronaut-theme/metadata.desktop"
+
+    sudo mkdir -p /etc/sddm.conf.d
+    printf '[Theme]\nCurrent=sddm-astronaut-theme\n' | sudo tee /etc/sddm.conf.d/10-theme.conf > /dev/null
+    # X11-greeter: обкатаннее с проприетарным NVIDIA, а xorg-server всё равно нужен
+    # для управления вентиляторами через Coolbits. Виртуальную клавиатуру не включаем.
+    printf '[General]\nDisplayServer=x11\n' | sudo tee /etc/sddm.conf.d/20-general.conf > /dev/null
+
+    sudo systemctl enable sddm
+    sudo systemctl set-default graphical.target
+    log_info "SDDM включён (вариант темы: $V)"
 }
 
 # ==========================================
@@ -652,13 +720,14 @@ main() {
     install_yay
     install_pacman_packages
     install_aur_packages
+    setup_nvidia          # до setup_gpu_fan: вентиляторами управляет драйвер
+    setup_sddm
     install_fonts
     setup_gpu_fan
     setup_system_fan
     install_hk_translator
     install_ohmyzsh
     setup_voice_input
-    mount_ntfs_disk
     copy_configs
     setup_singbox
     make_scripts_executable
@@ -675,8 +744,8 @@ main() {
     # Перезагрузка Hyprland конфига и перезапуск панели/обоев
     hyprctl reload 2>/dev/null && log_info "Hyprland конфиг перезагружен" || true
     pkill waybar 2>/dev/null || true; waybar &disown
-    pkill swww-daemon 2>/dev/null || true; swww-daemon &disown; sleep 1; swww img ~/wallpapers/15-Sequoia-Sunrise.png --transition-type none
-    log_info "waybar и swww перезапущены"
+    pkill awww-daemon 2>/dev/null || true; awww-daemon &disown; sleep 1; awww img ~/wallpapers/15-Sequoia-Sunrise.png --transition-type none
+    log_info "waybar и awww перезапущены"
 
     echo ""
     echo "=========================================="
@@ -684,10 +753,17 @@ main() {
     echo "=========================================="
     echo ""
     echo "Следующие шаги:"
-    echo "  1. ПЕРЕЗАГРУЗИСЬ для применения GPU fan control и zsh"
-    echo "  2. Запусти nvim для установки LazyVim плагинов"
-    echo "  3. sing-box VPN toggle: Alt+P (не забудь настроить сервер в ~/.config/sing-box/config.json)"
-    echo "  4. Проверь вентиляторы: nvidia-smi --query-gpu=fan.speed --format=csv"
+    echo "  1. Просмотри лог выше на [WARN] — скрипт не падает на сбоях, он их логирует"
+    echo "  2. Добавь в параметры ядра: nvidia_drm.modeset=1 nvidia_drm.fbdev=1"
+    echo "  3. ПЕРЕЗАГРУЗИСЬ — greeter SDDM, GPU fan control, zsh, кривая nct6798"
+    echo "  4. Запусти nvim для установки LazyVim плагинов"
+    echo "  5. sing-box VPN toggle: Alt+P (сервер настроить в ~/.config/sing-box/config.json)"
+    echo ""
+    echo "Проверки после ребута:"
+    echo "  nvidia-smi -q | grep 'GSP Firmware'                 # должно быть N/A"
+    echo "  nvidia-smi --query-gpu=fan.speed --format=csv       # не 0%"
+    echo "  systemctl is-active sddm gpu-fan system-fan"
+    echo "  hyprctl monitors                                    # частоты мониторов"
     echo ""
 }
 
