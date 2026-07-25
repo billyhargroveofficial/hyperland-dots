@@ -22,6 +22,12 @@ keybind = ctrl+shift+c=text:\x03
 keybind = ctrl+v=paste_from_clipboard
 keybind = ctrl+shift+v=paste_from_clipboard
 
+# Вставка КАРТИНОК в CLI-агентов (claude / codex / qwen / opencode / kimi).
+# Все они слушают Ctrl+V (0x16) и сами читают буфер через wl-paste,
+# но ghostty съедает ctrl+v выше и шлёт только текст. Alt+V отдаёт
+# приложению сырой ^V — оно достаёт из буфера картинку само.
+keybind = alt+v=text:\x16
+
 # Windows
 keybind = ctrl+shift+n=new_window
 keybind = alt+f4=close_window

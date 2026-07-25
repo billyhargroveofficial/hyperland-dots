@@ -168,6 +168,43 @@ Speech-to-text через CTRL+Super (toggle: первое нажатие — з
   в `themes/gruvbox-mine-dark` и `themes/gruvbox-mine-light`.
 - `themes/dark.conf` и `themes/light.conf` — legacy, больше не используются.
 
+## Вставка картинок в CLI-агентов — Alt+V
+
+`Alt+V` вставляет картинку из буфера в claude code / codex / qwen code / opencode /
+kimi cli. Работает и в кириллице — hk-translator при зажатом Alt гонит буквы
+латиницей, так что Alt+М это тот же Alt+V. Скриншот сразу в буфер — `Print`
+(`hyprshot -m region -c`), история картинок — `Super+V` (cliphist).
+
+Все пять агентов слушают **`Ctrl+V`, то есть байт `0x16`**, и дальше читают буфер
+сами (`wl-paste --type image/png`; у codex — arboard/wl-clipboard). Терминал
+картинку не передаёт и не может: его дело — доставить нажатие.
+
+Нажатие съедалось дважды, поэтому нужны обе правки сразу:
+
+| Кто ел | Правка |
+|---|---|
+| ghostty: `keybind = ctrl+v=paste_from_clipboard` вставлял сам, и только текст | `keybind = alt+v=text:\x16` — отдаёт приложению сырой `^V` |
+| hyprland: `bind = $mainMod, V` при `$mainMod = ALT` это Alt+V — cliphist+rofi | cliphist перевешен на явный `SUPER, V` |
+
+**Не возвращай cliphist на `$mainMod, V`.** При `$mainMod = ALT` он забирает Alt+V
+раньше терминала, и вместо вставки вылезает rofi с историей буфера. Явный `SUPER`
+переживает переключение по `F10`: `toggle-mainmod.sh` правит только строки
+`$mainMod =` / `$wsMod =`, биндов не касается.
+
+`Ctrl+V` картинку не вставляет и не должен — он остаётся обычной вставкой текста в
+терминал. Отдать под картинки можно и его, убрав `ctrl+v=paste_from_clipboard`, но
+тогда `^V` будет уходить в приложение всегда и сломает вставку в zsh и vim.
+
+Ghostty перечитывает конфиг по `Ctrl+Shift+,` (или `pkill -USR2 -x ghostty`).
+
+Проверка, что дело не в буфере: `wl-paste --list-types` должен показать `image/png`.
+Учти, что **XWayland-мост буфера мёртв** — `xclip` не видит даже текст из `wl-copy`.
+Всем пяти агентам это безразлично, у них fallback на `wl-paste`, но X11-приложения
+картинку из буфера не получат.
+
+Вставленные картинки Claude Code складывает в `~/.claude/image-cache/<session-id>/`
+и сам их не удаляет.
+
 ## Statusline Claude Code (cship)
 
 Нижняя строка в Claude Code. Ставится в `restore-config.sh` → `install_cship`.
