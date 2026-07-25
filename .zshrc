@@ -56,7 +56,7 @@ alias nrb='npm run build'
 
 # Poetry
 alias pl='poetry lock'
-alias pinstall='poetry install'
+alias pi='poetry install'
 pr() { poetry run "$@" }
 alias pm='poetry run python main.py'
 
@@ -199,8 +199,19 @@ export PATH='/home/billy/.local/bin':$PATH
 bright() {
     local s=~/.config/hypr/scripts/brightness.sh
     case "${1:-}" in
-        ""|show) cat /sys/class/backlight/ddcci3/brightness 2>/dev/null ;;
+        # command cat, а не cat: он заалиасен на bat, а тот спотыкается о
+        # симлинк /sys/class/backlight/ddcciN и печатает ошибку вместо числа
+        ""|show) command cat /sys/class/backlight/ddcci*/brightness 2>/dev/null ;;
         up|down) "$s" "$1" ;;
         *)       "$s" set "$1" ;;
     esac
 }
+
+# kimi-code
+export PATH="/home/billy/.kimi-code/bin:$PATH"
+
+# opencode
+export PATH=/home/billy/.opencode/bin:$PATH
+
+# общие секреты для AI-харнессов (GitHub PAT, Telegram) — читает mcp-sync и харнессы
+[ -f "$HOME/.config/agents/secrets.env" ] && source "$HOME/.config/agents/secrets.env"

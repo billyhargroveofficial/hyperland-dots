@@ -1,6 +1,12 @@
 [Unit]
 Description=Привязка ddcci к i2c-шинам монитора (авто-проба выключена с ядра 6.8)
-After=graphical.target
+# Никаких After=graphical.target: target получает неявный After= на всё, что
+# в него Wants/WantedBy, поэтому пара "After=graphical.target" +
+# "WantedBy=multi-user.target" давала цикл, и systemd молча выкидывал юнит
+# (Jul 25 21:33: "Job ddcci-bind.service/start deleted to break ordering cycle").
+# Ждать графику незачем — i2c-адаптеры поднимает модуль видеокарты, а скрипт
+# сам крутит ретраи, пока монитор не ответит по DDC.
+After=systemd-modules-load.service
 
 [Service]
 Type=oneshot

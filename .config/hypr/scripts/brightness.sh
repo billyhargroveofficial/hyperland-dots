@@ -13,17 +13,25 @@
 
 set -u
 
-DEV=/sys/class/backlight/ddcci3
+# Номер шины (ddcci3, ddcci1, ...) зависит от порядка инициализации видеокарты
+# и между загрузками не фиксирован — поэтому берём то, что реально создалось.
+DEV=
+for d in /sys/class/backlight/ddcci*; do
+    [ -d "$d" ] && { DEV=$d; break; }
+done
 STATE="${XDG_RUNTIME_DIR:-/tmp}/brightness-target"
 LOCK="${XDG_RUNTIME_DIR:-/tmp}/brightness.lock"
 APPLIER="${XDG_RUNTIME_DIR:-/tmp}/brightness-applier.lock"
 
 STEP=5
-MIN=5      # не 0: часть мониторов на нуле гаснет полностью, и вернуть их
+MIN=1      # не 0: часть мониторов на нуле гаснет полностью, и вернуть их
 MAX=100    #       можно только кнопками на самом мониторе
 QUIET=0.25 # столько тишины считаем концом жеста
 
-[ -d "$DEV" ] || { echo '{"text":"","tooltip":"нет ddcci-устройства"}'; exit 0; }
+[ -n "$DEV" ] && [ -d "$DEV" ] || {
+    echo '{"text":"","tooltip":"нет ddcci-устройства (systemctl status ddcci-bind)"}'
+    exit 0
+}
 
 hw() { cat "$DEV/brightness" 2>/dev/null || echo 50; }
 
@@ -59,7 +67,9 @@ exec 9>"$LOCK"
 flock 9
 cur=$(target)
 case "$1" in
-    up)   new=$((cur + STEP)) ;;
+    # Со дна (MIN=1) вверх идём на ровный STEP, иначе вся сетка съезжает
+    # на единицу и дальше получаются 6, 11, 16 вместо 5, 10, 15.
+    up)   if [ "$cur" -lt "$STEP" ]; then new=$STEP; else new=$((cur + STEP)); fi ;;
     down) new=$((cur - STEP)) ;;
     set)  new=${2:-$cur} ;;
 esac

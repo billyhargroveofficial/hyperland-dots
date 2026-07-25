@@ -222,9 +222,11 @@ monitor:DP-X`, `hyprpaper.conf` и аргумент `-o` у `nwg-dock-hyprland`.
   через `new_device`, а номер i2c-шины между загрузками не фиксирован.
 
 ```bash
+systemctl status ddcci-bind           # это он создаёт устройство — проверять первым
 ddcutil detect                        # монитор виден по DDC/CI?
 ls /sys/class/backlight/              # должен быть ddcciN
-cat /sys/class/backlight/ddcci3/brightness
+cat /sys/class/backlight/ddcci*/brightness
+bright 1                              # диапазон 1-100, шаг колеса 5
 ```
 
 Права даёт udev-правило через группу `video`. **Членство в группе подхватывается
