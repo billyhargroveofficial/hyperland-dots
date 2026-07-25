@@ -59,6 +59,7 @@ hyperland-dots/
     ├── gtk-4.0/              # GTK4 темы
     ├── neofetch/             # System info
     ├── swaykbdd/             # Per-window keyboard layout
+    ├── cship.toml            # statusline для Claude Code (см. раздел ниже)
     └── scripts/              # Общие скрипты
 
 └── system/                   # то, что ставится ВНЕ $HOME — см. system/README.md
@@ -81,6 +82,7 @@ hyperland-dots/
 | `.config/ghostty/config` | Ghostty терминал конфиг |
 | `.config/Code/User/settings.json` | VSCode настройки |
 | `.zshrc` | Shell конфиг + алиасы |
+| `.config/cship.toml` | Statusline Claude Code (папка, модель, контекст, лимиты) |
 | `restore-config.sh` | Скрипт установки |
 
 ## Тема (Gruvbox)
@@ -165,6 +167,60 @@ Speech-to-text через CTRL+Super (toggle: первое нажатие — з
   только в `config` будет затёрта при следующем переключении темы — менять надо
   в `themes/gruvbox-mine-dark` и `themes/gruvbox-mine-light`.
 - `themes/dark.conf` и `themes/light.conf` — legacy, больше не используются.
+
+## Statusline Claude Code (cship)
+
+Нижняя строка в Claude Code. Ставится в `restore-config.sh` → `install_cship`.
+
+```
+/home/billy/proj ● Opus 5 · max · ███░░░░░░░ 34% · 340000 tok ● 5h 37% · 2h4m ● 7d 62% · 2d19h
+```
+
+| Что | Где |
+|---|---|
+| Бинарь | `~/.local/bin/cship` (Rust, static musl, из GitHub Releases) |
+| Конфиг | `~/.config/cship.toml` ← репа `.config/cship.toml` |
+| Подключение | ключ `statusLine` в `~/.claude/settings.json` |
+
+**`~/.claude/settings.json` в репозитории нет намеренно.** Claude Code
+переписывает его сам на каждый `/model` и `/config` — в репе он давал бы вечный
+грязный diff. `install_cship` дописывает туда `statusLine` мержем через python.
+
+**Не ставить через `curl -fsSL https://cship.dev/install.sh | bash`.** На шаге 4
+он делает `sudo apt-get install libsecret-tools` (на Arch падает), на шаге 5 тянет
+Starship ещё одним `curl | sh`. Скрипт качает бинарь напрямую.
+
+**Почему не ccstatusline**, хотя у него 12k звёзд против 406: он запускается как
+`npx -y ccstatusline@latest` — замер `npx --version` дал 68 мс, и это на КАЖДУЮ
+отрисовку. У cship — 1 мс.
+
+**Лимиты берутся из stdin-JSON**, который Claude Code отдаёт сам (поля
+`rate_limits.five_hour` / `.seven_day`). Прогон с `unshare -rn` даёт байт-в-байт
+тот же вывод — сети в горячем пути нет. В API cship ходит только когда лимитов в
+stdin ещё нет (первые секунды сессии), с кэшем `ttl = 60`.
+
+### Грабли формата cship (проверено эмпирически)
+
+- **Переменные разделяются пробелом или `$`.** Парсер жадный: `<$cship.model>`
+  съедает `>` в имя переменной и печатает пустоту. `$cship.model$cship.effort`
+  работает и стыкует блоки без зазора.
+- **`format` отменяет автоприменение `style`.** Надо писать явно:
+  `format = "[$value]($style)"`. Просто `format = "$value"` даст текст без цвета.
+- **Внутрь `[текст](стиль)` переменную не подставить** — `[ $cship.model ]`
+  напечатает буквально `$cship.model`. Разметка красит только литералы.
+- **Внутренних плейсхолдеров нет**, только `$value`. `$used`, `$total`, `$pct`,
+  `$bar` — все пустые.
+- **`5h` и `7d` — один модуль `usage_limits`.** Отдельных переменных под них нет,
+  поэтому пороги `warn/critical` красят обе половины разом по максимальному
+  проценту. Развести их в разные цвета можно только вшив ANSI прямо в
+  `separator` через TOML-escape ``, но тогда пороги ломаются — выбрано
+  сохранить пороги.
+- **Процент из `context_bar` не убрать**: `show_percentage` игнорируется. Поэтому
+  число токенов выводится отдельной переменной `context_window.total_input_tokens`,
+  а не через `used_tokens` (тот отдаёт `34%(340k/1000k)` — процент дублировался бы).
+
+Пороги: контекст желтеет с 60%, краснеет с 85%; квота — с 70% и 90%.
+Компактный вариант без бара лежит рядом в `~/.config/cship.toml.compact-variant`.
 
 ## Синхронизация конфигов
 

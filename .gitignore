@@ -29,6 +29,10 @@
 !.config/gtk-3.0/**
 !.config/gtk-4.0/**
 !.config/alacritty/**
+# statusline для Claude Code (cship). Одиночный файл, не каталог — маска
+# `**` тут не нужна.
+!.config/cship.toml
+!.config/cship.toml.compact-variant
 !.config/scripts/**
 !.config/waybar/
 !.config/waybar/**

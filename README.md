@@ -17,6 +17,8 @@
 - **NVIDIA GPU fan control** — динамическое управление вентиляторами на Wayland
 - **LazyVim** — nvim с прозрачным gruvbox-material
 - **SwayNC** — уведомления в стиле Gruvbox
+- **Statusline Claude Code** — cship: папка, модель, effort, контекст в токенах,
+  5h и недельная квота с таймерами сброса (1 мс на отрисовку)
 
 ## Быстрая установка
 
@@ -468,6 +470,7 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 ├── niri/                 # Niri compositor
 ├── kitty/                # Терминал
 ├── alacritty/            # Терминал
+├── cship.toml            # Statusline Claude Code (см. CLAUDE.md)
 ├── gtk-3.0/              # GTK темы
 └── gtk-4.0/              # GTK темы
 
