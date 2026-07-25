@@ -60,6 +60,13 @@ hyperland-dots/
     ├── neofetch/             # System info
     ├── swaykbdd/             # Per-window keyboard layout
     └── scripts/              # Общие скрипты
+
+└── system/                   # то, что ставится ВНЕ $HOME — см. system/README.md
+    ├── hk-translator/        # хоткеи в кириллице (-> /opt) — форк, апстрим сломан
+    ├── kbd-layout-toggle/    # Alt+Shift (-> /opt)
+    ├── ddcci/                # яркость монитора (-> /usr/local/bin + systemd)
+    ├── udev/                 # права на /sys/class/backlight
+    └── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
 ```
 
 ## Ключевые файлы
@@ -86,12 +93,51 @@ hyperland-dots/
 | Waybar | Gruvbox Dark monochrome | Gruvbox Light monochrome |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Hyprland border | White (#ffffffcc) | White (#ffffffcc) |
-| GTK | Adwaita:dark | Adwaita |
+| GTK | **`Adwaita-dark`** | `Adwaita` |
 | Nvim | gruvbox-material (transparent) | gruvbox-material (transparent) |
 | Rofi | Gruvbox Dark (muted #a89984) | — |
 | SwayNC | Gruvbox Dark | — |
 
-## Voice Input (faster-whisper)
+### Правила, которые нельзя нарушать
+
+Переключение темы ломалось тремя способами. Все три исправлены — **не возвращай их**:
+
+1. **Никогда не добавляй `env = GTK_THEME,...` в hyprland.conf.** Это жёсткий
+   оверрайд уровня CSS-провайдера: любое GTK3-приложение наследует его из сессии
+   и остаётся в заданной теме при любом положении gsettings. Замер при
+   `color-scheme=prefer-light`: с переменной `#353535`, без неё `#f6f5f4`.
+2. **Имя тёмной темы — `Adwaita-dark`, а не `Adwaita:dark`.** Суффикс `:dark`
+   GTK3 парсит только у переменной окружения. Через gsettings он ищется как
+   буквальное имя темы, не находится, и GTK3 молча остаётся на светлой.
+3. **Не ставь `gtk-application-prefer-dark-theme` в `settings.ini`.** Он прибивает
+   тёмную тему намертво, а `settings.ini` не перечитывается на лету.
+
+Чего делать НЕ надо в `toggle-theme.sh` (всё это оттуда уже выброшено):
+
+- перезапускать xdg-desktop-portal — Chromium от этого тему не перечитывает,
+  а открытые файловые диалоги и захват экрана рвутся;
+- убивать waybar — с 0.15 он сам слушает портал и берёт `style-<appearance>.css`;
+- переписывать конфиг ghostty через sed — с 1.2 он сам читает портал.
+
+**Chromium/Chrome/Brave/Electron не возвращаются из тёмной темы в светлую** —
+баг апстрима, лечится только рестартом приложения.
+
+## Демоны вне $HOME — каталог `system/`
+
+Три вещи ставятся в системные каталоги, исходники лежат в репозитории
+(подробное объяснение каждой — `system/README.md`):
+
+| Что | Зачем |
+|---|---|
+| `hk-translator` | хоткеи в кириллице. **Форк, а не апстрим**: в оригинале отбор клавиатуры шёл по числу объявленных клавиш, и `grab()` доставался HID-интерфейсу мыши |
+| `kbd-layout-toggle` | Alt+Shift. Штатный `grp:alt_shift_toggle` тут не работает: **в Hyprland раскладка живёт отдельно у каждого устройства ввода** |
+| `ddcci` | яркость внешнего монитора через `/sys/class/backlight` |
+
+## Voice Input (faster-whisper) — ОТКЛЮЧЁН
+
+**Сейчас выключен**: бинд висел на голом `F11`, то есть глобально съедал фуллскрин
+в браузерах и видеоплеерах. Вернуть — раскомментировать `setup_voice_input` в
+`main()` и бинды в `hyprland.conf`, но перевесить на комбинацию с модификатором.
 
 Speech-to-text через CTRL+Super (toggle: первое нажатие — запись, второе — транскрибация).
 
@@ -108,10 +154,17 @@ Speech-to-text через CTRL+Super (toggle: первое нажатие — з
 
 ## Ghostty — важные особенности
 
-- **НЕТ hot-reload** — pkill -USR1 ghostty **крашит терминал**
-- Тема применяется только при открытии нового окна
-- toggle-theme.sh использует atomic write (tmpfile + mv) вместо sed -i
-- Нельзя использовать `sed -i` на ghostty config — создаёт дубли строк
+- **Тему переключать не надо руками.** В конфиге стоит
+  `theme = light:gruvbox-mine-light,dark:gruvbox-mine-dark` + `window-theme = auto`,
+  и ghostty ≥1.2 сам следует за системной темой через портал. Скрипт его больше
+  не трогает вообще.
+- **`SIGUSR1` крашит терминал. Перечитать конфиг — `SIGUSR2`** (`pkill -USR2 -x ghostty`).
+  Нужно только если правил конфиг руками; на смену темы это не требуется.
+- Нельзя использовать `sed -i` на ghostty config — создаёт дубли строк.
+- `background-opacity` живёт **в файлах тем**, а не только в `config`. Правка
+  только в `config` будет затёрта при следующем переключении темы — менять надо
+  в `themes/gruvbox-mine-dark` и `themes/gruvbox-mine-light`.
+- `themes/dark.conf` и `themes/light.conf` — legacy, больше не используются.
 
 ## Синхронизация конфигов
 
@@ -137,4 +190,23 @@ Speech-to-text через CTRL+Super (toggle: первое нажатие — з
 - Используй `config.json.example` как шаблон
 - nvim конфиг устанавливается отдельно (LazyVim) — restore создаёт transparent.lua
 - LazyVim тема сбрасывается при повторном запуске restore (клонирует заново)
-- NTFS диск (nvme0n1p1) монтируется в `/media/$USER/Storage` через fstab
+- **Диски: NTFS больше нет.** `nvme0n1p1` теперь `ext4` и монтируется как `/home`,
+  а не в `/media/$USER/Storage`. Функция `mount_ntfs_disk` вырезана из
+  `restore-config.sh`: она лезла драйвером `ntfs3 -o force` по жёстко прописанному
+  UUID `7E68A3DE68A39405` в живой `/home` и ломала загрузку.
+- **Монитор в `DP-3`.** `DP-2` и `DP-1` не существуют. Строка `monitor` на
+  несуществующий разъём не применяется молча, без ошибки, и срабатывает
+  catch-all — так монитор больше суток работал на 59.95 Гц вместо 200.
+  Catch-all должен быть `highrr`, а не `preferred`: `preferred` берёт режим из
+  EDID, а он у большинства мониторов 60 Гц. Разъём завязан ещё на три места:
+  `workspace = N, monitor:DP-X`, `hyprpaper.conf` и аргумент `-o` у дока.
+- **`$mainMod = ALT`**, не SUPER. Клавиатура была в Mac-режиме, где под большим
+  пальцем Cmd. Переключалка ALT↔SUPER — `toggle-mainmod.sh` на `F10`.
+- **`.gitignore`: строка `!*/` обязательна.** Без неё `*` не пускает git внутрь
+  каталогов, негативные правила не срабатывают, и НОВЫЕ файлы молча не
+  добавляются в репозиторий. На уже отслеживаемые файлы это не влияет, поэтому
+  проблему легко не заметить.
+- **`awww` — бывший `swww`**, бинарники `awww` / `awww-daemon`. Демон не уходит
+  в фон сам: `awww-daemon && awww img ...` зависает на первой команде, обои не
+  ставятся вообще. Запускать двумя отдельными `exec-once`.
+- **Обоев в репозитории нет** — `~/wallpapers/` надо наполнять самому.
