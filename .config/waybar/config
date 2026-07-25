@@ -19,8 +19,7 @@
     "custom/sep3",
     "network",
     "custom/singbox",
-    "tray",
-    "custom/voice"
+    "tray"
   ],
   "modules-center": [
     "hyprland/workspaces"
@@ -30,6 +29,8 @@
     "bluetooth",
     "pulseaudio",
     "pulseaudio/slider",
+    "backlight",
+    "backlight/slider",
     "clock",
     "custom/power"
   ],
@@ -53,7 +54,7 @@
   "pulseaudio": {
     "tooltip": false,
     "scroll-step": 5,
-    "format": "󰕾 {volume}%",
+    "format": "{icon} {volume}%",
     "format-muted": "󰖁 {volume}%",
     "on-click": "pavucontrol",
     "format-icons": {
@@ -62,6 +63,20 @@
   },
   "pulseaudio/slider": {
     "min": 0,
+    "max": 100,
+    "orientation": "horizontal",
+    "expand": false
+  },
+  "backlight": {
+    "device": "ddcci3",
+    "tooltip": false,
+    "scroll-step": 5,
+    "format": "{icon} {percent}%",
+    "format-icons": ["󰃞", "󰃟", "󰃠"]
+  },
+  "backlight/slider": {
+    "device": "ddcci3",
+    "min": 10,
     "max": 100,
     "orientation": "horizontal",
     "expand": false
@@ -144,13 +159,6 @@
     "on-scroll-up": "hyprctl dispatch workspace e+1",
     "on-scroll-down": "hyprctl dispatch workspace e-1",
     "on-click": "activate"
-  },
-  "custom/voice": {
-    "exec": "cat /tmp/waybar-voice.json 2>/dev/null || echo '{\"text\": \"\", \"class\": \"idle\"}'",
-    "return-type": "json",
-    "signal": 8,
-    "interval": "once",
-    "format": "{}"
   },
   "custom/singbox": {
     "exec": "~/.config/waybar/scripts/singbox-status.sh",

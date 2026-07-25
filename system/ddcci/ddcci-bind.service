@@ -1,0 +1,11 @@
+[Unit]
+Description=Привязка ddcci к i2c-шинам монитора (авто-проба выключена с ядра 6.8)
+After=graphical.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/ddcci-bind.sh
+
+[Install]
+WantedBy=multi-user.target

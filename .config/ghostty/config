@@ -64,27 +64,10 @@ unfocused-split-opacity = 1
 
 keybind = shift+insert=paste_from_clipboard
 keybind = ctrl+insert=copy_to_clipboard
-foreground = fbf1c7
-background = 000000
-background-opacity = 0.9
 background-blur = true
-window-theme = dark
-selection-foreground = 282828
-selection-background = d5c4a1
-cursor-color = d65d0e
-palette = 0=282828
-palette = 1=fb4934
-palette = 2=b8bb26
-palette = 3=fabd2f
-palette = 4=83a598
-palette = 5=d3869b
-palette = 6=8ec07c
-palette = 7=d5c4a1
-palette = 8=a89984
-palette = 9=fb4934
-palette = 10=b8bb26
-palette = 11=fabd2f
-palette = 12=83a598
-palette = 13=d3869b
-palette = 14=8ec07c
-palette = 15=fbf1c7
+
+# Тема: ghostty сам следит за org.freedesktop.appearance color-scheme
+# и переключает light/dark вживую, без перезапуска и без правки конфига.
+# Цвета лежат в ~/.config/ghostty/themes/gruvbox-mine-{light,dark}
+theme = light:gruvbox-mine-light,dark:gruvbox-mine-dark
+window-theme = auto

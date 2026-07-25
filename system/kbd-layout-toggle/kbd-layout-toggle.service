@@ -1,0 +1,12 @@
+[Unit]
+Description=kbd-layout-toggle — переключение раскладки по Alt+Shift (evdev)
+After=hk-translator.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/kbd-layout-toggle/kbd-layout-toggle.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,20 +1,20 @@
 * {
   border: none;
   border-radius: 0;
-  font-family: "Playpen Sans", sans-serif;
+  font-family: "Cantarell", "JetBrainsMono Nerd Font", sans-serif;
   font-size: 13px;
   min-height: 0;
   font-weight: 600;
 }
 
 window#waybar {
-  background: rgba(26, 26, 26, 0);
-  color: #ebdbb2;
+  background: rgba(0, 0, 0, 0);
+  color: #C9808A;
 }
 
 /* Левый блок */
 .modules-left {
-  background-color: rgba(40, 40, 36, 0.9);
+  background-color: rgba(0, 0, 0, 0.95);
   border-radius: 25px;
   padding: 0 15px;
   border: none;
@@ -24,21 +24,21 @@ window#waybar {
 #custom-sep,
 #custom-sep2,
 #custom-sep3 {
-  color: #665c54;
+  color: #333333;
   padding: 0 5px;
   font-size: 14px;
 }
 
 /* Правый блок */
 .modules-right {
-  background-color: rgba(40, 40, 36, 0.9);
+  background-color: rgba(0, 0, 0, 0.95);
   border-radius: 25px;
   padding: 0 15px;
   border: none;
 }
 
 .modules-center {
-  background-color: rgba(40, 40, 36, 0.9);
+  background-color: rgba(0, 0, 0, 0.95);
   border-radius: 25px;
   padding: 0 5px;
   border: none;
@@ -50,6 +50,8 @@ window#waybar {
 #pulseaudio,
 #custom-mic-volume,
 #pulseaudio-slider,
+#backlight,
+#backlight-slider,
 #network,
 #bluetooth,
 #cpu,
@@ -67,7 +69,7 @@ window#waybar {
 #language {
   padding: 4px 8px;
   margin: 0 2px;
-  color: #ebdbb2;
+  color: #C9808A;
 }
 
 #workspaces {
@@ -78,7 +80,7 @@ window#waybar {
 
 #workspaces button {
   padding: 0 5px;
-  color: #ebdbb2;
+  color: #C9808A;
   transition: all 0.3s ease;
 }
 
@@ -87,24 +89,24 @@ window#waybar {
 }
 
 #workspaces button.active {
-  color: #fe8019;
+  color: #D6959D;
 }
 
 #custom-launcher {
-  color: #fe8019;
+  color: #D6959D;
   font-size: 16px;
   padding: 0 15px;
 }
 
 #custom-power {
-  color: #ebdbb2;
+  color: #C9808A;
   font-size: 16px;
   padding: 0 15px;
 }
 
 /* Style for specific icons/modules that need it */
 #pulseaudio {
-  color: #ebdbb2;
+  color: #C9808A;
 }
 
 #custom-brightness {
@@ -120,20 +122,21 @@ window#waybar {
 }
 
 #network {
-  color: #ebdbb2;
+  color: #C9808A;
 }
 
 #bluetooth {
-  color: #bdae93;
+  color: #A86870;
 }
 
 #clock {
-  color: #d5c4a1;
+  color: #D6959D;
   font-weight: bold;
 }
 
 /* Hide sliders by default */
-#pulseaudio-slider slider {
+#pulseaudio-slider slider,
+#backlight-slider slider {
   min-height: 0px;
   min-width: 0px;
   opacity: 0;
@@ -144,37 +147,39 @@ window#waybar {
   padding: 0;
 }
 
-#pulseaudio-slider trough {
+#pulseaudio-slider trough,
+#backlight-slider trough {
   min-height: 12px;
   min-width: 80px;
   border-radius: 5px;
-  background-color: #504945;
+  background-color: #1A1A1A;
 }
 
-#pulseaudio-slider highlight {
+#pulseaudio-slider highlight,
+#backlight-slider highlight {
   min-width: 12px;
   min-height: 12px;
   border-radius: 9999px;
-  background-color: #d5c4a1;
+  background-color: #C9808A;
 }
 
 /* VPN индикатор */
 #custom-vpn {
-  color: #ebdbb2;
+  color: #C9808A;
   padding: 0 10px;
   font-weight: bold;
 }
 
 #custom-vpn.connected {
-  color: #ebdbb2;
+  color: #C9808A;
 }
 
 #custom-vpn.disconnected {
-  color: #928374;
+  color: #3A2428;
 }
 
 #custom-vpn.connecting {
-  color: #bdae93;
+  color: #A86870;
   animation: pulse 2s infinite;
 }
 
@@ -194,37 +199,37 @@ window#waybar {
 
 /* sing-box VPN индикатор */
 #custom-singbox {
-  color: #ebdbb2;
+  color: #C9808A;
   padding: 0 10px;
   font-weight: bold;
 }
 
 #custom-singbox.connected {
-  color: #ebdbb2;
+  color: #C9808A;
 }
 
 #custom-singbox.disconnected {
-  color: #928374;
+  color: #3A2428;
 }
 
 /* CPU секция */
 #cpu,
 #custom-cpu-temp,
 #custom-fan {
-  color: #d5c4a1;
+  color: #D6959D;
 }
 
 /* GPU секция */
 #custom-gpu-temp,
 #custom-gpu-fan,
 #custom-gpu-vram {
-  color: #bdae93;
+  color: #A86870;
 }
 
 /* Memory/Disk секция */
 #memory,
 #disk {
-  color: #a89984;
+  color: #855058;
 }
 
 #tray {
@@ -236,7 +241,7 @@ window#waybar {
   padding: 0 10px;
   margin: 0 2px;
   border-radius: 6px;
-  color: #a89984;
+  color: #855058;
   font-weight: bold;
 }
 
@@ -262,7 +267,7 @@ window#waybar {
 
 tooltip {
   border-radius: 15px;
-  background-color: #3c3836;
-  color: #ebdbb2;
+  background-color: #111111;
+  color: #C9808A;
   border: none;
 }

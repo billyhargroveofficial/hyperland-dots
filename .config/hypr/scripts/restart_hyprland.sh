@@ -17,8 +17,19 @@ pkill awww-daemon 2>/dev/null
 sleep 0.5
 awww-daemon &disown
 sleep 1
-WALLPAPER=$(grep 'awww img' ~/.config/hypr/hyprland.conf | sed 's/.*awww img //' | sed 's/ --.*//' | head -1)
-eval awww img "$WALLPAPER" --transition-type none &
+# Источник правды — кэш ~/.cache/current_wallpaper, который пишут wall-next.sh и
+# wall-select.sh. Раньше путь выковыривался grep'ом из hyprland.conf, и любая
+# правка строки exec-once ломала восстановление обоев.
+WALLPAPER=$(cat ~/.cache/current_wallpaper 2>/dev/null)
+if [[ ! -f "$WALLPAPER" ]]; then
+    WALLPAPER=$(grep -m1 'awww img' ~/.config/hypr/hyprland.conf | sed 's/.*awww img //; s/ --.*//')
+    WALLPAPER="${WALLPAPER/#\~/$HOME}"
+fi
+if [[ -f "$WALLPAPER" ]]; then
+    awww img "$WALLPAPER" --transition-type none
+else
+    echo "WARN: обои не найдены ($WALLPAPER), фон останется чёрным"
+fi
 
 # Restart clipboard manager
 pkill wl-paste 2>/dev/null
@@ -26,11 +37,13 @@ sleep 0.5
 wl-paste --type text --watch cliphist store &
 wl-paste --type image --watch cliphist store &
 
-# Restart nwg-dock (per monitor, filtered by workspaces)
-pkill nwg-dock-hyprla 2>/dev/null
-sleep 0.5
-nwg-dock-hyprland -d -l overlay -p bottom -i 48 -nolauncher -o DP-1 -m -iw "11,12,13,14,15,16,17,18,19,20" &disown
-nwg-dock-hyprland -d -l overlay -p bottom -i 48 -nolauncher -o DP-2 -m -iw "1,2,3,4,5,6,7,8,9,10" &disown
+# nwg-dock отключён по просьбе пользователя. Гасим на случай, если он остался
+# запущенным с прошлой сессии. -x по comm, а не -f по cmdline: -f матчит любую
+# строку, где встретилось имя, включая шелл, который этот pkill и запустил.
+# comm обрезан ядром до 15 символов, отсюда усечённое имя.
+pkill -x nwg-dock-hyprla 2>/dev/null
+# Вернуть док: раскомментировать строку ниже и layerrule'ы в hyprland.conf.
+# nwg-dock-hyprland -d -l overlay -p bottom -i 48 -nolauncher -o DP-3 -m -iw "1,2,3,4,5,6,7,8,9,10" &disown
 
 # Restart hyprshell (alt-tab switcher)
 hyprshell socat '"Restart"' 2>/dev/null || { hyprshell run & disown; }

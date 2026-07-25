@@ -1,7 +1,7 @@
 * {
   border: none;
   border-radius: 0;
-  font-family: "Playpen Sans", sans-serif;
+  font-family: "Cantarell", "JetBrainsMono Nerd Font", sans-serif;
   font-size: 13px;
   min-height: 0;
   font-weight: 600;
@@ -9,12 +9,12 @@
 
 window#waybar {
   background: rgba(255, 255, 255, 0);
-  color: #3c3836;
+  color: #A85F68;
 }
 
 /* Левый блок */
 .modules-left {
-  background-color: rgba(245, 240, 232, 0.9);
+  background-color: rgba(255, 255, 255, 0.95);
   border-radius: 25px;
   padding: 0 15px;
   border: none;
@@ -24,21 +24,21 @@ window#waybar {
 #custom-sep,
 #custom-sep2,
 #custom-sep3 {
-  color: #928374;
+  color: #DDDDDD;
   padding: 0 5px;
   font-size: 14px;
 }
 
 /* Правый блок */
 .modules-right {
-  background-color: rgba(245, 240, 232, 0.9);
+  background-color: rgba(255, 255, 255, 0.95);
   border-radius: 25px;
   padding: 0 15px;
   border: none;
 }
 
 .modules-center {
-  background-color: rgba(245, 240, 232, 0.9);
+  background-color: rgba(255, 255, 255, 0.95);
   border-radius: 25px;
   padding: 0 5px;
   border: none;
@@ -50,6 +50,8 @@ window#waybar {
 #pulseaudio,
 #custom-mic-volume,
 #pulseaudio-slider,
+#backlight,
+#backlight-slider,
 #network,
 #bluetooth,
 #cpu,
@@ -67,7 +69,7 @@ window#waybar {
 #language {
   padding: 4px 8px;
   margin: 0 2px;
-  color: #3c3836;
+  color: #A85F68;
 }
 
 #workspaces {
@@ -78,7 +80,7 @@ window#waybar {
 
 #workspaces button {
   padding: 0 5px;
-  color: #3c3836;
+  color: #A85F68;
   transition: all 0.3s ease;
 }
 
@@ -87,53 +89,54 @@ window#waybar {
 }
 
 #workspaces button.active {
-  color: #d65d0e;
+  color: #C4707A;
 }
 
 #custom-launcher {
-  color: #d65d0e;
+  color: #C4707A;
   font-size: 16px;
   padding: 0 15px;
 }
 
 #custom-power {
-  color: #3c3836;
+  color: #A85F68;
   font-size: 16px;
   padding: 0 15px;
 }
 
 /* Style for specific icons/modules that need it */
 #pulseaudio {
-  color: #3c3836;
+  color: #A85F68;
 }
 
 #custom-brightness {
-  color: #b57614;
+  color: #C97B2D;
   padding: 0 2px;
 }
 
 #custom-brightness-up,
 #custom-brightness-down {
-  color: #b57614;
+  color: #C97B2D;
   padding: 0 5px;
   font-weight: bold;
 }
 
 #network {
-  color: #3c3836;
+  color: #A85F68;
 }
 
 #bluetooth {
-  color: #665c54;
+  color: #8F5560;
 }
 
 #clock {
-  color: #504945;
+  color: #C4707A;
   font-weight: bold;
 }
 
 /* Hide sliders by default */
-#pulseaudio-slider slider {
+#pulseaudio-slider slider,
+#backlight-slider slider {
   min-height: 0px;
   min-width: 0px;
   opacity: 0;
@@ -144,37 +147,39 @@ window#waybar {
   padding: 0;
 }
 
-#pulseaudio-slider trough {
+#pulseaudio-slider trough,
+#backlight-slider trough {
   min-height: 12px;
   min-width: 80px;
   border-radius: 5px;
-  background-color: #ddd6c8;
+  background-color: #EFEFEF;
 }
 
-#pulseaudio-slider highlight {
+#pulseaudio-slider highlight,
+#backlight-slider highlight {
   min-width: 12px;
   min-height: 12px;
   border-radius: 9999px;
-  background-color: #504945;
+  background-color: #A85F68;
 }
 
 /* VPN индикатор */
 #custom-vpn {
-  color: #3c3836;
+  color: #A85F68;
   padding: 0 10px;
   font-weight: bold;
 }
 
 #custom-vpn.connected {
-  color: #3c3836;
+  color: #A85F68;
 }
 
 #custom-vpn.disconnected {
-  color: #928374;
+  color: #E3C4C8;
 }
 
 #custom-vpn.connecting {
-  color: #665c54;
+  color: #8F5560;
   animation: pulse 2s infinite;
 }
 
@@ -194,37 +199,37 @@ window#waybar {
 
 /* sing-box VPN индикатор */
 #custom-singbox {
-  color: #3c3836;
+  color: #A85F68;
   padding: 0 10px;
   font-weight: bold;
 }
 
 #custom-singbox.connected {
-  color: #3c3836;
+  color: #A85F68;
 }
 
 #custom-singbox.disconnected {
-  color: #928374;
+  color: #E3C4C8;
 }
 
 /* CPU секция */
 #cpu,
 #custom-cpu-temp,
 #custom-fan {
-  color: #504945;
+  color: #C4707A;
 }
 
 /* GPU секция */
 #custom-gpu-temp,
 #custom-gpu-fan,
 #custom-gpu-vram {
-  color: #665c54;
+  color: #8F5560;
 }
 
 /* Memory/Disk секция */
 #memory,
 #disk {
-  color: #7c6f64;
+  color: #75474F;
 }
 
 #tray {
@@ -236,7 +241,7 @@ window#waybar {
   padding: 0 10px;
   margin: 0 2px;
   border-radius: 6px;
-  color: #7c6f64;
+  color: #75474F;
   font-weight: bold;
 }
 
@@ -252,17 +257,17 @@ window#waybar {
 }
 
 #custom-voice.recording {
-  color: #cc241d;
+  color: #C0392B;
 }
 
 #custom-voice.processing {
-  color: #b57614;
+  color: #C97B2D;
   animation: pulse 0.5s infinite;
 }
 
 tooltip {
   border-radius: 15px;
-  background-color: #e8e2d6;
-  color: #3c3836;
+  background-color: #F5F5F5;
+  color: #A85F68;
   border: none;
 }

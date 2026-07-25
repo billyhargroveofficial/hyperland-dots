@@ -95,8 +95,18 @@ install_pacman_packages() {
         udiskie
         xdg-desktop-portal-gtk
         network-manager-applet
-        pavucontrol
         nautilus
+
+        # ЗВУК. Раньше здесь стоял только pavucontrol — то есть GUI микшера без
+        # звукового сервера под ним. В системе оказывались лишь библиотеки
+        # libpipewire/libwireplumber, PipeWire крутился без session-менеджера и
+        # без Pulse-совместимости, `pactl` отвечал "Connection refused", а
+        # pavucontrol не открывался. Демоны обязательны, GUI сам по себе бесполезен.
+        pipewire
+        wireplumber      # session-менеджер; без него PipeWire не маршрутизирует звук
+        pipewire-pulse   # слой совместимости с PulseAudio: его и спрашивает pavucontrol
+        pipewire-alsa
+        pavucontrol
 
         # Dev tools
         npm
@@ -122,10 +132,17 @@ install_pacman_packages() {
         dkms
         linux-headers
 
-        # Дисплей-менеджер
+        # Дисплей-менеджер.
+        # qt6-multimedia КРИТИЧЕН: тема sddm-astronaut-theme делает
+        # `import QtMultimedia` в Main.qml на верхнем уровне, и без пакета гритер
+        # падает с "module QtMultimedia is not installed" -> "Fallback to embedded
+        # theme". Тема при этом не показывается вообще, а в логе тишина, если не
+        # знать где искать (journalctl -u sddm).
         sddm
         qt6-svg
         qt6-declarative
+        qt6-multimedia
+        qt6-virtualkeyboard   # Components/VirtualKeyboard.qml; не фатально, но тема его грузит
 
         # Dependencies
         gtk3
@@ -135,9 +152,32 @@ install_pacman_packages() {
         xdotool
         wtype
         zellij
-        blueman
         imagemagick
         nwg-dock-hyprland
+
+        # BLUETOOTH. Та же болезнь, что со звуком: blueman (GUI) стоял, а демона
+        # под ним не было. bluetooth.service оказывался disabled, bluez-utils
+        # отсутствовал целиком — то есть не было даже bluetoothctl.
+        # Включение сервиса — в enable_system_services().
+        bluez
+        bluez-utils
+
+        # ТЕМЫ И ИКОНКИ.
+        # gnome-themes-extra даёт Adwaita-dark. Без него в /usr/share/themes/
+        # лежат только Default, Emacs и HighContrast — то есть ни одной тёмной
+        # GTK3-темы, и переключать light/dark физически не на что.
+        # papirus-icon-theme: hyprland.conf запускает rofi с
+        # `-icon-theme Papirus-Dark`, без пакета иконки в лаунчере пустые.
+        gnome-themes-extra
+        papirus-icon-theme
+
+        # Яркость внешнего монитора по DDC/CI (см. system/README.md).
+        # ddcutil нужен для диагностики (`ddcutil detect`), сама регулировка
+        # идёт через ядерный модуль ddcci-backlight.
+        ddcutil
+
+        # Нужен и hk-translator, и kbd-layout-toggle
+        python-evdev
     )
 
     sudo pacman -S --needed --noconfirm "${packages[@]}" || log_warn "Некоторые пакеты не найдены в pacman"
@@ -456,24 +496,98 @@ EOF
 install_hk_translator() {
     log_info "Установка hk-translator..."
 
-    # Зависимость
+    # Ставим из system/ в этом репозитории, а НЕ клонированием из
+    # github.com/reflaxess123/hk-translator, как было раньше. Две причины:
+    # аккаунт reflaxess123 больше не существует (301), и в апстримной версии
+    # был баг, из-за которого транслятор не работал никогда — отбор клавиатуры
+    # шёл по числу объявленных клавиш, и grab() доставался HID-интерфейсу мыши
+    # Logitech G102 (273 «клавиши» — больше любой клавиатуры).
+    # Подробности и список исправлений: system/README.md
     sudo pacman -S --needed --noconfirm python-evdev
 
-    # Клонируем и копируем
-    cd /tmp
-    rm -rf hk-translator
-    git clone --depth=1 https://github.com/reflaxess123/hk-translator.git
     sudo mkdir -p /opt/hk-translator
-    sudo cp hk-translator/hk-translator.py /opt/hk-translator/
-    sudo cp hk-translator/hk-translator.service /etc/systemd/system/
+    sudo install -m 755 "$SCRIPT_DIR/system/hk-translator/hk-translator.py" /opt/hk-translator/
+    sudo install -m 644 "$SCRIPT_DIR/system/hk-translator/hk-translator.service" /etc/systemd/system/
 
-    # Включаем сервис
     sudo systemctl daemon-reload
     sudo systemctl enable hk-translator
 
-    rm -rf /tmp/hk-translator
-
     log_info "hk-translator установлен (запустится после перезагрузки)"
+}
+
+# ==========================================
+# Переключение раскладки по Alt+Shift
+# ==========================================
+install_kbd_layout_toggle() {
+    log_info "Установка kbd-layout-toggle..."
+
+    # Почему не kb_options = grp:alt_shift_toggle: в Hyprland раскладка живёт
+    # отдельно у КАЖДОГО устройства ввода, а их тут больше десятка, включая две
+    # виртуальные клавиатуры от hk-translator. xkb переключает группу только у
+    # того устройства, на котором нажали, а печать идёт через другое.
+    # Подробности: system/README.md
+    sudo pacman -S --needed --noconfirm python-evdev
+
+    sudo mkdir -p /opt/kbd-layout-toggle
+    sudo install -m 755 "$SCRIPT_DIR/system/kbd-layout-toggle/kbd-layout-toggle.py" /opt/kbd-layout-toggle/
+    sudo install -m 644 "$SCRIPT_DIR/system/kbd-layout-toggle/kbd-layout-toggle.service" /etc/systemd/system/
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable kbd-layout-toggle
+
+    log_info "kbd-layout-toggle установлен"
+}
+
+# ==========================================
+# Яркость внешнего монитора (DDC/CI)
+# ==========================================
+install_ddcci_backlight() {
+    log_info "Установка ddcci-backlight (яркость внешнего монитора)..."
+
+    # Стабильный ddcci-driver-linux-dkms НЕ собирается на ядрах 7.x: в ядре
+    # добавили const в сигнатуру device_driver и выпилили I2C_CLASS_SPD.
+    # Берём форк, который это чинит.
+    yay -S --needed --noconfirm ddcci-driver-linux-clemax-dkms-git \
+        || { log_warn "ddcci-driver не собрался — яркость монитора работать не будет"; return 0; }
+
+    sudo install -m 755 "$SCRIPT_DIR/system/ddcci/ddcci-bind.sh" /usr/local/bin/
+    sudo install -m 644 "$SCRIPT_DIR/system/ddcci/ddcci-bind.service" /etc/systemd/system/
+    sudo install -m 644 "$SCRIPT_DIR/system/udev/99-ddcci-backlight.rules" /etc/udev/rules.d/
+    sudo install -m 644 "$SCRIPT_DIR/system/modules-load/ddcci.conf" /etc/modules-load.d/
+
+    # Права на запись яркости даёт udev-правило через группу video.
+    # ВНИМАНИЕ: членство в группе подхватывается только при следующем логине.
+    sudo usermod -aG video "$USER"
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable ddcci-bind.service
+    sudo udevadm control --reload-rules
+
+    log_info "ddcci-backlight установлен (заработает после перезагрузки)"
+}
+
+# ==========================================
+# Системные сервисы, которые иначе остаются выключенными
+# ==========================================
+enable_system_services() {
+    log_info "Включение системных сервисов..."
+
+    # Bluetooth: пакеты ставятся, но сервис по умолчанию disabled.
+    sudo systemctl enable --now bluetooth || log_warn "bluetooth не включился"
+
+    # nvidia-persistenced. Без него на загрузке НЕ существует /dev/nvidia0 и
+    # /dev/nvidia-modeset, а X-драйверу NVIDIA они нужны. Последствия были
+    # такие: SDDM трижды не мог поднять X ("Could not start Display server on
+    # vt 2") и появлялся с большой задержкой, а gpu-fan.service падал с
+    # "No devices detected". gpu-fan.service объявляет After= на этот юнит,
+    # но пока юнит выключен, зависимость молча указывает в пустоту.
+    sudo systemctl enable --now nvidia-persistenced || log_warn "nvidia-persistenced не включился"
+
+    # Звук — пользовательские юниты, не системные.
+    systemctl --user enable --now pipewire wireplumber pipewire-pulse \
+        || log_warn "аудио-юниты не включились"
+
+    log_info "Системные сервисы включены"
 }
 
 # ==========================================
@@ -726,25 +840,45 @@ main() {
     setup_gpu_fan
     setup_system_fan
     install_hk_translator
+    install_kbd_layout_toggle
+    install_ddcci_backlight
+    enable_system_services
     install_ohmyzsh
-    setup_voice_input
+    # setup_voice_input — отключено. Голосовой ввод висел на голом F11 и
+    # глобально съедал фуллскрин в браузерах и видеоплеерах. Venv на 2.7 ГБ
+    # с CUDA-библиотеками ставился при каждом прогоне. Вернуть: раскомментировать
+    # здесь и бинды F11 в .config/hypr/hyprland.conf.
     copy_configs
     setup_singbox
     make_scripts_executable
     install_lazyvim
     set_default_shell
 
-    # Установка тёмной темы по умолчанию
+    # Установка тёмной темы по умолчанию.
+    # Имя темы — именно 'Adwaita-dark', а НЕ 'Adwaita:dark'. Суффикс ":dark"
+    # GTK3 понимает только у переменной окружения GTK_THEME; через gsettings он
+    # ищется как буквальное имя темы, не находится, и GTK3 молча остаётся на
+    # светлой. Тема Adwaita-dark приезжает из gnome-themes-extra.
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita:dark'
+    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+    gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
     ln -sf "$HOME/.config/waybar/style-dark.css" "$HOME/.config/waybar/style.css"
     echo "dark" > "$HOME/.config/hypr/.theme-state"
     log_info "Тёмная тема установлена (переключение: Ctrl+Y)"
 
     # Перезагрузка Hyprland конфига и перезапуск панели/обоев
     hyprctl reload 2>/dev/null && log_info "Hyprland конфиг перезагружен" || true
-    pkill waybar 2>/dev/null || true; waybar &disown
-    pkill awww-daemon 2>/dev/null || true; awww-daemon &disown; sleep 1; awww img ~/wallpapers/15-Sequoia-Sunrise.png --transition-type none
+    pkill -x waybar 2>/dev/null || true; waybar &disown
+    # awww-daemon НЕ уходит в фон сам (ключа --daemonize у него нет), поэтому
+    # `awww-daemon && awww img ...` зависал бы на первой команде и обои никогда
+    # не ставились. Запускаем в фон явно.
+    pkill -x awww-daemon 2>/dev/null || true; awww-daemon &disown; sleep 1
+    WALL=$(cat ~/.cache/current_wallpaper 2>/dev/null || echo "$HOME/wallpapers/default.png")
+    if [ -f "$WALL" ]; then
+        awww img "$WALL" --transition-type none
+    else
+        log_warn "Обоев нет ($WALL) — рабочий стол останется чёрным. Положи файлы в ~/wallpapers/"
+    fi
     log_info "waybar и awww перезапущены"
 
     echo ""
@@ -762,8 +896,14 @@ main() {
     echo "Проверки после ребута:"
     echo "  nvidia-smi -q | grep 'GSP Firmware'                 # должно быть N/A"
     echo "  nvidia-smi --query-gpu=fan.speed --format=csv       # не 0%"
-    echo "  systemctl is-active sddm gpu-fan system-fan"
+    echo "  systemctl is-active sddm gpu-fan system-fan bluetooth nvidia-persistenced"
+    echo "  systemctl is-active hk-translator kbd-layout-toggle ddcci-bind"
     echo "  hyprctl monitors                                    # частоты мониторов"
+    echo "  pactl info | grep 'Server Name'                     # должен быть PipeWire"
+    echo "  ls /sys/class/backlight/                            # ddcciN — яркость монитора"
+    echo "  journalctl -u sddm -b | grep -i qml                 # тема гритера не должна падать"
+    echo ""
+    echo "Если что-то из этого пусто — смотри соответствующий раздел README."
     echo ""
 }
 

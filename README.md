@@ -142,15 +142,21 @@ DHCP при этом продолжает работать, адрес прос�
 |---------|----------|
 | `Alt + W` | Терминал (ghostty) |
 | `Alt + Q` | Закрыть окно |
-| `Alt + M` | Выход из Hyprland |
+| `Alt + Ctrl + M` | Выход из Hyprland |
 | `Alt + E` | Файловый менеджер (nautilus) |
 | `Alt + Space` | Лаунчер (rofi) |
 | `Alt + V` | Буфер обмена (cliphist + rofi) |
 | `Alt + F` | Fullscreen |
 | `Alt + T` | Toggle floating |
 | `Alt + S` | Pin window |
+| `Alt + Shift` | Переключить раскладку us/ru |
+| `Alt + Tab` | Переключатель окон (hyprshell) |
 | `Ctrl + Y` | Toggle dark/light тема |
-| `Ctrl + Super` | Voice input (toggle запись/транскрибация) |
+| `F10` | Переключить `$mainMod` между ALT и SUPER |
+
+> Выход из сессии сидит на `Alt + Ctrl + M`, а не на `Alt + M`. При
+> `$mainMod = ALT` одиночный `Alt + M` — это мнемоника меню в любом GTK/Qt
+> приложении, и случайное нажатие мгновенно убивало сессию без подтверждения.
 
 ### VPN и система
 
@@ -173,13 +179,54 @@ DHCP при этом продолжает работать, адрес прос�
 
 ## Мониторы
 
-Частоты задавать явно, иначе Hyprland выберет режим сам и не всегда лучший.
-Разъёмы смотреть через `hyprctl monitors`:
+**Сначала посмотри, в какой разъём монитор реально воткнут**: `hyprctl monitors`.
+Строка на несуществующий разъём просто не применяется — молча, без ошибки, — и
+срабатывает catch-all. Так монитор больше суток проработал на 59.95 Гц вместо
+200: в конфиге стоял `DP-2`, а кабель был в `DP-3`.
+
+Второе: catch-all должен быть `highrr`, а не `preferred`. **`preferred` берёт
+режим из EDID, а он у большинства мониторов 60 Гц** — именно это и давало 59.95.
 
 ```
-monitor=DP-1,2560x1440@180,0x0,1
-monitor=DP-2,2560x1440@200,2560x0,1
+monitor = , highrr, auto, 1              # запасной вариант для любого монитора
+monitor = DP-3, 2560x1440@200, 0x0, 1    # явно и с проверенной частотой
 ```
+
+Проверка после правки:
+```bash
+hyprctl monitors -j | jq '.[] | {name, width, height, refreshRate}'
+```
+
+Не забыть, что на разъём монитора завязаны ещё три места: `workspace = N,
+monitor:DP-X`, `hyprpaper.conf` и аргумент `-o` у `nwg-dock-hyprland`.
+
+## Яркость внешнего монитора
+
+У десктопа нет `/sys/class/backlight` — это интерфейс подсветки ноутбучных
+матриц. Внешний монитор управляется по **DDC/CI** через i2c прямо по кабелю.
+Другого способа менять настоящую яркость не существует: `hyprsunset` и гамма
+лишь затемняют картинку, подсветка при этом продолжает жарить на 100%.
+
+Гонять `ddcutil` из скрипта не годится — **~600 мс на вызов**. Вместо этого
+ставится ядерный модуль `ddcci-backlight`, и монитор появляется как обычный
+`/sys/class/backlight/ddcciN`: чтение мгновенное, запись 165 мс, работает
+нативный модуль waybar `backlight/slider`.
+
+Подводные камни (оба обойдены в `install_ddcci_backlight`, детали в
+`system/README.md`):
+
+- стабильный AUR-пакет **не собирается** на ядрах 7.x — нужен форк `clemax`;
+- с ядра 6.8 **отключена авто-проба дисплеев**, устройство создаётся вручную
+  через `new_device`, а номер i2c-шины между загрузками не фиксирован.
+
+```bash
+ddcutil detect                        # монитор виден по DDC/CI?
+ls /sys/class/backlight/              # должен быть ddcciN
+cat /sys/class/backlight/ddcci3/brightness
+```
+
+Права даёт udev-правило через группу `video`. **Членство в группе подхватывается
+только при следующем логине** — до него яркость меняется только от root.
 
 ## Тема (Gruvbox)
 
@@ -187,17 +234,129 @@ monitor=DP-2,2560x1440@200,2560x0,1
 
 | Компонент | Dark | Light |
 |-----------|------|-------|
-| Ghostty | Gruvbox Dark (0.8 opacity) | Gruvbox Light (0.3 opacity) |
+| Ghostty | `gruvbox-mine-dark` (0.9 opacity) | `gruvbox-mine-light` (0.9 opacity) |
 | Waybar | Gruvbox Dark monochrome | Gruvbox Light monochrome |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Nvim | gruvbox-material transparent | gruvbox-material transparent |
-| GTK | Adwaita:dark | Adwaita |
+| GTK | **`Adwaita-dark`** | `Adwaita` |
 | Rofi | Gruvbox Dark (muted) | — |
 | SwayNC | Gruvbox Dark | — |
 
-## Voice Input
+### Три вещи, которые ломали переключение
 
-Speech-to-text через faster-whisper large-v3-turbo на CUDA.
+Архитектура правильная — источник правды `gsettings org.gnome.desktop.interface`,
+наружу его транслирует `xdg-desktop-portal-gtk` через `org.freedesktop.appearance`.
+Ломали её три конкретные вещи, и все три устранены:
+
+**1. `env = GTK_THEME,Adwaita:dark` в `hyprland.conf`.** Главная причина.
+`GTK_THEME` — жёсткий оверрайд уровня CSS-провайдера, приоритетнее всего
+остального. Любое GTK3-приложение наследовало его из сессии и оставалось тёмным
+при любом положении gsettings. Замер при `color-scheme=prefer-light`:
+
+```
+с GTK_THEME=Adwaita:dark  ->  #353535  ТЁМНЫЙ   (неправильно)
+без GTK_THEME             ->  #f6f5f4  СВЕТЛЫЙ  (правильно)
+```
+
+**Не добавлять эту переменную обратно.** В Hyprland Discussion #5867 она прямо
+помечена как workaround, а не решение.
+
+**2. `gsettings set gtk-theme 'Adwaita:dark'` — это no-op.** Суффикс `:dark`
+GTK3 парсит только у переменной окружения, а не у значения из gsettings. Через
+gsettings `Adwaita:dark` ищется как буквальное имя темы, не находится, и GTK3
+падает на светлую. Правильное имя — `Adwaita-dark`.
+
+**3. В системе не было ни одной тёмной GTK3-темы.** В `/usr/share/themes/`
+лежали только `Default`, `Emacs` и `HighContrast` — переключать было физически
+не на что. Ставится пакетом `gnome-themes-extra`.
+
+### Чего делать не надо
+
+- **Перезапускать порталы** на каждое переключение. Chromium от этого тему не
+  перечитывает (проверено через DevTools Protocol), а открытые файловые диалоги
+  и захват экрана рвутся.
+- **Убивать waybar.** С версии 0.15 он сам слушает портал и берёт
+  `style-<appearance>.css` приоритетнее `style.css`, с живой перезагрузкой CSS.
+- **Переписывать конфиг ghostty через sed.** Ghostty ≥1.2 сам читает портал,
+  достаточно `theme = light:...,dark:...` и `window-theme = auto`.
+
+### Что починить нельзя
+
+**Chromium, Chrome, Brave, Electron не возвращаются из тёмной темы в светлую.**
+Баг апстрима ([chromium/40268108](https://issues.chromium.org/issues/40268108)):
+light→dark на лету работает, обратно — нет. Ни перезапуск порталов, ни смена
+бэкенда не помогают, только рестарт приложения. `toggle-theme.sh` про это
+честно предупреждает уведомлением.
+
+## Звук
+
+Ставить **демоны**, а не только GUI. Классическая ловушка этого репозитория: в
+списке пакетов был `pavucontrol`, но не было `wireplumber` и `pipewire-pulse` —
+в системе оказывались только библиотеки `libpipewire`/`libwireplumber`, PipeWire
+крутился без session-менеджера, `pactl` отвечал `Connection refused`, и
+pavucontrol не открывался вообще.
+
+```bash
+pactl info | grep 'Server Name'     # PulseAudio (on PipeWire X.Y.Z)
+systemctl --user is-active pipewire pipewire-pulse wireplumber
+```
+
+Если звука нет, а сервер работает — проверь две вещи:
+
+```bash
+pactl get-default-sink              # тот ли выход
+pactl get-sink-volume @DEFAULT_SINK@   # бывает 0% при живом сервере
+```
+
+Дефолтный выход стоит закрепить, иначе wireplumber каждую сессию выбирает его
+заново по приоритету и может увести звук на случайное устройство:
+
+```bash
+wpctl status                        # найти id нужного sink
+wpctl set-default <id>              # пишется в ~/.local/state/wireplumber/default-nodes
+```
+
+## Bluetooth
+
+Та же болезнь: `blueman` (GUI) ставился, а `bluez-utils` — нет, и
+`bluetooth.service` оставался `disabled`. Оба пункта закрыты в
+`install_pacman_packages` и `enable_system_services`.
+
+```bash
+systemctl is-active bluetooth       # active
+bluetoothctl show | grep Powered    # Powered: yes
+rfkill list bluetooth               # Soft/Hard blocked: no
+```
+
+## Раскладка и хоткеи в кириллице
+
+Два независимых демона, оба в `system/` (подробности — `system/README.md`):
+
+- **`hk-translator`** — чтобы `Ctrl+C` работал в русской раскладке. Перехватывает
+  клавиатуру на уровне evdev и переотправляет через два виртуальных устройства.
+  В апстримной версии был баг, из-за которого он **захватывал мышь** вместо
+  клавиатуры и не работал никогда.
+- **`kbd-layout-toggle`** — переключение по `Alt+Shift`. Штатная xkb-опция
+  `grp:alt_shift_toggle` здесь работать не может: **в Hyprland раскладка живёт
+  отдельно у каждого устройства ввода**, а их больше десятка.
+
+```bash
+systemctl is-active hk-translator kbd-layout-toggle
+journalctl -u hk-translator -n 20      # какие устройства захвачены
+hyprctl devices | grep -A1 Keyboard    # раскладки не должны разъезжаться
+```
+
+## Voice Input — ОТКЛЮЧЁН
+
+Speech-to-text через faster-whisper large-v3-turbo на CUDA. **Сейчас выключен.**
+
+Причина: бинд висел на голом `F11`, а это **фуллскрин в любом браузере и
+видеоплеере** — он съедался глобально, во всей системе. Плюс venv на 2.7 ГБ
+с CUDA-библиотеками пересобирался при каждом прогоне установки.
+
+Вернуть: раскомментировать `setup_voice_input` в `main()` и бинды `F11` в
+`.config/hypr/hyprland.conf`. Если возвращаешь — перевесь на комбинацию с
+модификатором, иначе снова потеряешь фуллскрин.
 
 - **Ctrl+Super** — первое нажатие начинает запись (красный ● в waybar)
 - **Ctrl+Super** — второе нажатие останавливает и транскрибирует (жёлтый ●)
@@ -299,9 +458,9 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 
 ```
 .config/
-├── hypr/                 # Hyprland + скрипты (voice-input, theme toggle)
-├── waybar/               # Панель (Gruvbox dark/light CSS, voice indicator)
-├── ghostty/              # Терминал + themes/
+├── hypr/                 # Hyprland + скрипты (theme toggle, вентиляторы, обои)
+├── waybar/               # Панель (Gruvbox dark/light CSS, звук + яркость)
+├── ghostty/              # Терминал + themes/gruvbox-mine-{dark,light}
 ├── Code/User/            # VSCode settings + keybindings
 ├── swaync/               # Уведомления (Gruvbox)
 ├── sing-box/             # VPN (только шаблон!)
@@ -311,4 +470,11 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 ├── alacritty/            # Терминал
 ├── gtk-3.0/              # GTK темы
 └── gtk-4.0/              # GTK темы
+
+system/                   # то, что живёт вне $HOME — см. system/README.md
+├── hk-translator/        # хоткеи в кириллице (-> /opt, форк: апстрим сломан)
+├── kbd-layout-toggle/    # Alt+Shift (-> /opt)
+├── ddcci/                # яркость монитора (-> /usr/local/bin + systemd)
+├── udev/                 # права на /sys/class/backlight
+└── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
 ```

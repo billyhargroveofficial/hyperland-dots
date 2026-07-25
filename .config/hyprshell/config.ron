@@ -1,6 +1,6 @@
 // Edit with `hyprshell config edit`
 (
-    version: 3,
+    version: 4,
     windows: (
         scale: 8.5,
         items_per_row: 5,
@@ -52,10 +52,10 @@
                 ),
             ),
             key: "Super_L",
+            top_offset: 430,
             modifier: "super",
             filter_by: [],
-            hide_filtered: false,
-            exclude_special_workspaces: "",
+            exclude_workspaces: "",
         ),
         switch: (
             modifier: "alt",
@@ -64,7 +64,8 @@
                 current_monitor,
             ],
             switch_workspaces: false,
-            exclude_special_workspaces: "",
+            exclude_workspaces: "",
+            kill_key: 'q',
         ),
         switch_2: None,
     ),

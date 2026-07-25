@@ -7,6 +7,21 @@ LOG_FILE="$HOME/.local/share/redsocks.log"
 # Создаём директорию для логов
 mkdir -p "$(dirname "$LOG_FILE")"
 
+die() {
+    command -v notify-send >/dev/null 2>&1 && notify-send "redsocks" "$1" -i dialog-error
+    echo "$1" >&2
+    exit 1
+}
+
+# Предполётная проверка. Скрипт висит на биндe Alt+I, у которого нет tty:
+# без этих проверок sudo молча уходил ждать пароль в никуда, и нажатие
+# выглядело как «ничего не произошло».
+command -v redsocks >/dev/null 2>&1 || die "redsocks не установлен (pacman -S redsocks)"
+[[ -f /etc/redsocks.conf ]]          || die "нет /etc/redsocks.conf"
+# sudoers разрешает без пароля только nvidia-settings и sing-box; iptables и
+# redsocks сюда не входят, поэтому проверяем заранее и не даём скрипту зависнуть.
+sudo -n true 2>/dev/null || die "нужен sudo без пароля для iptables/redsocks"
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }

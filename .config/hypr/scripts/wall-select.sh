@@ -7,19 +7,25 @@ CACHE_DIR="$HOME/.cache/wallpaper-thumbs"
 CACHE_FILE="$HOME/.cache/current_wallpaper"
 ROFI_THEME="$HOME/.config/rofi/wallpaper.rasi"
 
+# Запуск с бинда (Ctrl+Shift+Alt+A) — без tty, поэтому ругаемся уведомлением.
+if [[ ! -d "$WALLDIR" ]]; then
+    notify-send "Wallpaper" "Нет каталога $WALLDIR" -i dialog-error
+    exit 1
+fi
+
 # Create cache directory
 mkdir -p "$CACHE_DIR"
 
 # Generate larger thumbnails for better preview
-for img in $(find "$WALLDIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \)); do
-    [[ -f "$img" ]] || continue
+# `for img in $(find ...)` рвал имена файлов по пробелам; читаем через null.
+while IFS= read -r -d '' img; do
     name=$(basename "$img")
     thumb="$CACHE_DIR/$name"
 
     if [[ ! -f "$thumb" ]] || [[ "$img" -nt "$thumb" ]]; then
         magick "$img" -thumbnail 280x160^ -gravity center -extent 280x160 "$thumb" 2>/dev/null
     fi
-done
+done < <(find "$WALLDIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) -print0)
 
 # Build menu with images
 build_menu() {

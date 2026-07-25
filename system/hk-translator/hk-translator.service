@@ -1,0 +1,13 @@
+[Unit]
+Description=hk-translator — транслятор хоткеев
+After=systemd-logind.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/hk-translator/hk-translator.py
+Restart=on-failure
+RestartSec=3
+Nice=-20
+
+[Install]
+WantedBy=multi-user.target

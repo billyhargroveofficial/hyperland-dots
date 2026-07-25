@@ -1,0 +1,3 @@
+# Яркость монитора через ddcci доступна группе video — иначе waybar,
+# работающий от пользователя, не сможет её менять.
+ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="ddcci*", RUN+="/usr/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/usr/bin/chmod g+w /sys/class/backlight/%k/brightness"

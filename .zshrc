@@ -171,6 +171,10 @@ export NVM_DIR="$HOME/.nvm"
 
 # Lazy conda - загружается только при первом вызове
 conda() {
+  if [[ ! -r /opt/miniconda3/etc/profile.d/conda.sh ]]; then
+    print -u2 "conda: /opt/miniconda3 не установлен"
+    return 127
+  fi
   unfunction conda
   source /opt/miniconda3/etc/profile.d/conda.sh
   conda "$@"
@@ -184,3 +188,7 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 # pnpm end
+
+# Qwen Code PATH block begin
+export PATH='/home/billy/.local/bin':$PATH
+# Qwen Code PATH block end

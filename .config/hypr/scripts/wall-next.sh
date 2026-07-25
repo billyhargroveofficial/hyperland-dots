@@ -3,6 +3,13 @@
 WALLDIR="$HOME/wallpapers"
 CACHE_FILE="$HOME/.cache/current_wallpaper"
 
+# Скрипт запускается с бинда (Ctrl+Alt+A) — вывода в терминал никто не увидит,
+# поэтому об ошибках сообщаем через notify-send.
+if [[ ! -d "$WALLDIR" ]]; then
+    notify-send "Wallpaper" "Нет каталога $WALLDIR" -i dialog-error
+    exit 1
+fi
+
 # Создаем кеш-файл если его нет
 if [[ ! -f "$CACHE_FILE" ]]; then
     echo "" > "$CACHE_FILE"
@@ -16,7 +23,8 @@ readarray -t FILES < <(find "$WALLDIR" -type f \( -iname "*.jpg" -o -iname "*.pn
 
 # Если список пуст — выходим
 if [[ ${#FILES[@]} -eq 0 ]]; then
-  echo "❌ Нет файлов в $WALLDIR"
+  notify-send "Wallpaper" "Нет картинок в $WALLDIR" -i dialog-error
+  echo "Нет файлов в $WALLDIR"
   exit 1
 fi
 
