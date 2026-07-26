@@ -293,9 +293,44 @@ hl.bind(mainMod .. " + SHIFT + T", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + CTRL + T", hl.dsp.exec_cmd("missioncenter"))
 -- obs в системе не установлен — бинд только съедал бы Alt+O глобально.
 -- hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("obs"))
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen_state({ internal = 2, client = 0 }))
+-- action = "toggle" обязателен. Без него диспетчер только УСТАНАВЛИВАЕТ
+-- состояние, и повторное нажатие на уже развёрнутом окне ничего не делает —
+-- выйти из фуллскрина становится нечем. В hyprlang `fullscreenstate 2 0`
+-- переключал сам, в Lua это отдельный параметр.
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen_state({ internal = 2, client = 0, action = "toggle" }))
 hl.bind(mainMod .. " + D", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + S", hl.dsp.window.pin())
+-- Alt+S — закрепить окно поверх всех воркспейсов.
+--
+-- Голый pin применим ТОЛЬКО к плавающим окнам: на тайловом Hyprland отвечает
+-- «Window does not qualify to be pinned» и не делает ничего — снаружи бинд
+-- выглядит сломанным. Поэтому тайловое окно сначала переводим в floating, а
+-- при откреплении возвращаем в тайлинг — но лишь то, которое сами оттуда и
+-- вынимали: окно, бывшее плавающим изначально, так и останется плавающим.
+--
+-- Это возможно потому, что hl.bind принимает не только диспетчер, но и
+-- обычную функцию Lua — в hyprlang такую логику пришлось бы выносить в скрипт
+-- и дёргать hyprctl.
+local pinnedFromTiled = {}
+
+hl.bind(mainMod .. " + S", function()
+    local w = hl.get_active_window()
+    if not w then return end
+    local id = tostring(w.address)
+
+    if w.pinned then
+        hl.dispatch(hl.dsp.window.pin())
+        if pinnedFromTiled[id] then
+            hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+            pinnedFromTiled[id] = nil
+        end
+    else
+        if not w.floating then
+            hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+            pinnedFromTiled[id] = true
+        end
+        hl.dispatch(hl.dsp.window.pin())
+    end
+end)
 
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 
