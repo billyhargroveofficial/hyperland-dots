@@ -45,8 +45,9 @@ pkill -x nwg-dock-hyprla 2>/dev/null
 # Вернуть док: раскомментировать строку ниже и layerrule'ы в hyprland.conf.
 # nwg-dock-hyprland -d -l overlay -p bottom -i 48 -nolauncher -o DP-3 -m -iw "1,2,3,4,5,6,7,8,9,10" &disown
 
-# Restart hyprshell (alt-tab switcher)
-hyprshell socat '"Restart"' 2>/dev/null || { hyprshell run & disown; }
+# hyprshell отсюда убран вместе с автозапуском: его оверлей на Alt+Tab был не
+# нужен. Переключение окон теперь нативное (bind = ALT, Tab, cyclenext в
+# hyprland.conf) и переживает reload само, поднимать ничего не надо.
 
 # Reload Hyprland config
 hyprctl reload

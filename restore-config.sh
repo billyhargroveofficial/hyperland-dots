@@ -200,7 +200,8 @@ install_aur_packages() {
         zen-browser-bin
         visual-studio-code-bin
         obsidian
-        hyprshell-bin
+        # hyprshell-bin убран: его оверлей вылезал на Alt+Tab и был не нужен.
+        # Переключение окон нативное — bind = ALT, Tab, cyclenext.
     )
 
     for pkg in "${aur_packages[@]}"; do
@@ -956,6 +957,11 @@ main() {
     gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
     gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
     ln -sf "$HOME/.config/waybar/style-dark.css" "$HOME/.config/waybar/style.css"
+    # swaync, в отличие от waybar, портал НЕ слушает: он читает ровно
+    # ~/.config/swaync/style.css и ничего сам не выбирает. Поэтому активная
+    # тема задаётся симлинком, а переключает его toggle-theme.sh с
+    # последующим `swaync-client --reload-css`.
+    ln -sf "$HOME/.config/swaync/style-dark.css" "$HOME/.config/swaync/style.css"
     echo "dark" > "$HOME/.config/hypr/.theme-state"
     log_info "Тёмная тема установлена (переключение: Ctrl+Y)"
 

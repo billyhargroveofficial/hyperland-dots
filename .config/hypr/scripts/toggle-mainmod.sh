@@ -56,11 +56,8 @@ if [[ -n "$ERRORS" && "$ERRORS" != "no errors" ]]; then
     exit 1
 fi
 
-# hyprctl reload сбрасывает бинды, зарегистрированные в рантайме, — а hyprshell
-# вешает свои (Alt+Tab, Alt+`, Super_L) именно так. Без этого Alt+Tab умирает
-# после каждого reload до перезапуска hyprshell.
-if pgrep -x hyprshell > /dev/null 2>&1; then
-    hyprshell socat '"Restart"' > /dev/null 2>&1 || true
-fi
+# Перерегистрация hyprshell отсюда убрана вместе с самим hyprshell. Alt+Tab
+# теперь описан биндами в hyprland.conf, а не вешается в рантайме, поэтому
+# `hyprctl reload` его больше не сбрасывает и чинить после reload нечего.
 
 notify "Главный модификатор: $NEW"

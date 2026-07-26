@@ -180,7 +180,8 @@ DHCP при этом продолжает работать, адрес прос�
 | `Alt + T` | Toggle floating |
 | `Alt + S` | Pin window |
 | `Alt + Shift` | Переключить раскладку us/ru |
-| `Alt + Tab` | Переключатель окон (hyprshell) |
+| `Alt + Tab` | Следующее окно (нативный `cyclenext`, без оверлея) |
+| `Alt + Shift + Tab` | Предыдущее окно |
 | `Ctrl + Y` | Toggle dark/light тема |
 | `F10` | Переключить `$mainMod` между ALT и SUPER |
 
