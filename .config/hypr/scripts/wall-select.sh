@@ -2,8 +2,8 @@
 
 # Wallpaper selector with rofi and image previews (Catppuccin style)
 
-WALLDIR="$HOME/wallpapers"
-CACHE_DIR="$HOME/.cache/wallpaper-thumbs"
+WALLDIR="$HOME/wallsmacos"
+CACHE_DIR="$HOME/.cache/wallsmacos-thumbs"
 CACHE_FILE="$HOME/.cache/current_wallpaper"
 ROFI_THEME="$HOME/.config/rofi/wallpaper.rasi"
 

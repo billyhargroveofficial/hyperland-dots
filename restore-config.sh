@@ -966,11 +966,11 @@ main() {
     # `awww-daemon && awww img ...` зависал бы на первой команде и обои никогда
     # не ставились. Запускаем в фон явно.
     pkill -x awww-daemon 2>/dev/null || true; awww-daemon &disown; sleep 1
-    WALL=$(cat ~/.cache/current_wallpaper 2>/dev/null || echo "$HOME/wallpapers/default.png")
+    WALL=$(cat ~/.cache/current_wallpaper 2>/dev/null || echo "$HOME/wallsmacos/1.jpg")
     if [ -f "$WALL" ]; then
         awww img "$WALL" --transition-type none
     else
-        log_warn "Обоев нет ($WALL) — рабочий стол останется чёрным. Положи файлы в ~/wallpapers/"
+        log_warn "Обоев нет ($WALL) — рабочий стол останется чёрным. Положи файлы в ~/wallsmacos/"
     fi
     log_info "waybar и awww перезапущены"
 
