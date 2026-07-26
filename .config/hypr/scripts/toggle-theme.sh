@@ -29,6 +29,7 @@ set -u
 
 STATE_FILE="$HOME/.config/hypr/.theme-state"
 WAYBAR_DIR="$HOME/.config/waybar"
+SWAYNC_DIR="$HOME/.config/swaync"
 WEZTERM_THEME="$HOME/.config/wezterm/theme.txt"
 GTK3_INI="$HOME/.config/gtk-3.0/settings.ini"
 
@@ -69,6 +70,17 @@ if [ "$MODE" = "light" ]; then
     ln -sf "$WAYBAR_DIR/style-light.css" "$WAYBAR_DIR/style.css"
 else
     ln -sf "$WAYBAR_DIR/style-dark.css" "$WAYBAR_DIR/style.css"
+fi
+
+# --- 3b. swaync ---------------------------------------------------------
+# Уведомления оформлены под waybar и держат две темы теми же файлами:
+# style-{dark,light}.css, а style.css — симлинк на активную. Портал swaync
+# не слушает (в отличие от waybar), поэтому переключаем сами и просим
+# перечитать CSS: без --reload-css смена симлинка ничего не изменит до
+# перезапуска демона.
+if [ -d "$SWAYNC_DIR" ]; then
+    ln -sf "$SWAYNC_DIR/style-${MODE}.css" "$SWAYNC_DIR/style.css"
+    swaync-client --reload-css >/dev/null 2>&1
 fi
 
 # --- 4. Hyprland: цвета рамок -------------------------------------------

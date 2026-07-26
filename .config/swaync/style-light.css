@@ -1,0 +1,320 @@
+/* SwayNC — светлая тема, палитра waybar (style-light.css).
+ *
+ * Не редактировать в отрыве от waybar: цвета, радиус и шрифт скопированы
+ * оттуда, чтобы уведомления и панель читались как одна система.
+ *   фон блоков   rgba(255, 255, 255, 0.95)
+ *   основной     #A85F68
+ *   акцент       #C4707A
+ *   вторичный    #8F5560
+ *   приглушённый #75474F
+ *   тревога      #C0392B
+ *
+ * Тёмный близнец — style-dark.css, переключает toggle-theme.sh по Ctrl+Y
+ * (симлинк style.css + swaync-client --reload-css). Правки вносить в оба
+ * файла, иначе одна из тем отстанет.
+ */
+
+* {
+  font-family: "Cantarell", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Всплывающие уведомления: подложка прозрачная, карточка рисует себя сама */
+.floating-notifications,
+.blank-window {
+  background: transparent;
+}
+
+/* --- карточка уведомления ---------------------------------------------- */
+
+.notification-row {
+  outline: none;
+  background: transparent;
+}
+
+.notification-row .notification-background {
+  padding: 4px 8px;
+}
+
+.notification-row .notification-background .notification {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  border: none;
+  margin: 4px 0;
+  padding: 0;
+}
+
+/* Критические — единственные, кому положена рамка: их нельзя пропустить */
+.notification-row .notification-background .notification.critical {
+  border: 1px solid #C0392B;
+}
+
+.notification-row .notification-background .notification .notification-default-action {
+  border-radius: 20px;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  color: #A85F68;
+}
+
+.notification-row .notification-background .notification .notification-default-action:hover {
+  background: rgba(168, 95, 104, 0.12);
+}
+
+/* Когда снизу приклеены кнопки действий, у основной части углы прямые */
+.notification-row .notification-background .notification .notification-default-action:not(:only-child) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.notification-content {
+  padding: 10px 14px;
+  color: #A85F68;
+}
+
+.summary {
+  color: #C4707A;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.body {
+  color: #8F5560;
+  font-weight: 600;
+}
+
+.time {
+  color: #75474F;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 20px;
+}
+
+.image,
+.app-icon {
+  margin: 4px;
+}
+
+/* --- кнопки ------------------------------------------------------------- */
+
+.close-button {
+  background: transparent;
+  color: #75474F;
+  border-radius: 50%;
+  border: none;
+  margin: 8px;
+  padding: 2px;
+  min-width: 22px;
+  min-height: 22px;
+}
+
+.close-button:hover {
+  background: #C0392B;
+  color: #FFFFFF;
+}
+
+.notification-action,
+.notification-group-buttons button {
+  background: rgba(168, 95, 104, 0.12);
+  border: none;
+  border-radius: 12px;
+  color: #A85F68;
+  margin: 4px;
+  padding: 6px 10px;
+}
+
+.notification-action:hover,
+.notification-group-buttons button:hover {
+  background: #A85F68;
+  color: #FFFFFF;
+}
+
+.inline-reply-entry {
+  background: rgba(168, 95, 104, 0.10);
+  color: #A85F68;
+  border: none;
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+
+.inline-reply-button {
+  background: rgba(168, 95, 104, 0.12);
+  color: #A85F68;
+  border: none;
+  border-radius: 12px;
+  margin-left: 4px;
+  padding: 6px 10px;
+}
+
+.inline-reply-button:hover {
+  background: #A85F68;
+  color: #FFFFFF;
+}
+
+/* --- группы ------------------------------------------------------------- */
+
+.notification-group {
+  background: transparent;
+}
+
+.notification-group-headers {
+  color: #8F5560;
+  font-weight: 700;
+  margin: 4px 12px;
+}
+
+.notification-group-icon {
+  color: #A85F68;
+}
+
+.notification-group-close-button {
+  background: transparent;
+  color: #75474F;
+  border: none;
+  border-radius: 50%;
+  margin: 4px;
+  padding: 2px;
+}
+
+.notification-group-close-button:hover {
+  background: #C0392B;
+  color: #FFFFFF;
+}
+
+/* --- центр уведомлений -------------------------------------------------- */
+
+.control-center {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 25px;
+  border: none;
+  color: #A85F68;
+  padding: 8px;
+}
+
+.control-center-list {
+  background: transparent;
+}
+
+.control-center-list-placeholder {
+  color: #75474F;
+}
+
+.control-center .notification-row .notification-background .notification {
+  background: rgba(168, 95, 104, 0.08);
+}
+
+/* --- виджеты центра ----------------------------------------------------- */
+
+.widget-title {
+  color: #A85F68;
+  font-weight: 700;
+  margin: 8px 12px;
+}
+
+.widget-title > button {
+  background: rgba(168, 95, 104, 0.12);
+  color: #A85F68;
+  border: none;
+  border-radius: 12px;
+  padding: 4px 12px;
+}
+
+.widget-title > button:hover {
+  background: #A85F68;
+  color: #FFFFFF;
+}
+
+.widget-dnd {
+  color: #A85F68;
+  margin: 8px 12px;
+}
+
+.widget-dnd > switch {
+  background: rgba(168, 95, 104, 0.15);
+  border: none;
+  border-radius: 12px;
+}
+
+.widget-dnd > switch:checked {
+  background: #A85F68;
+}
+
+.widget-dnd > switch slider {
+  background: #A85F68;
+  border-radius: 50%;
+}
+
+.widget-dnd > switch:checked slider {
+  background: #FFFFFF;
+}
+
+.widget-label {
+  color: #8F5560;
+  margin: 8px 12px;
+}
+
+.widget-mpris,
+.widget-mpris-player {
+  background: rgba(168, 95, 104, 0.08);
+  border-radius: 20px;
+  color: #A85F68;
+  padding: 8px;
+  margin: 8px;
+}
+
+.widget-mpris-title {
+  color: #C4707A;
+  font-weight: 700;
+}
+
+.widget-mpris-subtitle {
+  color: #8F5560;
+  font-size: 11px;
+}
+
+.widget-buttons-grid {
+  background: transparent;
+  padding: 4px;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button {
+  background: rgba(168, 95, 104, 0.12);
+  border: none;
+  border-radius: 16px;
+  color: #A85F68;
+  margin: 4px;
+  padding: 8px;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button:hover {
+  background: #A85F68;
+  color: #FFFFFF;
+}
+
+.widget-volume,
+.widget-slider,
+.per-app-volume {
+  background: transparent;
+  color: #A85F68;
+  margin: 8px 12px;
+}
+
+trough {
+  background: rgba(168, 95, 104, 0.15);
+  border-radius: 12px;
+  min-height: 10px;
+}
+
+highlight {
+  background: #A85F68;
+  border-radius: 12px;
+  min-height: 10px;
+}
+
+slider {
+  background: #C4707A;
+  border-radius: 50%;
+  min-width: 12px;
+  min-height: 12px;
+}
