@@ -12,6 +12,12 @@ hyperland-dots/
 ├── AGENTS.md                 # Вход для Codex/Qwen/Kimi/Grok → этот документ
 ├── README.md                 # Документация
 ├── CLAUDE.md                 # Этот файл
+├── docs/                     # Грабли и замечания — читать ПЕРЕД правкой
+│   ├── waybar.md             #   свои модули, отступы иконок, анимации GTK3
+│   ├── screen-recording.md   #   wf-recorder + NVENC
+│   ├── notifications.md      #   swaync и переключение тем
+│   ├── hyprland.md           #   Alt+Tab без оверлея
+│   └── ai-harnesses.md       #   проверка control plane харнессов
 ├── .local/bin/mcp-sync       # Генератор нативных AI-конфигов
 ├── .grok/config.toml         # Базовые модели и постоянный YOLO Grok
 │
@@ -32,10 +38,14 @@ hyperland-dots/
     │
     ├── waybar/               # Waybar панель
     │   ├── config            # Модули и layout
-    │   ├── style-dark.css    # Gruvbox Dark тема
-    │   ├── style-light.css   # Gruvbox Light тема
+    │   ├── style-dark.css    # Тёмная тема
+    │   ├── style-light.css   # Светлая тема
     │   ├── style.css         # Симлинк на активную тему
     │   └── scripts/          # Скрипты для модулей
+    │       ├── cpu.py             # CPU: загрузка + топ по CPU в попапе
+    │       ├── memory.py          # Память: занято/всего + топ по RSS
+    │       ├── disk.py            # Диск: занято/всего + крупнейшие каталоги
+    │       ├── recorder.sh        # Запись экрана 720p60 -> ~/records
     │       ├── singbox-status.sh  # sing-box status
     │       └── leave.sh           # Power menu
     │
@@ -52,9 +62,11 @@ hyperland-dots/
     ├── sing-box/             # VPN конфиг
     │   └── config.json.example  # Шаблон (без реальных данных!)
     │
-    ├── swaync/               # Уведомления
+    ├── swaync/               # Уведомления (оформлены под палитру waybar)
     │   ├── config.json       # SwayNC конфиг
-    │   └── style.css         # Gruvbox Dark стиль
+    │   ├── style-dark.css    # Тёмная тема
+    │   ├── style-light.css   # Светлая тема
+    │   └── style.css         # Симлинк на активную (swaync портал НЕ слушает)
     │
     ├── rofi/                 # App launcher (Gruvbox темы)
     ├── niri/                 # Niri compositor конфиг
