@@ -213,5 +213,5 @@ export PATH="/home/billy/.kimi-code/bin:$PATH"
 # opencode
 export PATH=/home/billy/.opencode/bin:$PATH
 
-# общие секреты для AI-харнессов (GitHub PAT, Telegram) — читает mcp-sync и харнессы
+# Общие runtime-секреты AI-харнессов; значения никогда не хранятся в dotfiles.
 [ -f "$HOME/.config/agents/secrets.env" ] && source "$HOME/.config/agents/secrets.env"

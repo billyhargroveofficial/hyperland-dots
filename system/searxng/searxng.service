@@ -1,0 +1,59 @@
+[Unit]
+Description=SearXNG — локальный метапоиск для Qwen/Grok MCP
+Documentation=https://docs.searxng.org
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=searxng
+Group=searxng
+WorkingDirectory=/opt/searxng/searxng-src
+
+EnvironmentFile=/etc/searxng/secret.env
+Environment=SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+Environment=GRANIAN_PROCESS_NAME=searxng
+Environment=GRANIAN_WEBSOCKETS=false
+Environment=GRANIAN_BLOCKING_THREADS=4
+Environment=GRANIAN_WORKERS_KILL_TIMEOUT=30s
+Environment=GRANIAN_BLOCKING_THREADS_IDLE_TIMEOUT=5m
+
+ExecStartPre=/bin/sh -c 'for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do getent hosts duckduckgo.com >/dev/null 2>&1 && exit 0; sleep 1; done; exit 0'
+
+ExecStart=/opt/searxng/venv/bin/granian \
+    --interface wsgi \
+    --host 127.0.0.1 \
+    --port 8888 \
+    searx.webapp:app
+
+Restart=on-failure
+RestartSec=5s
+MemoryHigh=512M
+MemoryMax=1G
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectProc=invisible
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+SystemCallArchitectures=native
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

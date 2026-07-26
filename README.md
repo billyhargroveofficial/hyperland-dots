@@ -19,6 +19,9 @@
 - **SwayNC** — уведомления в стиле Gruvbox
 - **Statusline Claude Code** — cship: папка, модель, effort, контекст в токенах,
   5h и недельная квота с таймерами сброса (1 мс на отрисовку)
+- **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
+  Claude, Codex, Qwen, Kimi, OpenCode и Grok через Rulesync
+- **Локальный AI-поиск** — hardened SearXNG на `127.0.0.1:8888` для Qwen/Grok
 
 ## Быстрая установка
 
@@ -29,11 +32,36 @@ chmod +x restore-config.sh
 ./restore-config.sh
 ```
 
-Скрипт установит все зависимости, настроит конфиги, waybar, swww, LazyVim, voice input venv.
+Скрипт установит зависимости, настроит desktop, SearXNG и общий AI control
+plane. Voice Input сейчас намеренно отключён.
 
 Запускать **обычным пользователем**, не от root — скрипт сам зовёт `sudo` там, где нужно.
 Он не падает от единичного сбоя сети: каждый шаг логирует свой результат сам,
 поэтому после прогона стоит просмотреть лог на `[WARN]`.
+
+## AI-харнессы
+
+Канонические общие правила, MCP и skills хранятся в
+`.config/agents/.rulesync/`. `mcp-sync` генерирует нативные конфиги Claude Code,
+Codex CLI, Qwen Code, Kimi Code, OpenCode, Grok Build и fallback
+`~/.agents/AGENTS.md`.
+
+Отдельная установка без полного системного restore:
+
+```bash
+cd ~/hyperland-dots
+./scripts/install-ai-harnesses.sh
+$EDITOR ~/.config/agents/secrets.env
+mcp-sync
+```
+
+Секреты никогда не лежат в Git: bootstrap создаёт локальный
+`~/.config/agents/secrets.env` из шаблона и генерирует отдельные env-файлы
+user-systemd. Полная схема описана в `.config/agents/README.md`.
+
+Grok получает Kimi/Qwen plan-модели, GitHub/Telegram/Chrome/SearXNG MCP и
+постоянный `yolo = true`. SearXNG устанавливается системно из
+`system/searxng/` и слушает только loopback.
 
 ## Драйвер NVIDIA — проприетарный, не open
 
@@ -474,6 +502,8 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 
 ```
 .config/
+├── agents/               # единый source of truth для AI rules/MCP/skills
+├── systemd/user/         # Qwen и общий Telegram MCP
 ├── hypr/                 # Hyprland + скрипты (theme toggle, вентиляторы, обои)
 ├── waybar/               # Панель (Gruvbox dark/light CSS, звук + яркость)
 ├── ghostty/              # Терминал + themes/gruvbox-mine-{dark,light}
@@ -492,6 +522,10 @@ system/                   # то, что живёт вне $HOME — см. syste
 ├── hk-translator/        # хоткеи в кириллице (-> /opt, форк: апстрим сломан)
 ├── kbd-layout-toggle/    # Alt+Shift (-> /opt)
 ├── ddcci/                # яркость монитора (-> /usr/local/bin + systemd)
+├── searxng/              # локальный метапоиск для Qwen/Grok MCP
 ├── udev/                 # права на /sys/class/backlight
 └── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
+
+scripts/
+└── install-ai-harnesses.sh # отдельный bootstrap AI control plane
 ```

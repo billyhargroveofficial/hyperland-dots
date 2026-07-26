@@ -9,10 +9,15 @@ hyperland-dots/
 ├── .zshrc                    # Zsh конфиг (Oh My Zsh + Powerlevel10k + алиасы)
 ├── .p10k.zsh                 # Powerlevel10k конфиг
 ├── restore-config.sh         # Скрипт полной установки системы
+├── AGENTS.md                 # Вход для Codex/Qwen/Kimi/Grok → этот документ
 ├── README.md                 # Документация
 ├── CLAUDE.md                 # Этот файл
+├── .local/bin/mcp-sync       # Генератор нативных AI-конфигов
+├── .grok/config.toml         # Базовые модели и постоянный YOLO Grok
 │
 └── .config/
+    ├── agents/               # Канон rules/MCP/skills без секретов
+    ├── systemd/user/         # Qwen daemon/channel и общий Telegram MCP
     ├── hypr/                 # Hyprland конфиг
     │   ├── hyprland.conf     # Основной конфиг
     │   └── scripts/          # Скрипты автоматизации
@@ -66,6 +71,7 @@ hyperland-dots/
     ├── hk-translator/        # хоткеи в кириллице (-> /opt) — форк, апстрим сломан
     ├── kbd-layout-toggle/    # Alt+Shift (-> /opt)
     ├── ddcci/                # яркость монитора (-> /usr/local/bin + systemd)
+    ├── searxng/              # локальный backend поиска для Qwen/Grok MCP
     ├── udev/                 # права на /sys/class/backlight
     └── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
 ```
@@ -83,7 +89,31 @@ hyperland-dots/
 | `.config/Code/User/settings.json` | VSCode настройки |
 | `.zshrc` | Shell конфиг + алиасы |
 | `.config/cship.toml` | Statusline Claude Code (папка, модель, контекст, лимиты) |
+| `.config/agents/.rulesync/` | Общие AI rules, MCP и Agent Skills |
+| `.local/bin/mcp-sync` | Синхронизация во все поддерживаемые харнессы |
+| `scripts/install-ai-harnesses.sh` | Отдельный bootstrap AI-системы |
 | `restore-config.sh` | Скрипт установки |
+
+## Общая система AI-харнессов
+
+Единый source of truth находится в `.config/agents/.rulesync/`:
+
+- `rules/overview.md` — user-scope инструкции и курируемая память;
+- `mcp.jsonc` — shared/tool-scoped MCP;
+- `skills/<name>/SKILL.md` — переносимые Agent Skills;
+- `../rulesync.jsonc` — targets Rulesync.
+
+Не добавляй в репозиторий `secrets.env`, `qwen-service.env`,
+`telegram-service.env` или generated vendor-конфиги. Для применения:
+
+```bash
+./scripts/install-ai-harnesses.sh --no-network
+mcp-sync --check
+```
+
+SearXNG доступен Qwen и Grok через `mcp-searxng`; backend ставится из
+`system/searxng/`. В Grok осознанно постоянно включены `yolo = true` и
+`permission_mode = "always-approve"`.
 
 ## Тема (Gruvbox)
 

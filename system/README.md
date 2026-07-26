@@ -16,8 +16,23 @@
 | `ddcci/ddcci-bind.service` | `/etc/systemd/system/` |
 | `udev/99-ddcci-backlight.rules` | `/etc/udev/rules.d/` |
 | `modules-load/ddcci.conf` | `/etc/modules-load.d/` |
+| `searxng/settings.yml` | `/etc/searxng/settings.yml` |
+| `searxng/searxng.service` | `/etc/systemd/system/` |
 
 Всё это делает `restore-config.sh`, руками копировать не нужно.
+
+## SearXNG — локальный поиск для AI
+
+`system/searxng/install.sh` ставит pinned SearXNG в `/opt/searxng`, создаёт
+отдельного системного пользователя и hardened unit. Backend слушает только
+`127.0.0.1:8888`; к нему через `mcp-searxng` подключаются Qwen Code и Grok
+Build. Секрет генерируется в `/etc/searxng/secret.env` и в Git не попадает.
+
+```bash
+sudo bash system/searxng/install.sh
+systemctl status searxng
+curl -fsS http://127.0.0.1:8888/healthz
+```
 
 ## hk-translator — почему форк, а не клон апстрима
 

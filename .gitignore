@@ -47,6 +47,27 @@
 !.config/swaync/**
 !.config/hyprshell/
 !.config/hyprshell/**
+!.config/agents/
+!.config/agents/**
+.config/agents/secrets.env
+.config/agents/qwen-service.env
+.config/agents/telegram-service.env
+.config/agents/AGENTS.md
+.config/agents/mcp.json
+.config/agents/skills
+!.config/systemd/
+!.config/systemd/user/
+!.config/systemd/user/qwen-serve.service
+!.config/systemd/user/qwen-channel-telegram.service
+!.config/systemd/user/telegram-mcp.service
+!.config/chrome-flags.conf.template
+
+# AI control plane executables and Grok base config
+!.local/
+!.local/bin/
+!.local/bin/mcp-sync
+!.grok/
+!.grok/config.toml
 
 # Скрипты установки
 !scripts/
@@ -65,5 +86,6 @@
 # Documentation
 !README.md
 !CLAUDE.md
+!AGENTS.md
 !.config/Code/
 !.config/Code/**

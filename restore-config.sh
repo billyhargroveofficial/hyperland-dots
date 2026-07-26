@@ -80,6 +80,7 @@ install_pacman_packages() {
         curl
         wget
         unzip
+        uv
 
         # Wayland/Hyprland
         hyprland
@@ -576,6 +577,15 @@ install_ddcci_backlight() {
 }
 
 # ==========================================
+# Локальный SearXNG backend для Qwen/Grok MCP
+# ==========================================
+install_searxng() {
+    log_info "Установка локального SearXNG backend..."
+    sudo bash "$SCRIPT_DIR/system/searxng/install.sh" \
+        || log_warn "SearXNG не установлен; Qwen/Grok search MCP будет недоступен"
+}
+
+# ==========================================
 # Системные сервисы, которые иначе остаются выключенными
 # ==========================================
 enable_system_services() {
@@ -681,6 +691,15 @@ print('statusLine прописан в ' + path)
 PYEOF
 
     log_info "cship настроен (конфиг: ~/.config/cship.toml)"
+}
+
+# ==========================================
+# 7.4. Общий control plane AI-харнессов
+# ==========================================
+install_ai_harnesses() {
+    log_info "Установка общей системы AI-харнессов..."
+    bash "$SCRIPT_DIR/scripts/install-ai-harnesses.sh" \
+        || log_warn "AI control plane установлен не полностью"
 }
 
 # ==========================================
@@ -914,12 +933,14 @@ main() {
     install_kbd_layout_toggle
     install_ddcci_backlight
     enable_system_services
+    install_searxng
     install_ohmyzsh
     # setup_voice_input — отключено. Голосовой ввод висел на голом F11 и
     # глобально съедал фуллскрин в браузерах и видеоплеерах. Venv на 2.7 ГБ
     # с CUDA-библиотеками ставился при каждом прогоне. Вернуть: раскомментировать
     # здесь и бинды F11 в .config/hypr/hyprland.conf.
     copy_configs
+    install_ai_harnesses
     install_cship         # после copy_configs: ему нужен уже лежащий ~/.config/cship.toml
     setup_singbox
     make_scripts_executable
@@ -964,6 +985,7 @@ main() {
     echo "  3. ПЕРЕЗАГРУЗИСЬ — greeter SDDM, GPU fan control, zsh, кривая nct6798"
     echo "  4. Запусти nvim для установки LazyVim плагинов"
     echo "  5. sing-box VPN toggle: Alt+P (сервер настроить в ~/.config/sing-box/config.json)"
+    echo "  6. Заполни ~/.config/agents/secrets.env и выполни mcp-sync"
     echo ""
     echo "Проверки после ребута:"
     echo "  nvidia-smi -q | grep 'GSP Firmware'                 # должно быть N/A"

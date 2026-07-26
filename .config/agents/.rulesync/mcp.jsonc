@@ -1,0 +1,78 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "telegram": {
+      "description": "Один общий streamable-HTTP процесс через systemd user service",
+      "type": "http",
+      "url": "http://127.0.0.1:8765/mcp"
+    },
+    "chrome-devtools": {
+      "description": "Подключение к рабочему Chrome через CDP 127.0.0.1:9222",
+      "type": "stdio",
+      "command": "chrome-devtools-mcp",
+      "args": [
+        "--browser-url=http://127.0.0.1:9222",
+        "--screenshot-format=jpeg"
+      ],
+      "env": {
+        "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS": "1",
+        "CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS": "1"
+      }
+    }
+  },
+  "codexcli": {
+    "mcpServers": {
+      "github": {
+        "url": "https://api.githubcopilot.com/mcp",
+        "bearer_token_env_var": "GITHUB_PERSONAL_ACCESS_TOKEN"
+      }
+    }
+  },
+  "kimi-code": {
+    "mcpServers": {
+      "github": {
+        "type": "http",
+        "url": "https://api.githubcopilot.com/mcp",
+        "bearerTokenEnvVar": "GITHUB_PERSONAL_ACCESS_TOKEN"
+      }
+    }
+  },
+  "qwencode": {
+    "mcpServers": {
+      "github": {
+        "httpUrl": "https://api.githubcopilot.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+        }
+      },
+      "telegram": {
+        "httpUrl": "http://127.0.0.1:8765/mcp"
+      },
+      "searxng": {
+        "type": "stdio",
+        "command": "mcp-searxng",
+        "env": {
+          "SEARXNG_URL": "http://127.0.0.1:8888"
+        }
+      }
+    }
+  },
+  "grokcli": {
+    "mcpServers": {
+      "searxng": {
+        "type": "stdio",
+        "command": "mcp-searxng",
+        "env": {
+          "SEARXNG_URL": "http://127.0.0.1:8888"
+        }
+      }
+    }
+  }
+}

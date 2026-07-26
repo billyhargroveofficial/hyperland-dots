@@ -1,0 +1,6 @@
+# CDP для MCP-агентов: рабочий профиль перенесён в нестандартный путь, потому что
+# Chrome 136+ игнорирует --remote-debugging-port на дефолтной директории профиля.
+# Порт слушает только 127.0.0.1. Обёртка /usr/bin/google-chrome-stable читает этот
+# файл при каждом запуске (ланчер, xdg-open и т.д.).
+--user-data-dir=@HOME@/.config/google-chrome-cdp
+--remote-debugging-port=9222

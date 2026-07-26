@@ -1,0 +1,14 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/config-schema.json",
+  "global": true,
+  "delete": false,
+  "targets": {
+    "claudecode": ["rules", "mcp", "skills"],
+    "codexcli": ["rules", "mcp", "skills"],
+    "qwencode": ["rules", "mcp", "skills"],
+    "kimi-code": ["rules", "mcp", "skills"],
+    "opencode": ["rules", "mcp", "skills"],
+    "grokcli": ["rules", "mcp", "skills"],
+    "cline": ["rules"]
+  }
+}
