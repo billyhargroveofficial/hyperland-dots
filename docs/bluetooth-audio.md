@@ -1,8 +1,15 @@
 # Bluetooth-аудио — WH-1000XM5, PipeWire, автопереключение
 
-Стек: PipeWire 1.6.8 + WirePlumber 0.5.15 + BlueZ 5.87. Наушники Sony WH-1000XM5
-(`80:99:E7:93:9B:44`), профиль `a2dp-sink` — это LDAC, приоритет 134, выбирается
-сам как высший из доступных.
+Стек: PipeWire 1.6.8 + WirePlumber 0.5.15 + BlueZ 5.87. Наушники Sony WH-1000XM5,
+профиль `a2dp-sink` — это LDAC, приоритет 134, выбирается сам как высший из
+доступных.
+
+Команды ниже берут адрес из `$MAC`, чтобы в репозитории не лежал MAC конкретного
+устройства. Подставить свой:
+
+```bash
+MAC=$(bluetoothctl devices | grep -i 'WH-1000XM5' | awk '{print $2}')
+```
 
 ## Главная проблема: WirePlumber теряет BlueZ media-endpoints
 
@@ -21,7 +28,7 @@ Paired: yes
 устройства в D-Bus**:
 
 ```bash
-busctl introspect org.bluez /org/bluez/hci0/dev_80_99_E7_93_9B_44 | grep interface
+busctl introspect org.bluez /org/bluez/hci0/dev_${MAC//:/_} | grep interface
 ```
 
 | Что видно | Что это значит |
@@ -46,8 +53,8 @@ wireplumber -b` за всю загрузку выдал 12 строк, ни од
 
 ```bash
 systemctl --user restart wireplumber
-bluetoothctl disconnect 80:99:E7:93:9B:44
-bluetoothctl connect 80:99:E7:93:9B:44
+bluetoothctl disconnect $MAC
+bluetoothctl connect $MAC
 ```
 
 **Переподключение обязательно, одного рестарта мало.** WirePlumber заново
@@ -66,7 +73,7 @@ bluetoothctl connect 80:99:E7:93:9B:44
 перевода наушников в режим сопряжения:
 
 ```bash
-bluetoothctl pair 80:99:E7:93:9B:44
+bluetoothctl pair $MAC
 ```
 
 `Bonded: no` после этого остаётся и на работу не влияет.
@@ -149,9 +156,9 @@ pactl list cards | grep -E "a2dp-sink|headset-head-unit"
 наушники даже с выключенными сервисами. Честный тест — закрепить другой выход:
 
 ```bash
-bluetoothctl disconnect 80:99:E7:93:9B:44
+bluetoothctl disconnect $MAC
 pactl set-default-sink alsa_output.pci-0000_0b_00.4.analog-stereo
-bluetoothctl connect 80:99:E7:93:9B:44
+bluetoothctl connect $MAC
 sleep 8
 pactl get-default-sink          # ожидается bluez_output.*
 journalctl -t bt-audio-autoswitch -n 1   # "переключено на bluez_output..."

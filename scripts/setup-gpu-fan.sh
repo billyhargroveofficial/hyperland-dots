@@ -140,7 +140,7 @@ echo "   - Устанавливает 62% при загрузке (до запу
 echo "   - Изменить: sudo nano /etc/systemd/system/gpu-fan.service"
 echo ""
 echo "2. Демон gpu-fan-control.sh (динамическая кривая):"
-echo "   - Запускается через exec-once в hyprland.conf"
+echo "   - Запускается из hyprland.lua: hl.exec_cmd в hl.on(\"hyprland.start\")"
 echo "   - 40% при ≤35°C -> 100% при ≥85°C"
 echo "   - Логи: ~/.local/share/gpu-fan.log"
 echo ""

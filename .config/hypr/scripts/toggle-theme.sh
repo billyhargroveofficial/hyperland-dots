@@ -66,11 +66,12 @@ fi
 # waybar 0.15 сам слушает портал и предпочитает style-<appearance>.css
 # перед style.css, так что перезапуск НЕ нужен. Симлинк оставляем только
 # как запасной вариант на случай, если портал недоступен.
-if [ "$MODE" = "light" ]; then
-    ln -sf "$WAYBAR_DIR/style-light.css" "$WAYBAR_DIR/style.css"
-else
-    ln -sf "$WAYBAR_DIR/style-dark.css" "$WAYBAR_DIR/style.css"
-fi
+#
+# Цель симлинка задаётся ОТНОСИТЕЛЬНО (`style-dark.css`, а не полный путь):
+# каталог waybar лежит в git, и абсолютная цель зашила бы туда /home/billy —
+# на другой машине ссылка оказалась бы битой. Плюс репа и система тогда
+# расходятся при каждом переключении темы.
+ln -sfn "style-${MODE}.css" "$WAYBAR_DIR/style.css"
 
 # --- 3b. swaync ---------------------------------------------------------
 # Уведомления оформлены под waybar и держат две темы теми же файлами:
@@ -79,7 +80,7 @@ fi
 # перечитать CSS: без --reload-css смена симлинка ничего не изменит до
 # перезапуска демона.
 if [ -d "$SWAYNC_DIR" ]; then
-    ln -sf "$SWAYNC_DIR/style-${MODE}.css" "$SWAYNC_DIR/style.css"
+    ln -sfn "style-${MODE}.css" "$SWAYNC_DIR/style.css"
     swaync-client --reload-css >/dev/null 2>&1
 fi
 

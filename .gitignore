@@ -33,6 +33,9 @@
 # `**` тут не нужна.
 !.config/cship.toml
 !.config/cship.toml.compact-variant
+# Дефолтные приложения (браузер для http/https и схема claude-cli). Одиночный
+# файл: без него после восстановления ссылки открывает не Chrome, а что попало.
+!.config/mimeapps.list
 !.config/scripts/**
 !.config/waybar/
 !.config/waybar/**

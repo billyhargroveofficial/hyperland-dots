@@ -1,0 +1,14 @@
+[Unit]
+Description=Переключение звука на Bluetooth-наушники при подключении
+After=pipewire-pulse.service wireplumber.service
+Wants=pipewire-pulse.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/bt-audio-autoswitch
+Restart=always
+RestartSec=2
+Slice=session.slice
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,74 @@
+#!/bin/sh
+# Чинит ситуацию, когда BlueZ подключил аудио-устройство, а PipeWire его не увидел.
+#
+# WirePlumber при долгом аптайме теряет регистрацию своих BlueZ media-endpoints:
+# bluetoothd рапортует Connected=yes, но org.bluez.MediaTransport1 не создаётся и
+# карта bluez_card.* в PipeWire не появляется. Лечится перезапуском wireplumber
+# с последующим переподключением устройства (нужно, чтобы пересогласовать A2DP).
+#
+# Демон event-driven: слушает D-Bus, поллинга в фоне нет.
+
+set -u
+
+RESTART_COOLDOWN=60 # не перезапускать wireplumber чаще, чем раз в N секунд
+WAIT_TICKS=12       # сколько раз по 0.5с ждать появления карты
+last_restart=0
+
+log() { logger -t bt-audio-recover "$@"; }
+
+# /org/bluez/hci0/dev_AA_BB_CC_11_22_33 -> AA:BB:CC:11:22:33
+path_to_mac() {
+	printf '%s\n' "${1##*/dev_}" | tr '_' ':'
+}
+
+is_audio_device() {
+	bluetoothctl info "$1" 2>/dev/null | grep -q 'UUID: Audio Sink'
+}
+
+card_present() {
+	pactl list short cards 2>/dev/null |
+		cut -f2 | grep -qx "bluez_card.$(printf '%s' "$1" | tr ':' '_')"
+}
+
+handle_connect() {
+	mac=$(path_to_mac "$1")
+	is_audio_device "${mac}" || return 0
+
+	tick=0
+	while [ "${tick}" -lt "${WAIT_TICKS}" ]; do
+		card_present "${mac}" && return 0
+		sleep 0.5
+		tick=$((tick + 1))
+	done
+
+	now=$(date +%s)
+	if [ $((now - last_restart)) -lt "${RESTART_COOLDOWN}" ]; then
+		log "${mac}: карта не появилась, но перезапуск был $((now - last_restart))с назад — пропускаю"
+		return 0
+	fi
+	last_restart="${now}"
+
+	log "${mac}: BlueZ подключён, но карты в PipeWire нет — перезапускаю wireplumber"
+	systemctl --user restart wireplumber || return 0
+	sleep 3
+	bluetoothctl disconnect "${mac}" >/dev/null 2>&1
+	sleep 2
+	bluetoothctl connect "${mac}" >/dev/null 2>&1 &
+}
+
+dbus-monitor --system \
+	"type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',path_namespace='/org/bluez'" 2>/dev/null |
+	awk '
+		/^signal /                { key = ""
+		                            path = ""
+		                            if (match($0, /path=[^;]+/))
+		                                path = substr($0, RSTART + 5, RLENGTH - 5)
+		                            next }
+		/string "Connected"/      { key = "Connected"; next }
+		key == "Connected" && /boolean true/ { print path; fflush(); key = "" }
+	' |
+	while read -r dev_path; do
+		case "${dev_path}" in
+		*/dev_*) handle_connect "${dev_path}" ;;
+		esac
+	done

@@ -35,8 +35,8 @@ hyperland-dots/
     │       ├── gpu-fan-control.sh    # NVIDIA fan control
     │       ├── singbox-toggle.sh     # VPN toggle
     │       ├── restart_hyprland.sh   # Restart waybar + swww + Hyprland
-    │       ├── get-keyboard-layout.sh # Current keyboard layout
-    │       └── workspace-switch.sh   # Multi-monitor workspace switch
+    │       ├── toggle-mainmod.sh     # Главный модификатор ALT <-> SUPER (F10)
+    │       └── get-keyboard-layout.sh # Current keyboard layout
     │
     ├── waybar/               # Waybar панель
     │   ├── config            # Модули и layout
@@ -191,7 +191,7 @@ SearXNG доступен Qwen и Grok через `mcp-searxng`; backend став
 
 **Сейчас выключен**: бинд висел на голом `F11`, то есть глобально съедал фуллскрин
 в браузерах и видеоплеерах. Вернуть — раскомментировать `setup_voice_input` в
-`main()` и бинды в `hyprland.conf`, но перевесить на комбинацию с модификатором.
+`main()` и бинды в `hyprland.lua`, но перевесить на комбинацию с модификатором.
 
 Speech-to-text через CTRL+Super (toggle: первое нажатие — запись, второе — транскрибация).
 

@@ -2,7 +2,7 @@
 
 ## Конфиг переведён на Lua
 
-`hyprland.lua` — основной конфиг, `hyprland.conf` остаётся рядом нетронутым.
+`hyprland.lua` — единственный конфиг; `hyprland.conf` удалён (см. ниже).
 Hyprlang объявлен устаревшим в 0.55: авторы обещают поддерживать его «1–2
 релиза начиная с 0.55» и новых возможностей в него уже не добавляют.
 
@@ -68,6 +68,18 @@ hyprctl dispatch 'hl.dsp.exit()'
 root-демона `kbd-layout-toggle`.
 
 `toggle-mainmod.sh` (F10) правит теперь строку `local mainMod = "ALT"`.
+
+**После миграции обязательно прочесать все скрипты на старый синтаксис** — из-за
+нулевого кода возврата ни один из них не падает, они просто перестают что-либо
+делать. Проверка:
+
+```bash
+grep -rn "hyprctl \(keyword\|dispatch\)" ~/.config --include='*.sh' --include='*.py' | grep -v 'hl\.'
+```
+
+Так нашёлся `workspace-switch.sh`: обёртка над `hyprctl dispatch workspace N`,
+на которую после переезда уже никто не ссылался (бинды воркспейсов вызывают
+`hl.dsp.focus` напрямую). Удалён — есть в истории git.
 
 Соответствие синтаксиса, чтобы не искать каждый раз:
 
@@ -146,13 +158,13 @@ move <offset>         swapcol           center
 автозапуска, из `restart_hyprland.sh`, из `toggle-mainmod.sh` и из списка AUR в
 `restore-config.sh`.
 
-Сейчас в `hyprland.conf`:
+Сейчас в `hyprland.lua`:
 
-```
-bind = ALT, Tab, cyclenext
-bind = ALT, Tab, bringactivetotop
-bind = ALT SHIFT, Tab, cyclenext, prev
-bind = ALT SHIFT, Tab, bringactivetotop
+```lua
+hl.bind("ALT + Tab", hl.dsp.window.cycle_next())
+hl.bind("ALT + Tab", hl.dsp.window.bring_to_top())
+hl.bind("ALT + SHIFT + Tab", hl.dsp.window.cycle_next({ next = false }))
+hl.bind("ALT + SHIFT + Tab", hl.dsp.window.bring_to_top())
 ```
 
 Два диспетчера на один бинд не избыточность: `cyclenext` только переносит

@@ -1,0 +1,16 @@
+[Unit]
+Description=Восстановление BlueZ-endpoints WirePlumber при подключении аудио-устройства
+After=pipewire-pulse.service wireplumber.service
+
+# Намеренно без Wants/BindsTo на wireplumber: сервис его перезапускает
+# и не должен уезжать вместе с ним.
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/bt-audio-recover
+Restart=always
+RestartSec=2
+Slice=session.slice
+
+[Install]
+WantedBy=default.target

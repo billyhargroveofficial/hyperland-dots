@@ -170,7 +170,7 @@ install_pacman_packages() {
         # gnome-themes-extra даёт Adwaita-dark. Без него в /usr/share/themes/
         # лежат только Default, Emacs и HighContrast — то есть ни одной тёмной
         # GTK3-темы, и переключать light/dark физически не на что.
-        # papirus-icon-theme: hyprland.conf запускает rofi с
+        # papirus-icon-theme: hyprland.lua запускает rofi с
         # `-icon-theme Papirus-Dark`, без пакета иконки в лаунчере пустые.
         gnome-themes-extra
         papirus-icon-theme
@@ -218,7 +218,7 @@ install_aur_packages() {
         visual-studio-code-bin
         obsidian
         # hyprshell-bin убран: его оверлей вылезал на Alt+Tab и был не нужен.
-        # Переключение окон нативное — bind = ALT, Tab, cyclenext.
+        # Переключение окон нативное — hl.bind("ALT + Tab", hl.dsp.window.cycle_next()).
     )
 
     for pkg in "${aur_packages[@]}"; do
@@ -922,8 +922,10 @@ copy_configs() {
         ".config/swaync"
         ".config/Code/User"
         ".config/zellij"
-        ".config/wezterm"
         ".config/hyprshell"
+        # Дефолтные приложения: без него xdg-open после восстановления не знает,
+        # чем открывать ссылки, и http/https уходят в случайный .desktop.
+        ".config/mimeapps.list"
     )
 
     for item in "${items[@]}"; do
@@ -1002,7 +1004,7 @@ main() {
     # setup_voice_input — отключено. Голосовой ввод висел на голом F11 и
     # глобально съедал фуллскрин в браузерах и видеоплеерах. Venv на 2.7 ГБ
     # с CUDA-библиотеками ставился при каждом прогоне. Вернуть: раскомментировать
-    # здесь и бинды F11 в .config/hypr/hyprland.conf.
+    # здесь и бинды F11 в .config/hypr/hyprland.lua.
     copy_configs
     install_ai_harnesses
     install_cship         # после copy_configs: ему нужен уже лежащий ~/.config/cship.toml
@@ -1019,12 +1021,14 @@ main() {
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
     gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
     gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
-    ln -sf "$HOME/.config/waybar/style-dark.css" "$HOME/.config/waybar/style.css"
+    # Цель относительная, а не полный путь: оба каталога лежат в git, и
+    # абсолютная ссылка зашила бы в репу /home/<текущий юзер>.
+    ln -sfn "style-dark.css" "$HOME/.config/waybar/style.css"
     # swaync, в отличие от waybar, портал НЕ слушает: он читает ровно
     # ~/.config/swaync/style.css и ничего сам не выбирает. Поэтому активная
     # тема задаётся симлинком, а переключает его toggle-theme.sh с
     # последующим `swaync-client --reload-css`.
-    ln -sf "$HOME/.config/swaync/style-dark.css" "$HOME/.config/swaync/style.css"
+    ln -sfn "style-dark.css" "$HOME/.config/swaync/style.css"
     echo "dark" > "$HOME/.config/hypr/.theme-state"
     log_info "Тёмная тема установлена (переключение: Ctrl+Y)"
 

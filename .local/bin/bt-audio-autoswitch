@@ -1,0 +1,36 @@
+#!/bin/sh
+# Переключает вывод звука на Bluetooth-наушники, как только их sink появляется.
+#
+# Реагирует ТОЛЬКО на событие 'new' для sink'ов вида bluez_output.* — поэтому
+# hotplug HDMI-монитора (NVIDIA пересоздаёт ноду при пробуждении) и аналоговый
+# выход звук на себя не утаскивают. Ручной выбор другого выхода при уже
+# подключённых наушниках тоже не отменяется: 'change' игнорируется.
+
+set -u
+
+log() { logger -t bt-audio-autoswitch "$@"; }
+
+switch_to_bt() {
+	sink=$(pactl list short sinks 2>/dev/null | cut -f2 | grep -m1 '^bluez_output\.') || return 0
+	[ -n "${sink}" ] || return 0
+	[ "$(pactl get-default-sink 2>/dev/null)" = "${sink}" ] && return 0
+
+	pactl set-default-sink "${sink}" 2>/dev/null || return 0
+	pactl list short sink-inputs 2>/dev/null | cut -f1 | while read -r id; do
+		pactl move-sink-input "${id}" "${sink}" 2>/dev/null
+	done
+	log "переключено на ${sink}"
+}
+
+# Наушники могли быть подключены ещё до старта сервиса.
+switch_to_bt
+
+pactl subscribe 2>/dev/null | while read -r event; do
+	case "${event}" in
+	*"'new' on sink #"*)
+		# ноде нужно мгновение, чтобы полностью зарегистрироваться
+		sleep 1
+		switch_to_bt
+		;;
+	esac
+done
