@@ -32,17 +32,42 @@ Hyprland --verify-config -c ~/.config/hypr/hyprland.lua
 | `gaps_out = "5, 10, 10, 10"` | `gaps_out = { top = 5, right = 10, bottom = 10, left = 10 }` |
 | `opacity = { active = 0.95, inactive = 0.95 }` | `opacity = "0.95 override 0.95 override"` |
 
-Откат — без правок внутри файлов:
+`hyprland.conf` удалён — отката не планируется, а лежащий рядом мёртвый конфиг
+только путает: он не читается, но выглядит рабочим. Если однажды понадобится,
+он в истории git:
 
 ```bash
-mv ~/.config/hypr/hyprland.lua ~/.config/hypr/hyprland.lua.off
-# выйти и зайти в сессию — снова загрузится hyprland.conf
+git show a7315ed:.config/hypr/hyprland.conf > ~/.config/hypr/hyprland.conf
 ```
 
-`toggle-mainmod.sh` (F10) научен работать с обоими форматами: он определяет
-активный по Lua REPL (`hyprctl repl` отвечает только при lua-менеджере) и
-правит именно тот файл, который Hyprland загрузил. Без этого F10 после
-миграции молча правил бы неактивный конфиг.
+## Что миграция сломала молча
+
+Две вещи отвалились так, что скрипты продолжали «работать»: команда печатает
+ошибку в stdout и возвращает НОЛЬ, поэтому `set -e` её не ловит.
+
+**`hyprctl keyword` не работает при Lua вообще** — отвечает `keyword can't work
+with non-legacy parsers. Use eval.` На нём держался `toggle-theme.sh`: Ctrl+Y
+переключал бы GTK, waybar, swaync и nvim, но не цвет рамок Hyprland. Замена:
+
+```bash
+hyprctl eval 'hl.config({ general = { col = { active_border = "rgba(ffffffcc)" } } })'
+```
+
+**`hyprctl dispatch` со старым синтаксисом тоже мёртв** — аргумент
+подставляется прямо в `hl.dispatch(...)` и парсится как Lua-код, так что
+`workspace e+1` даёт `')' expected near 'e'`. Это ломало прокрутку воркспейсов
+в панели и `hyprctl dispatch exit` в power menu. Замена:
+
+```bash
+hyprctl dispatch 'hl.dsp.focus({ workspace = "e+1" })'
+hyprctl dispatch 'hl.dsp.exit()'
+```
+
+Продолжают работать без изменений: `hyprctl reload`, `setcursor`, `getoption`
+и `switchxkblayout` — последнее важно, на нём висит переключение раскладки из
+root-демона `kbd-layout-toggle`.
+
+`toggle-mainmod.sh` (F10) правит теперь строку `local mainMod = "ALT"`.
 
 Соответствие синтаксиса, чтобы не искать каждый раз:
 

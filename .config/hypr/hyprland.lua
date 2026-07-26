@@ -218,6 +218,12 @@ hl.config({
         sensitivity        = -0.7,
         accel_profile      = "adaptive",
 
+        -- 2, а не дефолтная 1: у G102 колесо шлёт hi-res события, и при 1
+        -- Hyprland копит их до «полного щелчка» — бинды на mouse_up/mouse_down
+        -- срабатывали примерно раз в несколько оборотов. 2 форсирует эмуляцию
+        -- дискретного скролла, то есть одно событие на каждый физический тик.
+        emulate_discrete_scroll = 2,
+
         touchpad = {
             natural_scroll = false,
         },
@@ -369,13 +375,21 @@ for i = 1, 10 do
 end
 
 -- ALT+колесо катает ленту scrolling-раскладки вместо переключения воркспейсов.
--- `focus next/prev` двигает фокус по колонкам, а лента едет следом сама — за
--- это отвечает scrolling.follow_focus, при нуле фокус уедет за экран.
+-- Колесо вниз — вправо по ленте, вверх — влево.
+--
+-- Здесь обычный movefocus, а НЕ layoutmsg: `hl.dsp.layout("focus", "next")`
+-- в 0.56 соседнюю колонку не находит и на каждый вызов отвечает «no window to
+-- focus» — при четырёх колонках подряд и фокусе посередине тоже. Снаружи это
+-- выглядело как полностью мёртвый Alt+колесо, хотя сам бинд срабатывал
+-- (проверено счётчиком на exec_cmd: 28 прокруток вниз, 38 вверх дошли).
+-- movefocus по тем же колонкам ходит безошибочно, а лента едет за фокусом
+-- сама — за это отвечает scrolling.follow_focus.
+--
 -- Вернуть переключение воркспейсов колесом:
 --   hl.bind(wsMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 --   hl.bind(wsMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
-hl.bind("ALT + mouse_down", hl.dsp.layout("focus next"))
-hl.bind("ALT + mouse_up",   hl.dsp.layout("focus prev"))
+hl.bind("ALT + mouse_down", hl.dsp.focus({ direction = "left" }))
+hl.bind("ALT + mouse_up",   hl.dsp.focus({ direction = "right" }))
 
 -- Таскать и растягивать окна мышью с зажатым модификатором
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })

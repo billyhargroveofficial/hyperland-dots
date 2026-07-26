@@ -95,11 +95,6 @@
     "format": "󰃰  {:%d.%m.%Y   %H:%M}",
     "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>"
   },
-  "cpu": {
-    "interval": 15,
-    "format": "󰻠  {}%",
-    "max-length": 10
-  },
   "custom/cpu-temp": {
     "exec": "sensors k10temp-pci-00c3 | grep 'Tctl:' | awk '{print $2}' | sed 's/+//;s/°C//'",
     "format": "󰔏  {}°C",
@@ -128,16 +123,6 @@
     "exec": "sensors asusec-isa-000a | grep 'Chipset:' | awk 'NR==1{print $2}' | sed 's/RPM//'",
     "format": "󰈐  {} RPM",
     "interval": 5
-  },
-  "memory": {
-    "interval": 30,
-    "format": "󰘚  {}%",
-    "max-length": 10
-  },
-  "disk": {
-    "interval": 30,
-    "format": "󰋊  {percentage_used}%",
-    "path": "/"
   },
   "custom/cpu": {
     "exec": "~/.config/waybar/scripts/cpu.py",
@@ -175,8 +160,8 @@
   },
   "hyprland/workspaces": {
     "format": "{name}",
-    "on-scroll-up": "hyprctl dispatch workspace e+1",
-    "on-scroll-down": "hyprctl dispatch workspace e-1",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
     "on-click": "activate"
   },
   "custom/singbox": {

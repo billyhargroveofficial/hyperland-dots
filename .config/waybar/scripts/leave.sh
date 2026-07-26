@@ -15,5 +15,7 @@ case "$selected" in
     "󰐥") systemctl poweroff ;;
     "󰜉") systemctl reboot ;;
     "󰤄") systemctl suspend ;;
-    "󰍃") hyprctl dispatch exit ;;
+    # Конфиг на Lua, поэтому hyprctl dispatch принимает Lua-выражение:
+    # старое `hyprctl dispatch exit` парсилось бы как код и падало.
+    "󰍃") hyprctl dispatch 'hl.dsp.exit()' ;;
 esac

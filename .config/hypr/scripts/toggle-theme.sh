@@ -84,13 +84,19 @@ if [ -d "$SWAYNC_DIR" ]; then
 fi
 
 # --- 4. Hyprland: цвета рамок -------------------------------------------
+# `hyprctl keyword` тут НЕ работает: конфиг на Lua, и команда отвечает
+# «keyword can't work with non-legacy parsers. Use eval.» — причём молча, с
+# нулевым кодом возврата, так что скрипт бы спокойно поехал дальше, а рамки
+# остались бы прежними. Настройки на лету меняются через eval с hl.config().
 if [ "$MODE" = "light" ]; then
-    hyprctl keyword general:col.active_border "rgba(ffffffcc)" >/dev/null 2>&1
-    hyprctl keyword general:col.inactive_border "rgba(d5c4a144)" >/dev/null 2>&1
+    INACTIVE_BORDER="rgba(d5c4a144)"
 else
-    hyprctl keyword general:col.active_border "rgba(ffffffcc)" >/dev/null 2>&1
-    hyprctl keyword general:col.inactive_border "rgba(28282800)" >/dev/null 2>&1
+    INACTIVE_BORDER="rgba(28282800)"
 fi
+hyprctl eval "hl.config({ general = { col = {
+    active_border   = \"rgba(ffffffcc)\",
+    inactive_border = \"$INACTIVE_BORDER\",
+} } })" >/dev/null 2>&1
 
 # --- 5. Nvim: пнуть все живые инстансы ----------------------------------
 for sock in /run/user/1000/nvim.*.0 /tmp/nvim.*/0; do
