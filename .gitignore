@@ -60,12 +60,18 @@
 !.config/systemd/user/qwen-serve.service
 !.config/systemd/user/qwen-channel-telegram.service
 !.config/systemd/user/telegram-mcp.service
+# Bluetooth-аудио: автопереключение на наушники и обход бага WirePlumber
+# с потерей BlueZ-endpoints (docs/bluetooth-audio.md).
+!.config/systemd/user/bt-audio-autoswitch.service
+!.config/systemd/user/bt-audio-recover.service
 !.config/chrome-flags.conf.template
 
 # AI control plane executables and Grok base config
 !.local/
 !.local/bin/
 !.local/bin/mcp-sync
+!.local/bin/bt-audio-autoswitch
+!.local/bin/bt-audio-recover
 !.grok/
 !.grok/config.toml
 
@@ -87,5 +93,11 @@
 !README.md
 !CLAUDE.md
 !AGENTS.md
+# Каталог docs/ добавлен 2026-07-26. До этого правила не было вообще, и весь
+# каталог молча лежал вне репозитория: `!README.md` вытягивал только
+# docs/README.md, а waybar.md, hyprland.md и остальные 27 КБ заметок git не
+# видел. Ровно тот же класс дыры, что и с `!*/` выше — правило есть, файлов нет.
+!docs/
+!docs/**
 !.config/Code/
 !.config/Code/**
