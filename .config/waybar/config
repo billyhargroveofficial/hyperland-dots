@@ -6,7 +6,7 @@
   "margin-left": 10,
   "margin-right": 10,
   "modules-left": [
-    "cpu",
+    "custom/cpu",
     "custom/cpu-temp",
     "custom/fan",
     "custom/sep",
@@ -14,8 +14,8 @@
     "custom/gpu-fan",
     "custom/gpu-vram",
     "custom/sep2",
-    "memory",
-    "disk",
+    "custom/memory",
+    "custom/disk",
     "custom/sep3",
     "network",
     "custom/singbox",
@@ -30,6 +30,7 @@
     "pulseaudio",
     "pulseaudio/slider",
     "custom/brightness",
+    "custom/recorder",
     "clock",
     "custom/power"
   ],
@@ -53,8 +54,8 @@
   "pulseaudio": {
     "tooltip": false,
     "scroll-step": 5,
-    "format": "{icon} {volume}%",
-    "format-muted": "󰖁 {volume}%",
+    "format": "{icon}  {volume}%",
+    "format-muted": "󰖁  {volume}%",
     "on-click": "pavucontrol",
     "format-icons": {
       "default": [
@@ -71,18 +72,18 @@
     "expand": false
   },
   "network": {
-    "format-wifi": "󰤨 {essid}",
-    "format-ethernet": "󰈀 Connected",
+    "format-wifi": "󰤨   {essid}",
+    "format-ethernet": "󰈀  Connected",
     "tooltip-format": "{essid} ({signalStrength}%)",
     "format-linked": "{ifname} (No IP)",
-    "format-disconnected": "󰤭 Disconnected",
+    "format-disconnected": "󰤭   Disconnected",
     "format-alt": "{ifname}: {ipaddr}/{cidr}"
   },
   "bluetooth": {
-    "format": "󰂯 {status}",
+    "format": "󰂯  {status}",
     "on-click": "blueman-manager",
     "format-disabled": "",
-    "format-connected": "󰂱 {num_connections}",
+    "format-connected": "󰂱  {num_connections}",
     "format-no-controller": "",
     "tooltip-format": "{controller_alias} {controller_address}"
   },
@@ -91,52 +92,81 @@
     "spacing": 10
   },
   "clock": {
-    "format": "󰃰 {:%d.%m.%Y   %H:%M}",
+    "format": "󰃰  {:%d.%m.%Y   %H:%M}",
     "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>"
   },
   "cpu": {
     "interval": 15,
-    "format": "󰻠 {}%",
+    "format": "󰻠  {}%",
     "max-length": 10
   },
   "custom/cpu-temp": {
     "exec": "sensors k10temp-pci-00c3 | grep 'Tctl:' | awk '{print $2}' | sed 's/+//;s/°C//'",
-    "format": "󰔏 {}°C",
+    "format": "󰔏  {}°C",
     "interval": 5
   },
   "custom/gpu-temp": {
     "exec": "nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits",
-    "format": "󰢮 {}°C",
+    "format": "󰢮  {}°C",
     "interval": 5
   },
   "custom/gpu-fan": {
     "exec": "nvidia-smi --query-gpu=fan.speed --format=csv,noheader,nounits",
-    "format": "󰈐 {}%",
+    "format": "󰈐  {}%",
     "interval": 5,
     "tooltip": true,
     "tooltip-format": "GPU Fan Speed"
   },
   "custom/gpu-vram": {
     "exec": "nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits | awk -F', ' '{printf \"%.1f/%.1fG\", $1/1024, $2/1024}'",
-    "format": "󰍛 {}",
+    "format": "󰍛  {}",
     "interval": 5,
     "tooltip": true,
     "tooltip-format": "GPU VRAM Usage"
   },
   "custom/fan": {
     "exec": "sensors asusec-isa-000a | grep 'Chipset:' | awk 'NR==1{print $2}' | sed 's/RPM//'",
-    "format": "󰈐 {} RPM",
+    "format": "󰈐  {} RPM",
     "interval": 5
   },
   "memory": {
     "interval": 30,
-    "format": "󰘚 {}%",
+    "format": "󰘚  {}%",
     "max-length": 10
   },
   "disk": {
     "interval": 30,
-    "format": "󰋊 {percentage_used}%",
+    "format": "󰋊  {percentage_used}%",
     "path": "/"
+  },
+  "custom/cpu": {
+    "exec": "~/.config/waybar/scripts/cpu.py",
+    "return-type": "json",
+    "interval": 3,
+    "format": "{}",
+    "tooltip": true
+  },
+  "custom/memory": {
+    "exec": "~/.config/waybar/scripts/memory.py",
+    "return-type": "json",
+    "interval": 10,
+    "format": "{}",
+    "tooltip": true
+  },
+  "custom/disk": {
+    "exec": "~/.config/waybar/scripts/disk.py /home",
+    "return-type": "json",
+    "interval": 60,
+    "format": "{}",
+    "tooltip": true
+  },
+  "custom/recorder": {
+    "exec": "~/.config/waybar/scripts/recorder.sh status",
+    "return-type": "json",
+    "interval": 30,
+    "signal": 10,
+    "on-click": "~/.config/waybar/scripts/recorder.sh",
+    "format": "{}"
   },
   "custom/power": {
     "format": "󰐥",

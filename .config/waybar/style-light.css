@@ -53,14 +53,14 @@ window#waybar {
 #custom-brightness,
 #network,
 #bluetooth,
-#cpu,
+#custom-cpu,
 #custom-cpu-temp,
 #custom-gpu-temp,
 #custom-gpu-fan,
 #custom-gpu-vram,
 #custom-fan,
-#memory,
-#disk,
+#custom-memory,
+#custom-disk,
 #tray,
 #hyprland-language,
 #custom-power,
@@ -77,18 +77,51 @@ window#waybar {
   border-radius: 6px;
 }
 
+/* Воркспейсы. Рецепт взят из JaKooLit/Hyprland-Dots и prasanthrangan/hyprdots
+   — оба известных набора делают это одинаково, и именно так эффект читается
+   как переезд выделения.
+
+   Суть в том, что заливка есть у ВСЕХ кнопок постоянно, просто приглушённая
+   через opacity. Активная не «зажигается» на пустом месте, а становится
+   яркой и шире (min-width), из-за чего соседние кнопки физически
+   разъезжаются — двигаются сами виджеты, а не рисунок внутри них. Этого
+   нельзя добиться, анимируя фон: там пилюля разворачивалась на месте.
+
+   Кривая cubic-bezier(0.4, 0, 0.2, 1) — плавный разгон и мягкое торможение
+   без отскока. В исходных дотфайлах стоит пружинная (.55, -0.68, .48, 1.682),
+   она выходит за [0,1] и даёт перелёт в конце — здесь убрана намеренно,
+   движение должно быть гладким.
+
+   transition: all обязателен — анимируются одновременно min-width, opacity
+   и padding; если перечислить их по отдельности и что-то забыть, кнопка
+   дёрнется скачком. */
 #workspaces button {
-  padding: 0 5px;
-  color: #A85F68;
-  transition: all 0.3s ease;
+  padding: 0 8px;
+  margin: 4px 3px;
+  border-radius: 15px;
+  border: none;
+  color: #FFFFFF;
+  background: #C4707A;
+  opacity: 0.4;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #workspaces button:hover {
-  background: rgba(100, 100, 100, 0);
+  opacity: 0.7;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #workspaces button.active {
-  color: #C4707A;
+  min-width: 32px;
+  opacity: 1;
+  font-weight: 700;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#workspaces button.urgent {
+  background: #C0392B;
+  color: #FFFFFF;
+  opacity: 1;
 }
 
 #custom-launcher {
@@ -208,8 +241,48 @@ window#waybar {
   color: #E3C4C8;
 }
 
+/* Рекордер.
+   Мигание задано через color, а не через opacity из @keyframes pulse:
+   GTK3 гасит непрозрачность виджета целиком, не перерисовывая метку, и
+   кнопка просто застывала. Второе условие живой анимации — большой
+   interval у модуля: waybar на каждом обновлении снимает и заново вешает
+   CSS-класс, а это сбрасывает анимацию в начало. */
+#custom-recorder {
+  color: #A85F68;
+  padding: 0 10px;
+  font-weight: bold;
+}
+
+#custom-recorder.recording {
+  color: #D93025;
+  animation: recorder-blink 1s ease-in-out infinite;
+}
+
+#custom-recorder.idle {
+  color: #A85F68;
+}
+
+/* wf-recorder не установлен — кнопка на месте, но нажимать бесполезно */
+#custom-recorder.missing {
+  color: #E3C4C8;
+}
+
+@keyframes recorder-blink {
+  0% {
+    color: #D93025;
+  }
+
+  50% {
+    color: #EFB9B5;
+  }
+
+  100% {
+    color: #D93025;
+  }
+}
+
 /* CPU секция */
-#cpu,
+#custom-cpu,
 #custom-cpu-temp,
 #custom-fan {
   color: #C4707A;
@@ -223,8 +296,8 @@ window#waybar {
 }
 
 /* Memory/Disk секция */
-#memory,
-#disk {
+#custom-memory,
+#custom-disk {
   color: #75474F;
 }
 
