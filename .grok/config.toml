@@ -60,3 +60,30 @@ yolo = true
 compact_mode = false
 permission_mode = "always-approve"
 theme = "oscura-midnight"
+
+[mcp_servers.github]
+type = "http"
+url = "https://api.githubcopilot.com/mcp"
+
+[mcp_servers.github.headers]
+Authorization = "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+
+[mcp_servers.telegram]
+type = "http"
+url = "http://127.0.0.1:8765/mcp"
+
+[mcp_servers.chrome-devtools]
+type = "stdio"
+command = "chrome-devtools-mcp"
+args = [ "--browser-url=http://127.0.0.1:9222", "--screenshot-format=jpeg" ]
+
+[mcp_servers.chrome-devtools.env]
+CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS = "1"
+CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS = "1"
+
+[mcp_servers.searxng]
+type = "stdio"
+command = "mcp-searxng"
+
+[mcp_servers.searxng.env]
+SEARXNG_URL = "http://127.0.0.1:8888"

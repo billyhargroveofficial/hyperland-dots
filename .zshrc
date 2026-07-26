@@ -213,5 +213,11 @@ export PATH="/home/billy/.kimi-code/bin:$PATH"
 # opencode
 export PATH=/home/billy/.opencode/bin:$PATH
 
-# Общие runtime-секреты AI-харнессов; значения никогда не хранятся в dotfiles.
+# общие секреты для AI-харнессов (GitHub PAT, Telegram) — читает mcp-sync и харнессы
 [ -f "$HOME/.config/agents/secrets.env" ] && source "$HOME/.config/agents/secrets.env"
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+fpath=(~/.grok/completions/zsh $fpath)
+autoload -Uz compinit && compinit -C
+# <<< grok installer <<<
