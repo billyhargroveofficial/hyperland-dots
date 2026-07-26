@@ -1,43 +1,47 @@
 # cship — statusline для Claude Code
 # папка ● модель · усилие · контекст ● 5h + таймер ● 7d + таймер
 # бинарь: ~/.local/bin/cship   |   референс: https://cship.dev
+#
+# Цвета — ТОЛЬКО именованные ANSI (blue, cyan, bright-black...), не хексы:
+# терминал перекрашивает их палитрой активной gruvbox-темы, и статуслайн
+# сам адаптируется к dark/light при переключении по Ctrl+Y.
 
 [cship]
-lines = ["$cship.workspace.current_dir[ ● ](fg:#565f89)$cship.model$cship.effort$cship.context_bar$cship.context_window.total_input_tokens[ ● ](fg:#565f89)$cship.usage_limits"]
+lines = ["$cship.workspace.current_dir[ ● ](fg:bright-black)$cship.model$cship.effort$cship.context_bar$cship.context_window.total_input_tokens[ ● ](fg:bright-black)$cship.usage_limits"]
 
 [cship.workspace]
 format = "[$value]($style)"
-style  = "fg:#7aa2f7 bold"
+style  = "fg:blue bold"
 
 [cship.model]
 format = "[$value]($style)"
-style  = "fg:#c0caf5 bold"
+style  = "bold"
 
 [cship.effort]
-format = "[ · ](fg:#565f89)[$value]($style)"
-style  = "fg:#bb9af7"
+format = "[ · ](fg:bright-black)[$value]($style)"
+style  = "fg:magenta"
 
 [cship.context_bar]
 width       = 10
 filled_char = "█"
 empty_char  = "░"
-format      = "[ · ](fg:#565f89)[$value]($style)"
-style       = "fg:#7dcfff"
+format      = "[ · ](fg:bright-black)[$value]($style)"
+style       = "fg:cyan"
 warn_threshold     = 60.0
-warn_style         = "fg:#e0af68"
+warn_style         = "fg:yellow"
 critical_threshold = 85.0
-critical_style     = "fg:#f7768e bold"
+critical_style     = "fg:red bold"
 
 [cship.usage_limits]
 five_hour_format = "5h {pct}% · {reset}"
 seven_day_format = "7d {pct}% · {reset}"
 separator        = " ● "
-style            = "fg:#9ece6a"
+style            = "fg:green"
 warn_threshold     = 70.0
-warn_style         = "fg:#e0af68"
+warn_style         = "fg:yellow"
 critical_threshold = 90.0
-critical_style     = "fg:#f7768e bold"
+critical_style     = "fg:red bold"
 
 [cship.context_window.total_input_tokens]
-format = "[ · ](fg:#565f89)[$value tok]($style)"
-style  = "fg:#7f88a8"
+format = "[ · ](fg:bright-black)[$value tok]($style)"
+style  = "fg:bright-black"

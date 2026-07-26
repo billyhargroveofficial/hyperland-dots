@@ -1,6 +1,9 @@
 foreground = 1d2021
 background = f5f0e8
 background-opacity = 0.9
+# На светлом фоне Regular выглядит тонким — берём весовую грань Medium.
+# В тёмной теме этого ключа нет: там вес откатывается на Regular из config.
+font-style = Medium
 selection-foreground = 1d2021
 selection-background = d5c4a1
 cursor-color = d65d0e
