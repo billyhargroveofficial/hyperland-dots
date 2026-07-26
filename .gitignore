@@ -101,3 +101,9 @@
 !docs/**
 !.config/Code/
 !.config/Code/**
+
+# Байткод Python. Каталоги скриптов пропущены в whitelist целиком (`!.config/
+# waybar/**`), поэтому без явного правила __pycache__ туда пролезает — его
+# создаёт любой запуск модулей waybar и любая проверка через py_compile.
+__pycache__/
+*.pyc

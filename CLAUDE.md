@@ -17,15 +17,17 @@ hyperland-dots/
 │   ├── screen-recording.md   #   wf-recorder + NVENC
 │   ├── notifications.md      #   swaync и переключение тем
 │   ├── hyprland.md           #   Alt+Tab без оверлея
-│   └── ai-harnesses.md       #   проверка control plane харнессов
+│   ├── ai-harnesses.md       #   проверка control plane харнессов
+│   └── bluetooth-audio.md    #   наушники: баг WirePlumber, автопереключение
 ├── .local/bin/mcp-sync       # Генератор нативных AI-конфигов
+├── .local/bin/bt-audio-*     # Автопереключение звука на BT и его починка
 ├── .grok/config.toml         # Базовые модели и постоянный YOLO Grok
 │
 └── .config/
     ├── agents/               # Канон rules/MCP/skills без секретов
-    ├── systemd/user/         # Qwen daemon/channel и общий Telegram MCP
+    ├── systemd/user/         # Qwen daemon/channel, Telegram MCP, bt-audio
     ├── hypr/                 # Hyprland конфиг
-    │   ├── hyprland.conf     # Основной конфиг
+    │   ├── hyprland.lua      # Основной конфиг (Lua, с 0.55; см. docs/hyprland.md)
     │   └── scripts/          # Скрипты автоматизации
     │       ├── toggle-theme.sh       # Dark/Light theme toggle (Ctrl+Y)
     │       ├── voice-input.sh        # Voice-to-text (Ctrl+Super)
@@ -92,7 +94,7 @@ hyperland-dots/
 
 | Файл | Описание |
 |------|----------|
-| `.config/hypr/hyprland.conf` | Основной конфиг Hyprland |
+| `.config/hypr/hyprland.lua` | Основной конфиг Hyprland — формат Lua |
 | `.config/hypr/scripts/toggle-theme.sh` | Переключение dark/light (Ctrl+Y) |
 | `.config/hypr/scripts/voice-input.sh` | Voice-to-text (Ctrl+Super) |
 | `.config/hypr/scripts/transcribe.py` | faster-whisper транскрибация |
@@ -103,6 +105,8 @@ hyperland-dots/
 | `.config/cship.toml` | Statusline Claude Code (папка, модель, контекст, лимиты) |
 | `.config/agents/.rulesync/` | Общие AI rules, MCP и Agent Skills |
 | `.local/bin/mcp-sync` | Синхронизация во все поддерживаемые харнессы |
+| `.local/bin/bt-audio-autoswitch` | Звук на BT-наушники при подключении (`docs/bluetooth-audio.md`) |
+| `.local/bin/bt-audio-recover` | Обход бага WirePlumber с потерей BlueZ-endpoints |
 | `scripts/install-ai-harnesses.sh` | Отдельный bootstrap AI-системы |
 | `restore-config.sh` | Скрипт установки |
 
@@ -134,19 +138,19 @@ SearXNG доступен Qwen и Grok через `mcp-searxng`; backend став
 | Компонент | Dark | Light |
 |-----------|------|-------|
 | Ghostty | Gruvbox Dark (0.8 opacity) | Gruvbox Light (0.3 opacity) |
-| Waybar | Gruvbox Dark monochrome | Gruvbox Light monochrome |
+| Waybar | розовая на чёрном | розовая на белом |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Hyprland border | White (#ffffffcc) | White (#ffffffcc) |
 | GTK | **`Adwaita-dark`** | `Adwaita` |
 | Nvim | gruvbox-material (transparent) | gruvbox-material (transparent) |
 | Rofi | Gruvbox Dark (muted #a89984) | — |
-| SwayNC | Gruvbox Dark | — |
+| SwayNC | палитра waybar | палитра waybar |
 
 ### Правила, которые нельзя нарушать
 
 Переключение темы ломалось тремя способами. Все три исправлены — **не возвращай их**:
 
-1. **Никогда не добавляй `env = GTK_THEME,...` в hyprland.conf.** Это жёсткий
+1. **Никогда не добавляй `hl.env("GTK_THEME", ...)` в конфиг Hyprland.** Это жёсткий
    оверрайд уровня CSS-провайдера: любое GTK3-приложение наследует его из сессии
    и остаётся в заданной теме при любом положении gsettings. Замер при
    `color-scheme=prefer-light`: с переменной `#353535`, без неё `#f6f5f4`.
@@ -351,3 +355,9 @@ stdin ещё нет (первые секунды сессии), с кэшем `t
   в фон сам: `awww-daemon && awww img ...` зависает на первой команде, обои не
   ставятся вообще. Запускать двумя отдельными `exec-once`.
 - **Обоев в репозитории нет** — используются локальные файлы из `~/wallsmacos/`.
+- **BT-наушники «подключены», а звука нет — это не BlueZ.** WirePlumber на долгом
+  аптайме теряет регистрацию своих BlueZ media-endpoints, и `MediaTransport1` не
+  создаётся: `bluetoothctl` при этом честно пишет `Connected: yes`, а логи
+  wireplumber пусты. Проверять `busctl introspect org.bluez /org/bluez/hci0/dev_<MAC>`,
+  а не логи. Автоматически лечит `bt-audio-recover.service`; подробности и ручной
+  рецепт — [docs/bluetooth-audio.md](docs/bluetooth-audio.md).

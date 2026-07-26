@@ -8,15 +8,19 @@
 
 ## Особенности
 
-- **Waybar** — минималистичная панель с Gruvbox цветами
-- **Gruvbox тема** — единый стиль для ghostty, waybar, VSCode, nvim, GTK, rofi, swaync
+- **Waybar** — панель со своими модулями CPU/памяти/диска: в тексте занято/всего,
+  в попапе при наведении — кто больше всех потребляет, живым списком
+- **Запись экрана кнопкой** — 720p60, h264_nvenc, в `~/records` (см. `docs/screen-recording.md`)
+- **Scrolling-раскладка** — окна лентой, прокрутка Alt+колесом (`docs/hyprland.md`)
+- **Конфиг Hyprland на Lua** — формат с 0.55, бинды умеют произвольные функции
+- **Единая тема** — ghostty, waybar, VSCode, nvim, GTK, rofi, swaync
 - **Dark/Light toggle** — переключение всех тем по Ctrl+Y
 - **Voice Input** — speech-to-text через faster-whisper на CUDA (Ctrl+Super)
 - **Плавные анимации** — настроенные bezier curves для окон и workspaces
 - **VPN с split tunneling** — sing-box (VLESS + Reality), .ru домены напрямую
 - **NVIDIA GPU fan control** — динамическое управление вентиляторами на Wayland
 - **LazyVim** — nvim с прозрачным gruvbox-material
-- **SwayNC** — уведомления в стиле Gruvbox
+- **SwayNC** — уведомления в палитре панели, две темы, переключаются вместе со всем
 - **Statusline Claude Code** — cship: папка, модель, effort, контекст в токенах,
   5h и недельная квота с таймерами сброса (1 мс на отрисовку)
 - **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
@@ -38,6 +42,21 @@ plane. Voice Input сейчас намеренно отключён.
 Запускать **обычным пользователем**, не от root — скрипт сам зовёт `sudo` там, где нужно.
 Он не падает от единичного сбоя сети: каждый шаг логирует свой результат сам,
 поэтому после прогона стоит просмотреть лог на `[WARN]`.
+
+## Прежде чем что-то править
+
+В [`docs/`](docs/) собраны грабли, на которые уже наступали — с причинами, а не
+только рецептами. Стоит заглянуть туда до того, как менять панель, запись
+экрана, уведомления или конфиг Hyprland:
+
+| | |
+|---|---|
+| [`docs/waybar.md`](docs/waybar.md) | свои модули CPU/памяти/диска, отступы у иконок, почему `interval: once` не перечитывается, анимации в GTK3 |
+| [`docs/hyprland.md`](docs/hyprland.md) | конфиг на Lua и что миграция ломает молча, scrolling-раскладка, Alt+Tab |
+| [`docs/screen-recording.md`](docs/screen-recording.md) | wf-recorder + NVENC: несуществующие флаги, диапазон яркости |
+| [`docs/notifications.md`](docs/notifications.md) | swaync и почему он не следует за системной темой сам |
+| [`docs/ai-harnesses.md`](docs/ai-harnesses.md) | чек-лист живой проверки control plane |
+| [`docs/bluetooth-audio.md`](docs/bluetooth-audio.md) | наушники и потеря BlueZ-endpoints |
 
 ## AI-харнессы
 
@@ -176,12 +195,13 @@ DHCP при этом продолжает работать, адрес прос�
 | `Alt + E` | Файловый менеджер (nautilus) |
 | `Alt + Space` | Лаунчер (rofi) |
 | `Alt + V` | Буфер обмена (cliphist + rofi) |
-| `Alt + F` | Fullscreen |
+| `Alt + F` | Fullscreen (повторное нажатие выводит обратно) |
 | `Alt + T` | Toggle floating |
-| `Alt + S` | Pin window |
+| `Alt + S` | Закрепить окно поверх всех (тайловое сначала станет плавающим) |
 | `Alt + Shift` | Переключить раскладку us/ru |
 | `Alt + Tab` | Следующее окно (нативный `cyclenext`, без оверлея) |
 | `Alt + Shift + Tab` | Предыдущее окно |
+| `Alt + колесо` | Катать ленту scrolling-раскладки |
 | `Ctrl + Y` | Toggle dark/light тема |
 | `F10` | Переключить `$mainMod` между ALT и SUPER |
 
@@ -281,7 +301,7 @@ bright 1                              # диапазон 1-100, шаг коле�
 наружу его транслирует `xdg-desktop-portal-gtk` через `org.freedesktop.appearance`.
 Ломали её три конкретные вещи, и все три устранены:
 
-**1. `env = GTK_THEME,Adwaita:dark` в `hyprland.conf`.** Главная причина.
+**1. `env = GTK_THEME,Adwaita:dark` в конфиге Hyprland.** Главная причина.
 `GTK_THEME` — жёсткий оверрайд уровня CSS-провайдера, приоритетнее всего
 остального. Любое GTK3-приложение наследовало его из сессии и оставалось тёмным
 при любом положении gsettings. Замер при `color-scheme=prefer-light`:
@@ -400,7 +420,7 @@ Speech-to-text через faster-whisper large-v3-turbo на CUDA. **Сейча�
 с CUDA-библиотеками пересобирался при каждом прогоне установки.
 
 Вернуть: раскомментировать `setup_voice_input` в `main()` и бинды `F11` в
-`.config/hypr/hyprland.conf`. Если возвращаешь — перевесь на комбинацию с
+`.config/hypr/hyprland.lua`. Если возвращаешь — перевесь на комбинацию с
 модификатором, иначе снова потеряешь фуллскрин.
 
 - **Ctrl+Super** — первое нажатие начинает запись (красный ● в waybar)

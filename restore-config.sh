@@ -91,6 +91,9 @@ install_pacman_packages() {
         swaync
         awww            # бывший swww: пакет и бинарники переименованы (awww / awww-daemon)
         hyprshot
+        grim            # снимок экрана; на нём же держится hyprshot
+        slurp           # выбор области для hyprshot
+        wf-recorder     # запись экрана кнопкой в waybar (scripts/recorder.sh)
         wl-clipboard
         cliphist
         udiskie
@@ -179,6 +182,20 @@ install_pacman_packages() {
 
         # Нужен и hk-translator, и kbd-layout-toggle
         python-evdev
+
+        # jq разбирает вывод hyprctl в scripts/recorder.sh (выбор монитора для
+        # записи). Без него запись стартует без -o и на нескольких выходах
+        # молча умирает, ожидая выбора на stdin.
+        jq
+
+        # lm_sensors — источник данных для модулей температуры и оборотов
+        # вентилятора в waybar (`sensors k10temp-...`, `sensors asusec-...`).
+        # Без пакета модули просто пустые, ошибок при этом никаких.
+        lm_sensors
+
+        # lua нужен не Hyprland (он со встроенным), а для проверки конфига
+        # руками: `luac -p ~/.config/hypr/hyprland.lua` до перезахода в сессию.
+        lua
     )
 
     sudo pacman -S --needed --noconfirm "${packages[@]}" || log_warn "Некоторые пакеты не найдены в pacman"
@@ -611,6 +628,40 @@ enable_system_services() {
 }
 
 # ==========================================
+# Bluetooth-аудио: автопереключение на наушники + обход бага WirePlumber
+# ==========================================
+# Подробности в docs/bluetooth-audio.md. Коротко, зачем оба юнита:
+#
+#   autoswitch — штатный module-switch-on-connect тут не годится: он уводит звук
+#   на ЛЮБОЕ новое устройство, а NVIDIA пересоздаёт HDMI-ноду при пробуждении
+#   монитора. Свой хук слушает pactl subscribe и реагирует только на bluez_output.*
+#
+#   recover — WirePlumber на долгом аптайме теряет регистрацию своих BlueZ
+#   media-endpoints: bluetoothd рапортует Connected=yes, но MediaTransport1 не
+#   создаётся и карты в PipeWire нет. Лечится рестартом wireplumber ОБЯЗАТЕЛЬНО
+#   с переподключением устройства — само ACL-соединение A2DP не пересогласует.
+install_bt_audio() {
+    log_info "Установка Bluetooth-аудио сервисов..."
+
+    install -Dm755 "$SCRIPT_DIR/.local/bin/bt-audio-autoswitch" \
+        "$HOME/.local/bin/bt-audio-autoswitch"
+    install -Dm755 "$SCRIPT_DIR/.local/bin/bt-audio-recover" \
+        "$HOME/.local/bin/bt-audio-recover"
+
+    local unit
+    for unit in bt-audio-autoswitch bt-audio-recover; do
+        install -Dm644 "$SCRIPT_DIR/.config/systemd/user/$unit.service" \
+            "$HOME/.config/systemd/user/$unit.service"
+    done
+
+    systemctl --user daemon-reload
+    systemctl --user enable --now bt-audio-autoswitch.service bt-audio-recover.service \
+        || log_warn "bt-audio сервисы не включились"
+
+    log_info "Bluetooth-аудио сервисы установлены"
+}
+
+# ==========================================
 # 7. Установка Oh-My-Zsh и Powerlevel10k
 # ==========================================
 install_ohmyzsh() {
@@ -901,6 +952,17 @@ make_scripts_executable() {
     chmod +x ~/.config/waybar/scripts/*.sh 2>/dev/null || true
     chmod +x ~/.config/scripts/*.sh 2>/dev/null || true
 
+    # Модули waybar для CPU, памяти и диска написаны на Python. Без бита
+    # исполнения waybar их просто не запустит, и три модуля будут пустыми —
+    # молча, без единой ошибки в логе.
+    chmod +x ~/.config/hypr/scripts/*.py 2>/dev/null || true
+    chmod +x ~/.config/waybar/scripts/*.py 2>/dev/null || true
+
+    # Каталоги, в которые пишут кнопка записи экрана и hyprshot. Оба
+    # инструмента их сами не создают: wf-recorder упадёт на открытии файла,
+    # hyprshot сохранит снимок мимо.
+    mkdir -p ~/records ~/Pictures/Screenshots
+
     log_info "Скрипты готовы"
 }
 
@@ -934,6 +996,7 @@ main() {
     install_kbd_layout_toggle
     install_ddcci_backlight
     enable_system_services
+    install_bt_audio      # после enable_system_services: ему нужны поднятые pipewire и bluetooth
     install_searxng
     install_ohmyzsh
     # setup_voice_input — отключено. Голосовой ввод висел на голом F11 и
