@@ -1,16 +1,28 @@
 # cship — statusline для Claude Code
-# папка ● модель · усилие · контекст ● 5h + таймер ● 7d + таймер
+# 📁 папка ● модель окно усилие контекст ● 5h + таймер ● 7d + таймер
 # бинарь: ~/.local/bin/cship   |   референс: https://cship.dev
+#
+# Строку рисует не cship напрямую, а обёртка ~/.local/bin/cship-wrap: она
+# правит JSON от Claude Code до того, как он сюда попадёт. Без неё не работают
+# три вещи — basename папки, «Opus 5 1M» вместо «Opus 5 (1M context)» и
+# сокращение токенов до тысяч. Причины и последствия — в шапке самой обёртки.
+#
+# Разделители: крупные ● отбивают смысловые блоки, мелких · внутри блоков нет
+# намеренно — блоки различаются цветом, а точки только удлиняли строку.
 #
 # Цвета — ТОЛЬКО именованные ANSI (blue, cyan, bright-black...), не хексы:
 # терминал перекрашивает их палитрой активной gruvbox-темы, и статуслайн
 # сам адаптируется к dark/light при переключении по Ctrl+Y.
 
 [cship]
-lines = ["$cship.workspace.current_dir[ ● ](fg:bright-black)$cship.model$cship.effort$cship.context_bar$cship.context_window.total_input_tokens[ ● ](fg:bright-black)$cship.usage_limits"]
+lines = ["$cship.workspace.current_dir[ ● ](fg:bright-black)$cship.model$cship.effort$cship.context_window.total_input_tokens[ ● ](fg:bright-black)$cship.usage_limits"]
 
+# $value приходит уже урезанным до имени каталога — режет cship-wrap, своей
+# опции для этого у cship нет: truncation_length, basename и truncate_to_repo
+# перебраны, неизвестные ключи он молча игнорирует, эффекта ноль.
 [cship.workspace]
-format = "[$value]($style)"
+symbol = "📁 "
+format = "[$symbol$value]($style)"
 style  = "fg:blue bold"
 
 [cship.model]
@@ -18,23 +30,12 @@ format = "[$value]($style)"
 style  = "bold"
 
 [cship.effort]
-format = "[ · ](fg:bright-black)[$value]($style)"
+format = "[ ](fg:bright-black)[$value]($style)"
 style  = "fg:magenta"
 
-[cship.context_bar]
-width       = 10
-filled_char = "█"
-empty_char  = "░"
-format      = "[ · ](fg:bright-black)[$value]($style)"
-style       = "fg:cyan"
-warn_threshold     = 60.0
-warn_style         = "fg:yellow"
-critical_threshold = 85.0
-critical_style     = "fg:red bold"
-
 [cship.usage_limits]
-five_hour_format = "5h {pct}% · {reset}"
-seven_day_format = "7d {pct}% · {reset}"
+five_hour_format = "5h {pct}% {reset}"
+seven_day_format = "7d {pct}% {reset}"
 separator        = " ● "
 style            = "fg:green"
 warn_threshold     = 70.0
@@ -42,6 +43,9 @@ warn_style         = "fg:yellow"
 critical_threshold = 90.0
 critical_style     = "fg:red bold"
 
+# Букву k дописывает формат: в $value уже лежат тысячи, делит их cship-wrap.
+# Поэтому $cship.context_window.used_tokens и $cship.context_bar подставлять в
+# lines больше нельзя — они посчитают проценты от тысяч и наврут.
 [cship.context_window.total_input_tokens]
-format = "[ · ](fg:bright-black)[$value tok]($style)"
+format = "[ ](fg:bright-black)[$value]($style)[k]($style)"
 style  = "fg:bright-black"

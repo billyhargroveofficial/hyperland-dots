@@ -22,7 +22,7 @@
 - **LazyVim** — nvim с прозрачным gruvbox-material
 - **SwayNC** — уведомления в палитре панели, две темы, переключаются вместе со всем
 - **Statusline Claude Code** — cship: папка, модель, effort, контекст в токенах,
-  5h и недельная квота с таймерами сброса (1 мс на отрисовку)
+  5h и недельная квота с таймерами сброса (8 мс на отрисовку против 70 у npx)
 - **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
   Claude, Codex, Qwen, Kimi, OpenCode и Grok через Rulesync
 - **Локальный AI-поиск** — hardened SearXNG на `127.0.0.1:8888` для Qwen/Grok

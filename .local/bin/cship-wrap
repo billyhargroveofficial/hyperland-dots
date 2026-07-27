@@ -1,0 +1,61 @@
+#!/bin/sh
+# cship-wrap — препроцессор JSON для statusline cship.
+#
+# Claude Code отдаёт statusline-программе контекст сессии одним JSON на stdin.
+# cship умеет только выбирать поля и красить их, но не преобразовывать: ни
+# basename пути, ни сокращения чисел, ни правки текста в нём нет (проверено
+# перебором опций на cship 1.8.0 — неизвестные ключи он молча игнорирует, так
+# что отсутствие эффекта и есть отсутствие опции). Поэтому три вещи правятся
+# здесь, до того как JSON попадёт в cship:
+#
+#   1. workspace.current_dir  — только имя конечной папки вместо полного пути.
+#   2. model.display_name     — «Opus 5 (1M context)» -> «Opus 5 1M».
+#   3. context_window.total_input_tokens — делится на 1000.
+#
+# Пункт 3 — единственное место, где значение перестаёт быть правдой: букву «k»
+# дописывает формат в ~/.config/cship.toml. Следствие: подставлять в статуслайн
+# $cship.context_window.used_tokens или $cship.context_bar больше нельзя, они
+# посчитают проценты от тысяч. Если понадобятся — убрать деление отсюда.
+#
+# jq, а не sed: арифметику из пункта 3 sed не умеет, а разбирать JSON руками
+# ради одного деления — гарантированный способ однажды поймать путь с кавычкой.
+
+set -u
+
+CSHIP=${CSHIP_BIN:-"$HOME/.local/bin/cship"}
+
+# JSON читается в переменную, а не течёт сразу в jq, чтобы был фоллбэк: если jq
+# однажды споткнётся о новую форму контекста, в cship уйдёт исходный JSON и
+# строка станет просто некрасивой, а не пустой. Пустую строку без сообщения
+# отлаживать нечем — statusline stderr не показывает.
+raw=$(cat)
+cooked=$(printf '%s' "$raw" | jq -c '
+  # Имя конечной папки. Хвостовые слэши срезаются первыми, иначе "^.*/" съест
+  # всё до последнего из них и вернёт пустую строку.
+  def basename:
+    (sub("/+$"; "") | sub("^.*/"; "")) as $b
+    | if $b == "" then "/" else $b end;
+
+  # current_dir может отсутствовать — тогда не трогаем ничего, иначе создадим
+  # объект workspace на пустом месте и cship решит, что данные есть.
+  (if (.workspace.current_dir? | type) == "string"
+     then .workspace.current_dir |= basename
+     else . end)
+
+  # «Opus 5 (1M context)» -> «Opus 5 1M». Скобки со словом context — это то,
+  # чем Claude Code помечает расширенное окно; размер сам по себе полезен,
+  # слово «context» в статуслайне — нет.
+  | (if (.model.display_name? | type) == "string"
+       then .model.display_name |= sub(" *\\((?<n>[0-9]+[A-Za-z]+) context\\)"; " \(.n)")
+       else . end)
+
+  # Токены в тысячах. context_window появляется только после первого ответа
+  # API, поэтому проверяем тип, а не наличие ключа.
+  | (if (.context_window.total_input_tokens? | type) == "number"
+       then .context_window.total_input_tokens |= (. / 1000 | round)
+       else . end)
+' 2>/dev/null) || cooked=
+
+[ -n "$cooked" ] || cooked=$raw
+
+printf '%s' "$cooked" | exec "$CSHIP" "$@"

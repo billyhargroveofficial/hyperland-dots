@@ -77,6 +77,7 @@
 !.local/bin/mcp-sync
 !.local/bin/bt-audio-autoswitch
 !.local/bin/bt-audio-recover
+!.local/bin/cship-wrap
 !.grok/
 !.grok/config.toml
 

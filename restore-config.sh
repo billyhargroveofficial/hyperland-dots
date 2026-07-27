@@ -704,7 +704,7 @@ install_cship() {
     #
     # Почему не ccstatusline (12k звёзд против 406): он запускается как
     # `npx -y ccstatusline@latest`, это ~70 мс на КАЖДУЮ отрисовку строки.
-    # У cship — 1 мс.
+    # У cship — 1 мс, с обёрткой cship-wrap — 8 мс.
     local url="https://github.com/stephenleo/cship/releases/latest/download/cship-x86_64-unknown-linux-musl"
     mkdir -p "$HOME/.local/bin"
     if curl -fsSL "$url" -o "$HOME/.local/bin/cship.new"; then
@@ -716,6 +716,12 @@ install_cship() {
         log_warn "cship не скачался — statusline в Claude Code останется дефолтным"
         return 0
     fi
+
+    # Обёртка. Правит stdin-JSON от Claude Code до того, как он попадёт в cship:
+    # basename папки, «Opus 5 1M» вместо «Opus 5 (1M context)», токены в тысячах.
+    # Ничего этого cship не умеет — подробности в шапке самого файла. Ставится
+    # ПОСЛЕ бинаря: без cship она бесполезна.
+    install -Dm755 "$SCRIPT_DIR/.local/bin/cship-wrap" "$HOME/.local/bin/cship-wrap"
 
     # secret-tool из libsecret. Лимиты cship берёт из stdin-JSON, который отдаёт
     # сам Claude Code, но когда их там ещё нет (первые секунды сессии) — ходит
@@ -740,7 +746,8 @@ except (ValueError, OSError) as e:
     sys.exit(1)
 data['statusLine'] = {
     'type': 'command',
-    'command': os.path.expanduser('~/.local/bin/cship'),
+    # cship-wrap, а не cship: обёртка препроцессит JSON и сама зовёт бинарь.
+    'command': os.path.expanduser('~/.local/bin/cship-wrap'),
 }
 with open(path, 'w') as f:
     json.dump(data, f, indent=2)
