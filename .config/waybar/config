@@ -160,8 +160,9 @@
   },
   "hyprland/workspaces": {
     "format": "{name}",
-    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'",
-    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "all-outputs": false,
+    "on-scroll-up": "hyprctl dispatch '(function() hyprWsCycle(1) return hl.dsp.no_op() end)()'",
+    "on-scroll-down": "hyprctl dispatch '(function() hyprWsCycle(-1) return hl.dsp.no_op() end)()'",
     "on-click": "activate"
   },
   "custom/singbox": {
