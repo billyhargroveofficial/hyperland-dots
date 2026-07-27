@@ -50,6 +50,8 @@
 !.config/swaync/**
 !.config/hyprshell/
 !.config/hyprshell/**
+!.config/wireplumber/
+!.config/wireplumber/**
 !.config/agents/
 !.config/agents/**
 .config/agents/secrets.env

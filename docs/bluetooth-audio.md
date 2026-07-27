@@ -1,8 +1,8 @@
 # Bluetooth-аудио — WH-1000XM5, PipeWire, автопереключение
 
 Стек: PipeWire 1.6.8 + WirePlumber 0.5.15 + BlueZ 5.87. Наушники Sony WH-1000XM5,
-профиль `a2dp-sink` — это LDAC, приоритет 134, выбирается сам как высший из
-доступных.
+донгл TP-Link UB500 (Realtek RTL8761BU). Профиль `a2dp-sink` — это **AAC**: LDAC
+принудительно выключен, см. раздел «Заикания на LDAC» ниже.
 
 Команды ниже берут адрес из `$MAC`, чтобы в репозитории не лежал MAC конкретного
 устройства. Подставить свой:
@@ -62,6 +62,94 @@ bluetoothctl connect $MAC
 пересогласует — транспорта как не было, так и не будет.
 
 Автоматически это делает `bt-audio-recover.service` (ниже).
+
+## Заикания на LDAC: почему кодек принудительно AAC
+
+**Симптом.** Звук рвётся и заикается, при этом соединение НЕ падает. В журнале
+BlueZ при этом пусто: потери пакетов внутри уже установленного A2DP-транспорта
+он не логирует вообще. Поэтому «в логах чисто» здесь ничего не опровергает —
+ровно та же ловушка, что и в первом разделе, но по другой причине.
+
+Считать надо не логи, а полные падения транспорта:
+
+```bash
+journalctl --since "-24h" | grep -c 'Failure in Bluetooth audio transport'
+```
+
+Если их единицы, а на слух рвётся постоянно — линк цел, проблема в пропускной
+способности, а не в разрывах.
+
+**Причина — пропускная способность RTL8761B.** LDAC в верхнем режиме гонит
+909-990 кбит/с, и это радио их не вывозит. Тот же донгл на Windows работал без
+нареканий, и это не аргумент в пользу железа: инбоксовый A2DP-стек Microsoft
+**не умеет LDAC в принципе** (только SBC, плюс AAC в Win11), поэтому там
+наушники всегда играли SBC ~328 кбит/с. Железо одинаковое, нагрузка на эфир
+отличалась втрое.
+
+Известная болезнь именно этого чипа: [Arch BBS](https://bbs.archlinux.org/viewtopic.php?id=282351),
+[Manjaro (ASUS BT500, тот же RTL8761B)](https://forum.manjaro.org/t/bluetooth-asus-bt500-bt-speakers-stutters/101176),
+[Linux Mint по UB500](https://forums.linuxmint.com/viewtopic.php?t=382807).
+
+**Решение** — `.config/wireplumber/wireplumber.conf.d/51-bluez-codecs.conf`:
+
+```
+monitor.bluez.properties = {
+  bluez5.codecs = [ "aac", "sbc_xq", "sbc" ]
+  bluez5.enable-sbc-xq = true
+}
+```
+
+Приоритеты профилей: LDAC 134 > AAC 133 > SBC 132 > SBC-XQ 131. Убрав `ldac` из
+списка, отдаём победу AAC (~256 кбит/с) **автоматически при каждом подключении**.
+Ручное переключение профиля через `pactl set-card-profile` тут не годится — оно
+откатывается на высший приоритет при переподключении.
+
+Секция называется `monitor.bluez.properties` (её читает
+`/usr/share/wireplumber/scripts/monitors/bluez.lua:18`), `bluez5.codecs`
+обязательно массив. Список поддерживаемых свойств сверять так:
+
+```bash
+strings /usr/lib/spa-0.2/bluez5/libspa-bluez5.so | grep -E '^bluez5\.'
+```
+
+Применяется рестартом wireplumber **с переподключением** (причина — в первом
+разделе). Проверка:
+
+```bash
+pw-dump | grep -oP '"api\.bluez5\.codec":\s*"\K[^"]+'   # ожидается aac
+journalctl -u bluetooth -n 20 | grep 'Endpoint registered'  # ldac быть не должно
+```
+
+Если AAC когда-нибудь окажется мало по качеству — вернуть `"ldac"` в массив и
+добавить `bluez5.a2dp.ldac.quality = "sq"` (660 кбит/с) вместо дефолтного `auto`:
+адаптивный режим LDAC на Linux плохо реагирует на затор и до 990 доезжает и там,
+где не должен.
+
+### Сопутствующее: автосуспенд донгла
+
+`btusb` по умолчанию (`enable_autosuspend=Y`) разрешает USB-автосуспенд
+адаптеру — тот засыпает на паузах в звуке и просыпается с задержкой. На
+десктопе это чистый вред, экономить нечего. Лечит
+`system/modules-load/btusb-modprobe.conf` → `/etc/modprobe.d/btusb.conf`
+(ставит `install_bt_audio`). Проверка текущего состояния:
+
+```bash
+cat /sys/module/btusb/parameters/enable_autosuspend   # ожидается N
+```
+
+Это, вместе с кодеком, и есть два единственных отличия от Windows — там
+selective suspend для BT-радио в таком виде не применяется.
+
+### Что проверить, если рвётся и на AAC
+
+- **Wi-Fi в 2.4 ГГц.** `nmcli -t -f ACTIVE,SSID,FREQ dev wifi | grep '^yes'` —
+  если частота 24xx, он воюет с Bluetooth за тот же эфир. На 5 ГГц (5xxx) не
+  мешает.
+- **Донгл рядом с USB 3.0.** USB 3.0 — документированный широкополосный источник
+  шума ровно в 2.4 ГГц. У этой машины Wi-Fi Archer T3U сидит в USB 3.0 порту;
+  BT-донгл стоит держать в USB 2.0 и подальше, лучше на удлинителе.
+- **Второе BT-устройство на том же адаптере** делит с наушниками пропускную
+  способность — на RTL8761B это заметно.
 
 ## Вторая проблема: `Paired: no` при `Trusted: yes`
 
@@ -142,8 +230,11 @@ systemctl --user status bt-audio-autoswitch bt-audio-recover
 # их лог
 journalctl -t bt-audio-autoswitch -t bt-audio-recover -f
 
-# доступные кодеки (LDAC/AAC/SBC-XQ/SBC) и их приоритеты
+# доступные кодеки и их приоритеты (LDAC в списке быть не должно)
 pactl list cards | grep -E "a2dp-sink|headset-head-unit"
+
+# какой кодек реально согласован
+pw-dump | grep -oP '"api\.bluez5\.codec":\s*"\K[^"]+'
 ```
 
 Если наушники подключены, а звука нет — сразу смотреть `busctl introspect` из

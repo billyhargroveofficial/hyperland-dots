@@ -56,7 +56,7 @@ plane. Voice Input сейчас намеренно отключён.
 | [`docs/screen-recording.md`](docs/screen-recording.md) | wf-recorder + NVENC: несуществующие флаги, диапазон яркости |
 | [`docs/notifications.md`](docs/notifications.md) | swaync и почему он не следует за системной темой сам |
 | [`docs/ai-harnesses.md`](docs/ai-harnesses.md) | чек-лист живой проверки control plane |
-| [`docs/bluetooth-audio.md`](docs/bluetooth-audio.md) | наушники и потеря BlueZ-endpoints |
+| [`docs/bluetooth-audio.md`](docs/bluetooth-audio.md) | наушники: заикания на LDAC и почему кодек прибит к AAC, потеря BlueZ-endpoints |
 
 ## AI-харнессы
 

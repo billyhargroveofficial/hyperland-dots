@@ -658,6 +658,12 @@ install_bt_audio() {
     systemctl --user enable --now bt-audio-autoswitch.service bt-audio-recover.service \
         || log_warn "bt-audio сервисы не включились"
 
+    # btusb по умолчанию разрешает USB-автосуспенд адаптеру: донгл засыпает на
+    # паузах в звуке и просыпается с задержкой — микрообрывы. На десктопе
+    # экономить нечего. Применяется при следующей загрузке модуля.
+    sudo install -m 644 "$SCRIPT_DIR/system/modules-load/btusb-modprobe.conf" \
+        /etc/modprobe.d/btusb.conf
+
     log_info "Bluetooth-аудио сервисы установлены"
 }
 
@@ -923,6 +929,9 @@ copy_configs() {
         ".config/Code/User"
         ".config/zellij"
         ".config/hyprshell"
+        # Кодеки A2DP: LDAC выключен, наушники играют AAC.
+        # Почему — в самом конфиге и в docs/bluetooth-audio.md.
+        ".config/wireplumber"
         # Дефолтные приложения: без него xdg-open после восстановления не знает,
         # чем открывать ссылки, и http/https уходят в случайный .desktop.
         ".config/mimeapps.list"

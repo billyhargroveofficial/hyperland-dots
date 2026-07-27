@@ -18,7 +18,7 @@ hyperland-dots/
 │   ├── notifications.md      #   swaync и переключение тем
 │   ├── hyprland.md           #   Alt+Tab без оверлея, два монитора
 │   ├── ai-harnesses.md       #   проверка control plane харнессов
-│   └── bluetooth-audio.md    #   наушники: баг WirePlumber, автопереключение
+│   └── bluetooth-audio.md    #   наушники: кодек AAC вместо LDAC, баг WirePlumber
 ├── .local/bin/mcp-sync       # Генератор нативных AI-конфигов
 ├── .local/bin/bt-audio-*     # Автопереключение звука на BT и его починка
 ├── .grok/config.toml         # Базовые модели и постоянный YOLO Grok
