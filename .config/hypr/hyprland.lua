@@ -171,11 +171,11 @@ hl.config({
 		gaps_out = { top = 5, right = 10, bottom = 10, left = 10 },
 
 		col = {
-			active_border = "rgba(ffffffcc)",
+			active_border = "rgba(ffffffff)",
 			inactive_border = "rgba(28282800)",
 		},
 
-		border_size = 0,
+		border_size = 2,
 		resize_on_border = true,
 		allow_tearing = false,
 
