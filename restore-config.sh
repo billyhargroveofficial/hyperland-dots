@@ -912,6 +912,10 @@ copy_configs() {
         ".config/ghostty"
         ".config/kitty"
         ".config/alacritty"
+        ".tmux.conf"
+        # Каталог целиком: rm -rf выше снёс бы rename-random.sh и
+        # agent-win.sh, если положить только часть файлов.
+        ".config/tmux"
         ".config/cship.toml"
         ".config/cship.toml.compact-variant"
         ".config/swaykbdd"

@@ -23,6 +23,12 @@
 - **SwayNC** — уведомления в палитре панели, две темы, переключаются вместе со всем
 - **Statusline Claude Code** — cship: папка, модель, effort, контекст в токенах,
   5h и недельная квота с таймерами сброса (8 мс на отрисовку против 70 у npx)
+- **AI-агенты во вкладках tmux** — иконка харнесса и состояние
+  (работает / ждёт ввода / готово) прямо в сегменте вкладки, для всех
+  шести: Claude Code, Codex, OpenCode, Qwen, Kimi, Hermes
+  (см. `harness-hooks/README.md`)
+- **Hermes Agent** — Telegram-гейтвей как systemd user-сервис, модель
+  через Alibaba Token Plan, все MCP из канона
 - **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
   Claude, Codex, Qwen, Kimi, OpenCode и Grok через Rulesync
 

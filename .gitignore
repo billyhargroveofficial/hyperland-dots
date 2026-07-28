@@ -15,6 +15,7 @@
 # Явно включаем нужные конфиги
 !.zshrc
 !.p10k.zsh
+!.tmux.conf
 !gpu-fan-control.sh
 !restore-config.sh
 !.config/
@@ -29,6 +30,11 @@
 !.config/gtk-3.0/**
 !.config/gtk-4.0/**
 !.config/alacritty/**
+# tmux: тема из macdots + скрипты (случайные имена окон, индикатор
+# AI-агентов во вкладках). Каталог целиком — restore-config.sh делает
+# rm -rf перед cp, неполный набор потерял бы rename-random.sh.
+!.config/tmux/
+!.config/tmux/**
 # statusline для Claude Code (cship). Одиночный файл, не каталог — маска
 # `**` тут не нужна.
 !.config/cship.toml
@@ -69,6 +75,9 @@
 # с потерей BlueZ-endpoints (docs/bluetooth-audio.md).
 !.config/systemd/user/bt-audio-autoswitch.service
 !.config/systemd/user/bt-audio-recover.service
+# Hermes Agent (Telegram gateway). PATH в юните обязателен: без него
+# stdio-MCP из ~/.local/bin не стартуют.
+!.config/systemd/user/hermes-agent.service
 !.config/chrome-flags.conf.template
 
 # AI control plane executables and Grok base config
@@ -79,6 +88,7 @@
 !.local/bin/bt-audio-autoswitch
 !.local/bin/bt-audio-recover
 !.local/bin/cship-wrap
+!.local/bin/hermes
 !.grok/
 !.grok/config.toml
 
@@ -106,6 +116,11 @@
 # видел. Ровно тот же класс дыры, что и с `!*/` выше — правило есть, файлов нет.
 !docs/
 !docs/**
+
+# Хуки харнессов для tmux-agent-indicator: фрагменты конфигов, которые
+# правятся вручную (сами конфиги харнессов не версионируются).
+!harness-hooks/
+!harness-hooks/**
 !.config/Code/
 !.config/Code/**
 # OpenCode: версионируется только выбор темы TUI (прозрачный фон = тема

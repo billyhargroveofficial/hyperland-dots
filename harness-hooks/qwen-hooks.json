@@ -1,0 +1,53 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.tmux/plugins/tmux-agent-indicator/scripts/agent-state.sh\" --agent qwen --state running",
+            "name": "tmux-agent-indicator-running",
+            "statusMessage": "tmux: qwen running"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.tmux/plugins/tmux-agent-indicator/scripts/agent-state.sh\" --agent qwen --state needs-input",
+            "name": "tmux-agent-indicator-needs-input",
+            "statusMessage": "tmux: qwen needs-input"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.tmux/plugins/tmux-agent-indicator/scripts/agent-state.sh\" --agent qwen --state done",
+            "name": "tmux-agent-indicator-done",
+            "statusMessage": "tmux: qwen done"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.tmux/plugins/tmux-agent-indicator/scripts/agent-state.sh\" --agent qwen --state done",
+            "name": "tmux-agent-indicator-done",
+            "statusMessage": "tmux: qwen done"
+          }
+        ]
+      }
+    ]
+  }
+}

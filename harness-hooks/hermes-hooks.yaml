@@ -1,0 +1,16 @@
+hooks:
+  pre_llm_call:
+    - command: /home/billy/.config/tmux/hermes-agent-state.sh running
+      timeout: 5
+  post_llm_call:
+    - command: /home/billy/.config/tmux/hermes-agent-state.sh done
+      timeout: 5
+  pre_approval_request:
+    - command: /home/billy/.config/tmux/hermes-agent-state.sh needs-input
+      timeout: 5
+  post_approval_response:
+    - command: /home/billy/.config/tmux/hermes-agent-state.sh running
+      timeout: 5
+  on_session_end:
+    - command: /home/billy/.config/tmux/hermes-agent-state.sh done
+      timeout: 5
