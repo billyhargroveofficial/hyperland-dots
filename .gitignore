@@ -98,6 +98,10 @@
 !.pi/
 !.pi/agent/
 !.pi/agent/models.json
+# Список установленных расширений (pi-mcp-adapter), провайдер, модель и
+# уровень мышления по умолчанию. Рядом лежат auth.json, сессии и
+# mcp-cache.json — это runtime и секреты, им в репо нельзя.
+!.pi/agent/settings.json
 
 # Скрипты установки
 !scripts/

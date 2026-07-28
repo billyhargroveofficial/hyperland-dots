@@ -1,0 +1,12 @@
+{
+  "packages": [
+    "npm:pi-mcp-adapter",
+    "npm:pi-subagents",
+    "npm:@quintinshaw/pi-dynamic-workflows"
+  ],
+  "lastChangelogVersion": "0.82.1",
+  "theme": "dark",
+  "defaultProvider": "alibaba-token-plan",
+  "defaultModel": "qwen3.8-max-preview",
+  "defaultThinkingLevel": "high"
+}

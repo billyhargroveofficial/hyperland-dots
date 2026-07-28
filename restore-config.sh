@@ -919,6 +919,7 @@ copy_configs() {
         # Только models.json: рядом лежат auth.json и сессии Pi, а выше
         # по циклу идёт rm -rf — каталогом сюда нельзя.
         ".pi/agent/models.json"
+        ".pi/agent/settings.json"
         ".config/cship.toml"
         ".config/cship.toml.compact-variant"
         ".config/swaykbdd"
