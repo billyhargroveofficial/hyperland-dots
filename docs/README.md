@@ -15,6 +15,7 @@
 | [hyprland.md](hyprland.md) | Alt+Tab без оверлея; чем болел hyprshell |
 | [ai-harnesses.md](ai-harnesses.md) | Общий control plane харнессов: как проверить, что он реально работает |
 | [bluetooth-audio.md](bluetooth-audio.md) | Наушники: WirePlumber теряет BlueZ-endpoints, автопереключение на BT-вывод |
+| [hermes-agent.md](hermes-agent.md) | Hermes: MCP-подсистема молча выключается без extra `mcp`, PATH в юните, контекст 1M |
 
 Разделы про темы, монитор, звук, кириллицу, cship и прочее исторически лежат в
 [../README.md](../README.md) и [../CLAUDE.md](../CLAUDE.md) — они там и остаются.
