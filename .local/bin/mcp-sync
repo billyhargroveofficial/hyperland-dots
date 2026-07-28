@@ -91,6 +91,9 @@ COMPAT_LINKS = (
     (ROOT / "mcp.json", ROOT / ".rulesync" / "mcp.jsonc"),
     (ROOT / "skills", ROOT / ".rulesync" / "skills"),
     (HOME / ".kimi" / "AGENTS.md", HOME / ".kimi-code" / "AGENTS.md"),
+    # Вендор-нейтральный AGENTS.md. Rulesync умеет target `agentsmd` только в
+    # project scope, поэтому в user scope держим ссылку на сгенерированный файл.
+    (HOME / ".agents" / "AGENTS.md", HOME / ".codex" / "AGENTS.md"),
 )
 
 

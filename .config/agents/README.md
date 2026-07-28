@@ -27,6 +27,8 @@ cd ~/hyperland-dots
 
 ## Генерируемые харнессы
 
+Под управлением пять харнессов — все, которыми пользуется владелец:
+
 | Target Rulesync | Нативные правила | MCP | Skills |
 | --- | --- | --- | --- |
 | `claudecode` | `~/.claude/CLAUDE.md` | `~/.claude.json` | `~/.claude/skills/` |
@@ -34,13 +36,12 @@ cd ~/hyperland-dots
 | `qwencode` | `~/.qwen/QWEN.md` | `~/.qwen/settings.json` | `~/.qwen/skills/` |
 | `kimi-code` | `~/.kimi-code/AGENTS.md` | `~/.kimi-code/mcp.json` | `~/.kimi-code/skills/` |
 | `opencode` | `~/.config/opencode/AGENTS.md` | OpenCode config | `~/.config/opencode/skills/` |
-| `grokcli` | `~/.grok/AGENTS.md` | `~/.grok/config.toml` | `~/.grok/skills/` |
-| `cline` | `~/.agents/AGENTS.md` | — | — |
 
 Общий стандартный файл находится в `~/.agents/AGENTS.md`. `~/AGENTS.md`
 намеренно не создаётся: в домашнем каталоге он дублирует нативные user-scope
-правила Codex и Grok. Старый `~/.kimi/AGENTS.md` указывает на актуальный Kimi
-Code файл.
+правила Codex. Старый `~/.kimi/AGENTS.md` указывает на актуальный Kimi
+Code файл; всё остальное в `~/.kimi/` — legacy от kimi-cli, живой конфиг лежит
+в `~/.kimi-code/`.
 
 ## Повседневное использование
 
@@ -92,12 +93,53 @@ mcp-sync --list-targets
 }
 ```
 
-`${VAR}` остаётся runtime-ссылкой. Qwen, Grok, Claude и OpenCode разворачивают
-её нативно; Codex и Kimi получают свои нативные поля для bearer token.
+### Подстановка секретов
 
-Локальный `searxng` подключён tool-scoped только к Qwen и Grok. Команда
-`mcp-searxng` ожидает backend на `http://127.0.0.1:8888`; его установка лежит в
-`~/hyperland-dots/system/searxng/`.
+`${VAR}` остаётся runtime-ссылкой: Rulesync записывает её в конфиги как есть,
+значение подставляет сам харнесс. Разворачивают нативно только Claude, Qwen и
+OpenCode. **Codex и Kimi подстановки не разворачивают, а Codex вдобавок вообще
+не отдаёт stdio MCP-серверу родительское окружение** — проверено, сервер
+падает с `VERTEX_PROJECT_ID environment variable is required`. Наследование из
+шелла для них не работает, рассчитывать на него нельзя.
+
+Отсюда два рабочих приёма — значение секрета в канон не пишется никогда, канон
+уезжает в публичный репозиторий:
+
+- **Нативное поле для имени переменной**, если харнесс его поддерживает:
+  `bearer_token_env_var` (Codex) и `bearerTokenEnvVar` (Kimi) вместо заголовка
+  `Authorization` у GitHub. Задаётся tool-scoped блоками.
+- **Обёртка-скрипт**, если поля нет. Так сделан `gemini-search`: в каноне одна
+  строка `command: gemini-search-mcp`, а `~/.local/bin/gemini-search-mcp` сам
+  подтягивает `secrets.env` и экспортирует нужное. Работает одинаково во всех
+  пяти харнессах, проверено запуском с полностью пустым окружением.
+
+Обёртка предпочтительнее tool-scoped костылей: один файл вместо блока на
+каждый харнесс, и канон остаётся читаемым.
+
+### Qwen и remote-серверы
+
+Qwen Code трактует `url` как устаревший SSE, а streamable HTTP берёт только из
+`httpUrl`. Rulesync 15.1.0 пишет ему `url` — upstream-баг, симптом узнаваемый:
+все remote-серверы disconnected, все stdio connected. Обход — блок
+`qwencode.mcpServers` с `httpUrl`. Если Rulesync это починит, блок можно убрать.
+
+### Веб-поиск
+
+Общий сервер `gemini-search` (`mcp-gemini-google-search`) даёт Google Search
+через Vertex AI grounding: Gemini здесь прокси к поиску, а не рабочая модель.
+Модель `gemini-3.6-flash`, локация обязательно `global` — на региональных
+эндпоинтах модели Gemini 3.x отдают 404. Авторизация — ADC, без JSON-ключей:
+
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project "$VERTEX_PROJECT_ID"
+gcloud auth application-default print-access-token   # проверка
+```
+
+Бесплатный лимит — 5 000 grounding-запросов в месяц на аккаунт.
+
+Других поисковых MCP в системе нет намеренно: `open-websearch` убран
+2026-07-28, SearXNG — 2026-07-27. Возвращать их не нужно.
 
 `mcp-sync` атомарно создаёт отдельные `qwen-service.env` и
 `telegram-service.env` с минимальным набором переменных. После изменения
@@ -120,10 +162,21 @@ Skill хранится каталогом:
 В `SKILL.md` обязательны frontmatter-поля `name` и `description`. Rulesync
 адаптирует один источник под нативные каталоги выбранных харнессов.
 
-Общая долговременная память — раздел в корневом правиле
-`.rulesync/rules/overview.md`. Один root-файл выбран намеренно: Kimi Code и Grok
-Build игнорируют дополнительные user-scope rule-файлы. Нативная автоматическая
-память, sessions, OAuth cache и история остаются runtime-состоянием.
+Память разделена на два уровня.
+
+Первый — раздел «Общая долговременная память» в корневом правиле
+`.rulesync/rules/overview.md`: он всегда в контексте у всех харнессов, поэтому
+туда идут только те несколько фактов, которые нужны постоянно. Один root-файл
+выбран намеренно: Kimi Code игнорирует дополнительные user-scope rule-файлы.
+
+Второй — общая кросс-харнесс память `~/.agents/memory/`: индекс `MEMORY.md` и
+записи `entries/<ГГГГ-ММ>-<слаг>.md`. Читается по релевантности, а не всегда,
+поэтому растёт без раздувания контекста. Протокол работы с ней описан в том же
+корневом правиле, так что его видит каждый харнесс. Каталог не версионируется:
+это личная накопленная память машины, как и `secrets.env`.
+
+Нативная автоматическая память харнессов, sessions, OAuth cache и история
+остаются runtime-состоянием и между клиентами не зеркалятся.
 
 ## Новый сторонний харнесс
 
@@ -136,7 +189,11 @@ Build игнорируют дополнительные user-scope rule-файл
 Если Rulesync ещё не знает инструмент, временный post-generation adapter можно
 добавить рядом с `mcp-sync`, не возвращаясь к монолитному преобразователю.
 
-## Grok Build
+## Grok Build — вне системы
+
+Grok выведен из эксплуатации 2026-07-26 и не является target-ом Rulesync:
+канон до него не доезжает. Раздел оставлен на случай возврата — тогда
+достаточно добавить `grokcli` в `rulesync.jsonc`.
 
 В `~/.grok/config.toml` настроены:
 

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Обёртка над mcp-gemini-google-search.
+#
+# Зачем: харнессы ведут себя по-разному. Claude, Qwen и OpenCode разворачивают
+# ${VAR} в конфиге, а Codex и Kimi — нет, и вдобавок Codex не отдаёт
+# MCP-серверу родительское окружение вовсе (проверено: сервер падает с
+# "VERTEX_PROJECT_ID environment variable is required"). Обёртка убирает эту
+# разницу: окружение собирается здесь, а в каноне остаётся одна строка
+# `command: gemini-search-mcp` без секретов — канон уезжает в публичный репо.
+
+set -euo pipefail
+
+SECRETS="${HOME}/.config/agents/secrets.env"
+if [ -f "$SECRETS" ]; then
+    # shellcheck disable=SC1090
+    . "$SECRETS"
+fi
+
+if [ -z "${VERTEX_PROJECT_ID:-}" ]; then
+    echo "gemini-search-mcp: VERTEX_PROJECT_ID не задан в $SECRETS" >&2
+    exit 1
+fi
+
+export VERTEX_PROJECT_ID
+export GEMINI_PROVIDER="${GEMINI_PROVIDER:-vertex}"
+# Только global: на региональных эндпоинтах модели Gemini 3.x отдают 404.
+export VERTEX_LOCATION="${VERTEX_LOCATION:-global}"
+export GEMINI_MODEL="${GEMINI_MODEL:-gemini-3.6-flash}"
+
+# PATH у дочернего процесса харнесса урезан, node ищем сами.
+export PATH="${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
+
+exec "${HOME}/.local/bin/mcp-gemini-google-search" "$@"

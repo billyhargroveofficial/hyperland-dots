@@ -9,8 +9,11 @@ AGENTS_SOURCE="$REPO_ROOT/.config/agents"
 AGENTS_HOME="$HOME/.config/agents"
 RULESYNC_VERSION="15.1.0"
 CHROME_MCP_VERSION="1.6.0"
-SEARXNG_MCP_VERSION="1.11.1"
+CODEX_VERSION="0.145.0"
+GEMINI_SEARCH_MCP_VERSION="0.1.1"
 TELEGRAM_MCP_COMMIT="78923cc736617b152ce8afa1c4089bf7c8ed56a9"
+GCLOUD_SDK_HOME="$HOME/.local/share/google-cloud-sdk"
+GCLOUD_SDK_URL="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz"
 NO_NETWORK=false
 
 if [[ "${1:-}" == "--no-network" ]]; then
@@ -41,6 +44,9 @@ install_sources() {
         "$AGENTS_HOME/AUDIT-2026-07-26.md"
 
     install -Dm755 "$REPO_ROOT/.local/bin/mcp-sync" "$HOME/.local/bin/mcp-sync"
+    install -Dm755 \
+        "$REPO_ROOT/.local/bin/gemini-search-mcp" \
+        "$HOME/.local/bin/gemini-search-mcp"
     install -Dm600 "$REPO_ROOT/.grok/config.toml" "$HOME/.grok/config.toml"
 
     local unit
@@ -56,6 +62,28 @@ install_sources() {
         "$REPO_ROOT/.config/chrome-flags.conf.template" > "$chrome_flags"
     install -Dm644 "$chrome_flags" "$HOME/.config/chrome-flags.conf"
     rm -f "$chrome_flags"
+
+    initialize_shared_memory
+}
+
+# Общая кросс-харнесс память. Содержимое личное и не версионируется: создаём
+# только пустой индекс, если каталога ещё нет.
+initialize_shared_memory() {
+    local memory_home="$HOME/.agents/memory"
+
+    mkdir -p "$memory_home/entries"
+    if [[ ! -f "$memory_home/MEMORY.md" ]]; then
+        cat > "$memory_home/MEMORY.md" <<'MEMORY'
+# Общая память AI-харнессов
+
+Индекс кросс-харнесс памяти. Одна строка — одна запись из `entries/`.
+Протокол — в корневом правиле `~/.config/agents/.rulesync/rules/overview.md`,
+раздел «Общая память харнессов».
+
+## Записи
+MEMORY
+        info "Создан индекс общей памяти $memory_home/MEMORY.md"
+    fi
 }
 
 initialize_secrets() {
@@ -137,12 +165,15 @@ install_dependencies() {
         return
     fi
 
-    info "Устанавливаю Rulesync и stdio MCP в пользовательский npm-prefix"
+    info "Устанавливаю Rulesync, CLI и stdio MCP в пользовательский npm-prefix"
     npm install --global --prefix "$HOME/.local" --ignore-scripts \
         "rulesync@$RULESYNC_VERSION"
     npm install --global --prefix "$HOME/.local" \
         "chrome-devtools-mcp@$CHROME_MCP_VERSION" \
-        "mcp-searxng@$SEARXNG_MCP_VERSION"
+        "mcp-gemini-google-search@$GEMINI_SEARCH_MCP_VERSION" \
+        "@openai/codex@$CODEX_VERSION"
+
+    install_gcloud
 
     local telegram_dir="$HOME/.local/share/telegram-mcp"
     if [[ ! -d "$telegram_dir/.git" ]]; then
@@ -167,6 +198,39 @@ install_dependencies() {
     fi
 }
 
+# gcloud нужен только ради ADC для gemini-search. Ставим в $HOME, без sudo и без
+# правки PATH: бинарники прокидываются симлинками в ~/.local/bin.
+install_gcloud() {
+    if command -v gcloud >/dev/null 2>&1; then
+        info "gcloud уже установлен, пропускаю"
+        return
+    fi
+
+    info "Устанавливаю Google Cloud SDK в $GCLOUD_SDK_HOME"
+    local archive
+    archive="$(mktemp -t gcloud-XXXXXX.tar.gz)"
+    if ! curl -fsSL -o "$archive" "$GCLOUD_SDK_URL"; then
+        warn "Не удалось скачать Google Cloud SDK; gemini-search останется без ADC"
+        rm -f "$archive"
+        return
+    fi
+
+    mkdir -p "$(dirname "$GCLOUD_SDK_HOME")"
+    rm -rf "$GCLOUD_SDK_HOME"
+    tar -xzf "$archive" -C "$(dirname "$GCLOUD_SDK_HOME")"
+    rm -f "$archive"
+
+    "$GCLOUD_SDK_HOME/install.sh" --quiet --usage-reporting=false \
+        --path-update=false --command-completion=false >/dev/null
+
+    local tool
+    for tool in gcloud gsutil; do
+        ln -sfn "$GCLOUD_SDK_HOME/bin/$tool" "$HOME/.local/bin/$tool"
+    done
+
+    warn "Авторизация ADC делается руками: gcloud auth application-default login"
+}
+
 generate_native_configs() {
     if ! command -v rulesync >/dev/null 2>&1; then
         echo "rulesync не найден в PATH; проверь ~/.local/bin" >&2
@@ -186,17 +250,16 @@ generate_native_configs() {
 report() {
     local missing=()
     local command_name
-    for command_name in claude codex qwen kimi opencode grok; do
+    for command_name in claude codex qwen kimi opencode; do
         command -v "$command_name" >/dev/null 2>&1 || missing+=("$command_name")
     done
     if (( ${#missing[@]} )); then
         warn "Не установлены vendor CLI: ${missing[*]}"
     fi
 
-    if curl -fsS --max-time 3 http://127.0.0.1:8888/healthz >/dev/null 2>&1; then
-        info "SearXNG backend доступен на 127.0.0.1:8888"
-    else
-        warn "SearXNG backend не отвечает; установи system/searxng"
+    if command -v gcloud >/dev/null 2>&1 &&
+        ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
+        warn "ADC не настроен: gemini-search не заработает до gcloud auth application-default login"
     fi
 
     info "Готово. Заполни $AGENTS_HOME/secrets.env и снова выполни mcp-sync"

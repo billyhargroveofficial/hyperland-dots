@@ -75,6 +75,7 @@
 !.local/
 !.local/bin/
 !.local/bin/mcp-sync
+!.local/bin/gemini-search-mcp
 !.local/bin/bt-audio-autoswitch
 !.local/bin/bt-audio-recover
 !.local/bin/cship-wrap
@@ -107,6 +108,11 @@
 !docs/**
 !.config/Code/
 !.config/Code/**
+# OpenCode: версионируется только выбор темы TUI (прозрачный фон = тема
+# терминала). Остальное НЕ включаем намеренно: opencode.json содержит MCP и
+# частично генерится mcp-sync (AGENTS.md, skills), node_modules — runtime.
+# Маска узкая, без `**`, чтобы будущий `git add .` не затащил runtime/generated.
+!.config/opencode/tui.json
 
 # Байткод Python. Каталоги скриптов пропущены в whitelist целиком (`!.config/
 # waybar/**`), поэтому без явного правила __pycache__ туда пролезает — его

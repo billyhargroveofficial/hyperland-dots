@@ -5,10 +5,8 @@
   "targets": {
     "claudecode": ["rules", "mcp", "skills"],
     "codexcli": ["rules", "mcp", "skills"],
-    "qwencode": ["rules", "mcp", "skills"],
     "kimi-code": ["rules", "mcp", "skills"],
     "opencode": ["rules", "mcp", "skills"],
-    "grokcli": ["rules", "mcp", "skills"],
-    "cline": ["rules"]
+    "qwencode": ["rules", "mcp", "skills"]
   }
 }

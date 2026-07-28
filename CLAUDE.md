@@ -9,7 +9,7 @@ hyperland-dots/
 ├── .zshrc                    # Zsh конфиг (Oh My Zsh + Powerlevel10k + алиасы)
 ├── .p10k.zsh                 # Powerlevel10k конфиг
 ├── restore-config.sh         # Скрипт полной установки системы
-├── AGENTS.md                 # Вход для Codex/Qwen/Kimi/Grok → этот документ
+├── AGENTS.md                 # Вход для Codex/Qwen/Kimi/OpenCode → этот документ
 ├── README.md                 # Документация
 ├── CLAUDE.md                 # Этот файл
 ├── docs/                     # Грабли и замечания — читать ПЕРЕД правкой
@@ -20,8 +20,9 @@ hyperland-dots/
 │   ├── ai-harnesses.md       #   проверка control plane харнессов
 │   └── bluetooth-audio.md    #   наушники: кодек AAC вместо LDAC, баг WirePlumber
 ├── .local/bin/mcp-sync       # Генератор нативных AI-конфигов
+├── .local/bin/gemini-search-mcp  # Обёртка MCP веб-поиска (Vertex AI)
 ├── .local/bin/bt-audio-*     # Автопереключение звука на BT и его починка
-├── .grok/config.toml         # Базовые модели и постоянный YOLO Grok
+├── .grok/config.toml         # Grok выведен 2026-07-26, вне control plane
 │
 └── .config/
     ├── agents/               # Канон rules/MCP/skills без секретов
@@ -85,7 +86,6 @@ hyperland-dots/
     ├── hk-translator/        # хоткеи в кириллице (-> /opt) — форк, апстрим сломан
     ├── kbd-layout-toggle/    # Alt+Shift (-> /opt)
     ├── ddcci/                # яркость монитора (-> /usr/local/bin + systemd)
-    ├── searxng/              # локальный backend поиска для Qwen/Grok MCP
     ├── udev/                 # права на /sys/class/backlight
     └── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
 ```
@@ -105,6 +105,7 @@ hyperland-dots/
 | `.config/cship.toml` | Statusline Claude Code (папка, модель, контекст, лимиты) |
 | `.config/agents/.rulesync/` | Общие AI rules, MCP и Agent Skills |
 | `.local/bin/mcp-sync` | Синхронизация во все поддерживаемые харнессы |
+| `.local/bin/gemini-search-mcp` | Обёртка MCP веб-поиска: собирает окружение из `secrets.env` |
 | `.local/bin/bt-audio-autoswitch` | Звук на BT-наушники при подключении (`docs/bluetooth-audio.md`) |
 | `.local/bin/bt-audio-recover` | Обход бага WirePlumber с потерей BlueZ-endpoints |
 | `scripts/install-ai-harnesses.sh` | Отдельный bootstrap AI-системы |
@@ -119,6 +120,12 @@ hyperland-dots/
 - `skills/<name>/SKILL.md` — переносимые Agent Skills;
 - `../rulesync.jsonc` — targets Rulesync.
 
+Под управлением **пять харнессов** — Claude Code, Codex CLI, Kimi Code,
+OpenCode, Qwen Code — и все получают одинаковые правила, MCP и skills. Grok
+выведен 2026-07-26 и target-ом не является: `.grok/config.toml` в репозитории
+остаётся как есть, но канон до него не доезжает. Подробности и чек-лист живой
+системы — [docs/ai-harnesses.md](docs/ai-harnesses.md).
+
 Не добавляй в репозиторий `secrets.env`, `qwen-service.env`,
 `telegram-service.env` или generated vendor-конфиги. Для применения:
 
@@ -127,9 +134,21 @@ hyperland-dots/
 mcp-sync --check
 ```
 
-SearXNG доступен Qwen и Grok через `mcp-searxng`; backend ставится из
-`system/searxng/`. В Grok осознанно постоянно включены `yolo = true` и
-`permission_mode = "always-approve"`.
+Три вещи, на которых тут проще всего обжечься:
+
+1. **Канон замещает, а не мержит.** Секция MCP-серверов в нативном конфиге
+   переписывается целиком: дописанный руками сервер исчезнет при следующем
+   `mcp-sync`. Сервер для одного харнесса — блоком `<target>.mcpServers`.
+2. **Bootstrap делает `rm -rf ~/.config/agents/.rulesync`.** Правку живого
+   канона всегда зеркаль в репозиторий, иначе следующий прогон её снесёт.
+3. **Репозиторий публичный.** Значение секрета в канон не пишется никогда —
+   только `${VAR}`, нативное поле с именем переменной или обёртка вроде
+   `.local/bin/gemini-search-mcp` (Codex не отдаёт MCP-серверу родительское
+   окружение, Kimi не разворачивает подстановки).
+
+Веб-поиск для всех пяти — MCP `gemini-search` через Vertex AI grounding,
+авторизация ADC (`gcloud auth application-default login`), локация обязательно
+`global`. Других поисковых MCP в системе нет намеренно.
 
 ## Тема (Gruvbox)
 
@@ -399,6 +418,12 @@ stdin ещё нет (первые секунды сессии), с кэшем `t
   монитор больше суток работал на 59.95 Гц вместо 200. Catch-all тоже должен
   быть `highrr`, а не `preferred`: `preferred` берёт режим из EDID, а он у
   большинства мониторов 60 Гц.
+- **Яркость идёт на оба монитора сразу.** `bright 50` пишет во все
+  `/sys/class/backlight/ddcci*`, а не в первый попавшийся. Если крутится только
+  один экран — не привязался `ddcci` ко второй i2c-шине (второй монитор молчал
+  на загрузке): `sudo systemctl restart ddcci-bind`, детали в
+  `system/README.md`. Сверять надо `ddcutil detect` (видит мониторы напрямую)
+  с `ls /sys/class/backlight/`.
 - **Столы разделены по мониторам: `DP-2` — 1..10, `DP-3` — 11..20.** Таблица
   `wsBase` в `hyprland.lua` — единственный источник этого деления: её читают и
   `workspace_rule`, и бинды цифр, и прокрутка колесом. Цифра выбирает стол по

@@ -25,11 +25,31 @@
         "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS": "1",
         "CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS": "1"
       }
+    },
+    "brave-devtools": {
+      "description": "То же для Brave через CDP 127.0.0.1:9223. Brave не блокирует CDP на дефолтном профиле — только флаг в ~/.config/brave-flags.conf, профиль не переносился. Работает, лишь пока Brave запущен пользователем (юнита нет намеренно); если после апдейта Brave порт перестанет подниматься — перенести профиль по хромовской схеме",
+      "type": "stdio",
+      "command": "chrome-devtools-mcp",
+      "args": [
+        "--browser-url=http://127.0.0.1:9223",
+        "--screenshot-format=jpeg"
+      ],
+      "env": {
+        "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS": "1",
+        "CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS": "1"
+      }
+    },
+    "gemini-search": {
+      "description": "Google Search через Vertex AI grounding; Gemini здесь прокси к поиску, а не рабочая модель. Окружение собирает обёртка ~/.local/bin/gemini-search-mcp: Codex не отдаёт MCP-серверу родительское окружение, а Codex и Kimi не разворачивают подстановки",
+      "type": "stdio",
+      "command": "gemini-search-mcp"
     }
   },
   "codexcli": {
     "mcpServers": {
       "github": {
+        "description": "Codex не разворачивает подстановки в headers: токен берётся нативно, через bearer_token_env_var",
+        "type": "http",
         "url": "https://api.githubcopilot.com/mcp",
         "bearer_token_env_var": "GITHUB_PERSONAL_ACCESS_TOKEN"
       }
@@ -38,6 +58,7 @@
   "kimi-code": {
     "mcpServers": {
       "github": {
+        "description": "Kimi не разворачивает подстановки в headers: нативное поле bearerTokenEnvVar",
         "type": "http",
         "url": "https://api.githubcopilot.com/mcp",
         "bearerTokenEnvVar": "GITHUB_PERSONAL_ACCESS_TOKEN"
@@ -54,24 +75,6 @@
       },
       "telegram": {
         "httpUrl": "http://127.0.0.1:8765/mcp"
-      },
-      "searxng": {
-        "type": "stdio",
-        "command": "mcp-searxng",
-        "env": {
-          "SEARXNG_URL": "http://127.0.0.1:8888"
-        }
-      }
-    }
-  },
-  "grokcli": {
-    "mcpServers": {
-      "searxng": {
-        "type": "stdio",
-        "command": "mcp-searxng",
-        "env": {
-          "SEARXNG_URL": "http://127.0.0.1:8888"
-        }
       }
     }
   }
