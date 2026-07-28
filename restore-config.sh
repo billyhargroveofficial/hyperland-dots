@@ -595,15 +595,6 @@ install_ddcci_backlight() {
 }
 
 # ==========================================
-# Локальный SearXNG backend для Qwen/Grok MCP
-# ==========================================
-install_searxng() {
-    log_info "Установка локального SearXNG backend..."
-    sudo bash "$SCRIPT_DIR/system/searxng/install.sh" \
-        || log_warn "SearXNG не установлен; Qwen/Grok search MCP будет недоступен"
-}
-
-# ==========================================
 # Системные сервисы, которые иначе остаются выключенными
 # ==========================================
 enable_system_services() {
@@ -1015,7 +1006,6 @@ main() {
     install_ddcci_backlight
     enable_system_services
     install_bt_audio      # после enable_system_services: ему нужны поднятые pipewire и bluetooth
-    install_searxng
     install_ohmyzsh
     # setup_voice_input — отключено. Голосовой ввод висел на голом F11 и
     # глобально съедал фуллскрин в браузерах и видеоплеерах. Venv на 2.7 ГБ

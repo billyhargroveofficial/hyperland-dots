@@ -25,7 +25,6 @@
   5h и недельная квота с таймерами сброса (8 мс на отрисовку против 70 у npx)
 - **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
   Claude, Codex, Qwen, Kimi, OpenCode и Grok через Rulesync
-- **Локальный AI-поиск** — hardened SearXNG на `127.0.0.1:8888` для Qwen/Grok
 
 ## Быстрая установка
 
@@ -36,7 +35,7 @@ chmod +x restore-config.sh
 ./restore-config.sh
 ```
 
-Скрипт установит зависимости, настроит desktop, SearXNG и общий AI control
+Скрипт установит зависимости, настроит desktop и общий AI control
 plane. Voice Input сейчас намеренно отключён.
 
 Запускать **обычным пользователем**, не от root — скрипт сам зовёт `sudo` там, где нужно.
@@ -78,9 +77,8 @@ mcp-sync
 `~/.config/agents/secrets.env` из шаблона и генерирует отдельные env-файлы
 user-systemd. Полная схема описана в `.config/agents/README.md`.
 
-Grok получает Kimi/Qwen plan-модели, GitHub/Telegram/Chrome/SearXNG MCP и
-постоянный `yolo = true`. SearXNG устанавливается системно из
-`system/searxng/` и слушает только loopback.
+Grok получает Kimi/Qwen plan-модели, GitHub/Telegram/Chrome MCP и
+постоянный `yolo = true`.
 
 ## Драйвер NVIDIA — проприетарный, не open
 
@@ -293,15 +291,22 @@ hyprctl monitors -j | jq '.[] | {name, x, y, refreshRate}'
 
 - стабильный AUR-пакет **не собирается** на ядрах 7.x — нужен форк `clemax`;
 - с ядра 6.8 **отключена авто-проба дисплеев**, устройство создаётся вручную
-  через `new_device`, а номер i2c-шины между загрузками не фиксирован.
+  через `new_device`, а номер i2c-шины между загрузками не фиксирован;
+- мониторов два, и **отвечают они не одновременно** — скрипт ждёт подсветку на
+  каждый подключённый коннектор, а не выходит по первой.
 
 ```bash
 systemctl status ddcci-bind           # это он создаёт устройство — проверять первым
-ddcutil detect                        # монитор виден по DDC/CI?
-ls /sys/class/backlight/              # должен быть ddcciN
-cat /sys/class/backlight/ddcci*/brightness
-bright 1                              # диапазон 1-100, шаг колеса 5
+ddcutil detect                        # мониторы видны по DDC/CI? (должно быть два)
+ls /sys/class/backlight/              # должно быть ddcciN на КАЖДЫЙ монитор
+bright                                # текущая яркость по экранам
+bright 1                              # диапазон 1-100, шаг колеса 5; ставится на все сразу
 ```
+
+Если `ddcutil detect` показывает два дисплея, а `/sys/class/backlight/` — одну
+подсветку, монитор ни при чём: не привязался `ddcci`. Лечится
+`sudo systemctl restart ddcci-bind`, причина обычно в `dmesg`
+(`core device [6e] probe failed: -19` — экран спал в момент привязки).
 
 Права даёт udev-правило через группу `video`. **Членство в группе подхватывается
 только при следующем логине** — до него яркость меняется только от root.
@@ -568,7 +573,6 @@ system/                   # то, что живёт вне $HOME — см. syste
 ├── hk-translator/        # хоткеи в кириллице (-> /opt, форк: апстрим сломан)
 ├── kbd-layout-toggle/    # Alt+Shift (-> /opt)
 ├── ddcci/                # яркость монитора (-> /usr/local/bin + systemd)
-├── searxng/              # локальный метапоиск для Qwen/Grok MCP
 ├── udev/                 # права на /sys/class/backlight
 └── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
 
