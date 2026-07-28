@@ -11,6 +11,8 @@ RULESYNC_VERSION="15.1.0"
 CHROME_MCP_VERSION="1.6.0"
 CODEX_VERSION="0.145.0"
 GEMINI_SEARCH_MCP_VERSION="0.1.1"
+PI_VERSION="0.82.1"
+PI_MCP_ADAPTER_VERSION="2.15.0"
 TELEGRAM_MCP_COMMIT="78923cc736617b152ce8afa1c4089bf7c8ed56a9"
 GCLOUD_SDK_HOME="$HOME/.local/share/google-cloud-sdk"
 GCLOUD_SDK_URL="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz"
@@ -172,6 +174,10 @@ install_dependencies() {
         "chrome-devtools-mcp@$CHROME_MCP_VERSION" \
         "mcp-gemini-google-search@$GEMINI_SEARCH_MCP_VERSION" \
         "@openai/codex@$CODEX_VERSION"
+    # Pi ставится с --ignore-scripts по рекомендации апстрима.
+    npm install --global --prefix "$HOME/.local" --ignore-scripts \
+        "@earendil-works/pi-coding-agent@$PI_VERSION"
+    install_pi_mcp
 
     install_gcloud
 
@@ -200,6 +206,18 @@ install_dependencies() {
 
 # gcloud нужен только ради ADC для gemini-search. Ставим в $HOME, без sudo и без
 # правки PATH: бинарники прокидываются симлинками в ~/.local/bin.
+# Нативного MCP у Pi нет — авторы отказались от него намеренно. Его даёт
+# расширение pi-mcp-adapter: оно читает стандартный mcpServers и само
+# разворачивает ${VAR}, поэтому конфиг Pi — симлинк прямо на канон, без
+# генерации (в rulesync у target `pi` фичи `mcp` не существует).
+install_pi_mcp() {
+    local agent_dir="$HOME/.pi/agent"
+    mkdir -p "$agent_dir"
+    "$HOME/.local/bin/pi" install "npm:pi-mcp-adapter@$PI_MCP_ADAPTER_VERSION" || \
+        warn "Не удалось установить pi-mcp-adapter — Pi останется без MCP"
+    ln -sfn "$HOME/.config/agents/.rulesync/mcp.jsonc" "$agent_dir/mcp.json"
+}
+
 install_gcloud() {
     if command -v gcloud >/dev/null 2>&1; then
         info "gcloud уже установлен, пропускаю"
@@ -250,7 +268,7 @@ generate_native_configs() {
 report() {
     local missing=()
     local command_name
-    for command_name in claude codex qwen kimi opencode; do
+    for command_name in claude codex qwen kimi opencode pi; do
         command -v "$command_name" >/dev/null 2>&1 || missing+=("$command_name")
     done
     if (( ${#missing[@]} )); then

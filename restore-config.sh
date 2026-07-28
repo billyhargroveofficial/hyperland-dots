@@ -916,6 +916,9 @@ copy_configs() {
         # Каталог целиком: rm -rf выше снёс бы rename-random.sh и
         # agent-win.sh, если положить только часть файлов.
         ".config/tmux"
+        # Только models.json: рядом лежат auth.json и сессии Pi, а выше
+        # по циклу идёт rm -rf — каталогом сюда нельзя.
+        ".pi/agent/models.json"
         ".config/cship.toml"
         ".config/cship.toml.compact-variant"
         ".config/swaykbdd"

@@ -7,6 +7,7 @@
     "codexcli": ["rules", "mcp", "skills"],
     "kimi-code": ["rules", "mcp", "skills"],
     "opencode": ["rules", "mcp", "skills"],
+    "pi": ["rules", "skills"],
     "qwencode": ["rules", "mcp", "skills"]
   }
 }

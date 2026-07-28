@@ -7,7 +7,7 @@ description: "Общие пользовательские инструкции �
 # Общие инструкции
 
 Это единый набор пользовательских правил для Claude Code, Codex CLI, Kimi Code,
-OpenCode и Qwen Code.
+OpenCode, Pi и Qwen Code.
 
 Канонические источники находятся в `~/.config/agents/.rulesync/`. Нативные
 `AGENTS.md`, `CLAUDE.md`, MCP-конфиги и каталоги skills генерирует
@@ -82,9 +82,17 @@ OpenCode и Qwen Code.
 - Telegram MCP работает одним общим systemd user-сервисом
   `telegram-mcp.service` на `http://127.0.0.1:8765/mcp`; не переводить его
   обратно в отдельные stdio-процессы.
-- Активные харнессы (все пять под управлением канона): Claude Code, Codex CLI,
-  Kimi Code, OpenCode, Qwen Code. Codex CLI и Kimi Code возвращены в систему
-  2026-07-28; Grok Build и Qwen-демоны остаются выведенными с 2026-07-26.
+- Активные харнессы (все шесть под управлением канона): Claude Code, Codex CLI,
+  Kimi Code, OpenCode, Pi, Qwen Code. Codex CLI и Kimi Code возвращены в систему
+  2026-07-28, Pi добавлен 2026-07-28; Grok Build и Qwen-демоны остаются
+  выведенными с 2026-07-26.
+- Pi (`@earendil-works/pi-coding-agent`) нативного MCP не имеет — авторы
+  отказались от него намеренно. MCP даёт расширение `pi-mcp-adapter`: оно
+  читает стандартный `mcpServers` и само разворачивает `${VAR}`, поэтому
+  `~/.pi/agent/mcp.json` — симлинк прямо на канон, без генерации. В
+  `rulesync.jsonc` у target `pi` только `rules` и `skills`, фичи `mcp` там
+  быть не может. Команда `pi` перекрывала алиас `poetry install` — тот
+  переименован в `poi`.
 - Общая память харнессов: `~/.agents/memory/`, поднята 2026-07-28.
 - Веб-поиск для всех харнессов: MCP-сервер `gemini-search`
   (`mcp-gemini-google-search`) через Vertex AI grounding, модель

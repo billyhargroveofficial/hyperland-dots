@@ -92,6 +92,13 @@
 !.grok/
 !.grok/config.toml
 
+# Pi: только описание провайдера Alibaba Token Plan (ключ — ссылкой на
+# $BAILIAN_TOKEN_PLAN_API_KEY). Остальное в ~/.pi/agent/ — auth.json,
+# сессии, установленные npm-расширения — runtime, в репо ему нельзя.
+!.pi/
+!.pi/agent/
+!.pi/agent/models.json
+
 # Скрипты установки
 !scripts/
 !scripts/**

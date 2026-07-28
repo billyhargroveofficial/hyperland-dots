@@ -30,7 +30,7 @@
 - **Hermes Agent** — Telegram-гейтвей как systemd user-сервис, модель
   через Alibaba Token Plan, все MCP из канона
 - **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
-  Claude, Codex, Qwen, Kimi, OpenCode и Grok через Rulesync
+  Claude, Codex, Qwen, Kimi, OpenCode и Pi через Rulesync
 
 ## Быстрая установка
 
