@@ -33,6 +33,7 @@ hk-translator — транслятор хоткеев для Hyprland + нела
 
 import argparse
 import queue
+import select
 import selectors
 import signal
 import socket
@@ -72,7 +73,16 @@ for _n in [
 # ── Поиск клавиатур ───────────────────────────────────────────────
 
 SELF_MARK = 'hk-translator'   # имя собственных виртуальных устройств
-RESCAN_INTERVAL = 5.0         # секунд — подхват горячего подключения
+# Устоявшийся скан только перечисляет /dev/input/event* и не открывает уже
+# проверенные узлы, поэтому его можно делать часто. Длинное старое окно в 5 с
+# оставляло физическую клавиатуру видимой Hyprland до позднего grab().
+RESCAN_INTERVAL = 0.2
+
+# Нельзя делать EVIOCGRAB посреди нажатия: compositor увидит key-down от
+# физической клавиатуры, а key-up уже от hk-translator-main и оставит первую
+# клавишу логически зажатой. Перед захватом требуем короткое окно без событий
+# и ещё раз проверяем bitmap нажатых клавиш непосредственно после grab().
+GRAB_QUIET_INTERVAL = 0.08
 
 # Обязательный набор для «настоящей» клавиатуры
 NEED_KEYS = {ecodes.KEY_A, ecodes.KEY_Z, ecodes.KEY_LEFTCTRL,
@@ -150,6 +160,25 @@ def build_caps(devs):
     return caps
 
 
+def keyboard_is_quiet(dev):
+    """Устройство не держит клавиш и не выдавало событий в коротком окне.
+
+    Пока grab() не сделан, события продолжает получать compositor. Если
+    пользователь печатает, закрываем этот probe и пробуем снова после паузы:
+    так одна клавиша никогда не делится между физическим и виртуальным
+    устройствами.
+    """
+    try:
+        if dev.active_keys():
+            return False
+        readable, _, _ = select.select(
+            [dev], [], [], GRAB_QUIET_INTERVAL
+        )
+        return not readable and not dev.active_keys()
+    except (OSError, ValueError):
+        return False
+
+
 # ── Рабочий поток: всё, что может заблокироваться ─────────────────
 
 class DeviceWorker(threading.Thread):
@@ -219,6 +248,14 @@ class DeviceWorker(threading.Thread):
                 with self.lock:
                     self.rejected.add(path)
                 continue
+            if not keyboard_is_quiet(dev):
+                # Не захватываем устройство между key-down и key-up. Путь не
+                # кэшируем: следующий быстрый скан повторит попытку.
+                try:
+                    dev.close()
+                except Exception:
+                    pass
+                continue
             try:
                 dev.grab()
             except OSError as e:
@@ -228,6 +265,16 @@ class DeviceWorker(threading.Thread):
                     dev.close()
                 except Exception:
                     pass
+                continue
+            try:
+                pressed_after_grab = bool(dev.active_keys())
+            except OSError:
+                pressed_after_grab = True
+            if pressed_after_grab:
+                # Клавиша попала в микроскопическую гонку между последней
+                # проверкой и EVIOCGRAB. Сразу отпускаем устройство; физический
+                # key-up тогда дойдёт тому же compositor-у, что видел key-down.
+                self._close(dev)
                 continue
             with self.lock:
                 self.active.add(path)
