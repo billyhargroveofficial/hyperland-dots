@@ -13,11 +13,13 @@
 
 set -u
 
-# Номер шины (ddcci3, ddcci1, ...) зависит от порядка инициализации видеокарты
-# и между загрузками не фиксирован — поэтому берём то, что реально создалось.
-DEV=
+# Номера (ddcci3, ddcci1, ...) зависят от порядка инициализации видеокарты и
+# между загрузками не фиксированы — поэтому берём всё, что реально создалось.
+# Мониторов больше одного: одна ручка крутит сразу все экраны, поэтому здесь
+# список, а не единственное устройство.
+DEVS=()
 for d in /sys/class/backlight/ddcci*; do
-    [ -d "$d" ] && { DEV=$d; break; }
+    [ -d "$d" ] && DEVS+=("$d")
 done
 STATE="${XDG_RUNTIME_DIR:-/tmp}/brightness-target"
 LOCK="${XDG_RUNTIME_DIR:-/tmp}/brightness.lock"
@@ -28,12 +30,26 @@ MIN=1      # не 0: часть мониторов на нуле гаснет п
 MAX=100    #       можно только кнопками на самом мониторе
 QUIET=0.25 # столько тишины считаем концом жеста
 
-[ -n "$DEV" ] && [ -d "$DEV" ] || {
+[ "${#DEVS[@]}" -gt 0 ] || {
     echo '{"text":"","tooltip":"нет ddcci-устройства (systemctl status ddcci-bind)"}'
     exit 0
 }
 
-hw() { cat "$DEV/brightness" 2>/dev/null || echo 50; }
+# Экраны держатся синхронно, так что за текущее значение отвечает первый.
+hw() { cat "${DEVS[0]}/brightness" 2>/dev/null || echo 50; }
+
+# Пишем последовательно, а не в фоне на каждый экран: у nvidia все i2c-шины
+# сидят под одним локом драйвера, параллельные записи всё равно выстроятся в
+# очередь, зато вперемешку дают DDC-таймауты и монитор проглатывает значение.
+apply() {
+    local v=$1 dev max w
+    for dev in "${DEVS[@]}"; do
+        max=$(cat "$dev/max_brightness" 2>/dev/null || echo 100)
+        w=$v
+        [ "$w" -gt "$max" ] && w=$max
+        echo "$w" > "$dev/brightness" 2>/dev/null || true
+    done
+}
 
 # Цель живёт максимум пару секунд после жеста. Если файл старый — значит
 # предыдущий жест давно применён, и точка отсчёта берётся из железа.
@@ -58,8 +74,13 @@ case "${1:-get}" in
         # своей ячейки и наезжают на пробел. В остальных модулях хватает двух,
         # но глиф солнца (U+F00E0) самый широкий из используемых — замер по
         # скриншоту давал 2px зазора против 7px у соседей.
-        printf '{"text":"%s   %s%%","tooltip":"Яркость монитора: %s%%","class":"brightness"}\n' \
-            "$icon" "$t" "$t"
+        if [ "${#DEVS[@]}" -gt 1 ]; then
+            tip="Яркость мониторов (${#DEVS[@]}): $t%"
+        else
+            tip="Яркость монитора: $t%"
+        fi
+        printf '{"text":"%s   %s%%","tooltip":"%s","class":"brightness"}\n' \
+            "$icon" "$t" "$tip"
         exit 0
         ;;
     up|down|set) ;;
@@ -99,7 +120,7 @@ if mkdir "$APPLIER" 2>/dev/null; then
             [ "$t" = "$last" ] && break
             last="$t"
         done
-        [ -n "$last" ] && echo "$last" > "$DEV/brightness" 2>/dev/null
+        [ -n "$last" ] && apply "$last"
         refresh
     ) >/dev/null 2>&1 &
     disown

@@ -38,11 +38,6 @@
         "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS": "1",
         "CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS": "1"
       }
-    },
-    "gemini-search": {
-      "description": "Google Search через Vertex AI grounding; Gemini здесь прокси к поиску, а не рабочая модель. Окружение собирает обёртка ~/.local/bin/gemini-search-mcp: Codex не отдаёт MCP-серверу родительское окружение, а Codex и Kimi не разворачивают подстановки",
-      "type": "stdio",
-      "command": "gemini-search-mcp"
     }
   },
   "codexcli": {

@@ -3,14 +3,18 @@
 # Restart script for Hyprland and related services
 # Bind: $mainMod CTRL + W
 
-export HYPRLAND_INSTANCE_SIGNATURE=$(ls -t /run/user/1000/hypr/ 2>/dev/null | head -1)
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export XDG_RUNTIME_DIR="$RUNTIME_DIR"
+export HYPRLAND_INSTANCE_SIGNATURE=$(ls -t "$RUNTIME_DIR/hypr/" 2>/dev/null | head -1)
 
 echo "Restarting Hyprland services..."
 
 # Restart waybar
 pkill waybar 2>/dev/null
 sleep 0.5
-waybar &disown
+WAYBAR_BIN="$HOME/.local/bin/waybar"
+[[ -x "$WAYBAR_BIN" ]] || WAYBAR_BIN=waybar
+"$WAYBAR_BIN" &disown
 
 # Restart wallpaper
 pkill awww-daemon 2>/dev/null
@@ -22,8 +26,7 @@ sleep 1
 # правка строки exec-once ломала восстановление обоев.
 WALLPAPER=$(cat ~/.cache/current_wallpaper 2>/dev/null)
 if [[ ! -f "$WALLPAPER" ]]; then
-    WALLPAPER=$(grep -m1 'awww img' ~/.config/hypr/hyprland.conf | sed 's/.*awww img //; s/ --.*//')
-    WALLPAPER="${WALLPAPER/#\~/$HOME}"
+    WALLPAPER="$HOME/wallpapers/1.jpg"
 fi
 if [[ -f "$WALLPAPER" ]]; then
     awww img "$WALLPAPER" --transition-type none

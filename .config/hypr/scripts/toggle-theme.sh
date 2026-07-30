@@ -33,19 +33,23 @@ SWAYNC_DIR="$HOME/.config/swaync"
 WEZTERM_THEME="$HOME/.config/wezterm/theme.txt"
 GTK3_INI="$HOME/.config/gtk-3.0/settings.ini"
 
+# Не даём повторному нажатию Ctrl+Y запустить второй переключатель, пока
+# первый ещё рассылает обновления приложениям.
+THEME_LOCK="${XDG_RUNTIME_DIR:-/tmp}/billy-toggle-theme.lock"
+exec 9>"$THEME_LOCK"
+flock -n 9 || exit 0
+
 # Codex CLI кэширует foreground/background терминала и перечитывает их при
 # FocusGained. После глобального хоткея Ghostty остаётся в фокусе, поэтому
-# событие само не приходит. Коротко фокусируем другие видимые поверхности
-# Ghostty и возвращаем исходную: уже запущенные TUI получают штатный refresh,
-# а ввод, черновики и выполняющийся turn не затрагиваются.
+# событие само не приходит. Коротко фокусируем другое видимое окно и возвращаем
+# исходное: активный TUI получает штатный refresh, а фоновые Codex обновятся
+# естественно при первом переходе в них.
 refresh_codex_tui_palette() {
     command -v hyprctl >/dev/null 2>&1 || return 0
     command -v jq >/dev/null 2>&1 || return 0
 
     local initial_window active_address active_class current_address
-    local monitors_json clients_json visible_workspaces bounce_address window_address
-    local -a ghostty_windows=()
-    local -a focus_targets=()
+    local monitors_json clients_json visible_workspaces bounce_address
 
     initial_window=$(hyprctl activewindow -j 2>/dev/null) || return 0
     active_address=$(jq -r '.address // empty' <<<"$initial_window")
@@ -70,51 +74,40 @@ refresh_codex_tui_palette() {
         '[.[] | .activeWorkspace.id, .specialWorkspace.id] | map(select(. != 0)) | unique' \
         <<<"$monitors_json")
 
-    mapfile -t ghostty_windows < <(
-        jq -r --argjson visible "$visible_workspaces" '
-            .[]
-            | select((.workspace.id as $workspace | $visible | index($workspace)) != null)
-            | select(((.class // "") | ascii_downcase | contains("ghostty")))
-            | .address
-        ' <<<"$clients_json"
-    )
+    bounce_address=$(jq -r --arg active "$active_address" \
+        --argjson visible "$visible_workspaces" '
+            first(
+                .[]
+                | select(.address != $active)
+                | select((.workspace.id as $workspace | $visible | index($workspace)) != null)
+                | .address
+            ) // empty
+        ' <<<"$clients_json")
+    [ -n "$bounce_address" ] || return 0
 
-    for window_address in "${ghostty_windows[@]}"; do
-        if [ "$window_address" != "$active_address" ]; then
-            focus_targets+=("$window_address")
-        fi
-    done
+    # Lua dispatcher ожидает HL.Window. Строковый selector здесь иногда
+    # принимался как fallback и циклил фокус по истории вместо точного окна.
+    hyprctl eval \
+        "local target = hl.get_window(\"address:$bounce_address\"); if target then return hl.dispatch(hl.dsp.focus({ window = target })) end" \
+        >/dev/null 2>&1
+    sleep 0.08
 
-    # Если Ghostty на видимых workspace один, используем любое другое видимое
-    # окно только как безопасную промежуточную точку фокуса.
-    if [ "${#focus_targets[@]}" -eq 0 ]; then
-        bounce_address=$(jq -r --arg active "$active_address" \
-            --argjson visible "$visible_workspaces" '
-                first(
-                    .[]
-                    | select(.address != $active)
-                    | select((.workspace.id as $workspace | $visible | index($workspace)) != null)
-                    | .address
-                ) // empty
-            ' <<<"$clients_json")
-        [ -n "$bounce_address" ] && focus_targets+=("$bounce_address")
-    fi
-
-    [ "${#focus_targets[@]}" -gt 0 ] || return 0
-
-    for window_address in "${focus_targets[@]}"; do
-        hyprctl eval \
-            "return hl.dispatch(hl.dsp.focus({ window = \"address:$window_address\" }))" \
-            >/dev/null 2>&1
-        sleep 0.04
-    done
+    # Пользователь мог успеть переключиться сам — тогда фокус назад не тянем.
+    current_address=$(hyprctl activewindow -j 2>/dev/null | jq -r '.address // empty')
+    [ "$current_address" = "$bounce_address" ] || return 0
 
     hyprctl eval \
-        "return hl.dispatch(hl.dsp.focus({ window = \"address:$active_address\" }))" \
+        "local target = hl.get_window(\"address:$active_address\"); if target then return hl.dispatch(hl.dsp.focus({ window = target })) end" \
         >/dev/null 2>&1
+    sleep 0.12
 }
 
-current=$(cat "$STATE_FILE" 2>/dev/null || echo "dark")
+current_scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null || true)
+case "$current_scheme" in
+    *dark*) current="dark" ;;
+    *light*) current="light" ;;
+    *) current=$(cat "$STATE_FILE" 2>/dev/null || echo "dark") ;;
+esac
 
 if [ "$current" = "dark" ]; then
     MODE="light"
@@ -162,7 +155,9 @@ ln -sfn "style-${MODE}.css" "$WAYBAR_DIR/style.css"
 # перезапуска демона.
 if [ -d "$SWAYNC_DIR" ]; then
     ln -sfn "style-${MODE}.css" "$SWAYNC_DIR/style.css"
-    swaync-client --reload-css >/dev/null 2>&1
+    if pgrep -x swaync >/dev/null 2>&1 && command -v swaync-client >/dev/null 2>&1; then
+        timeout 2 swaync-client --reload-css >/dev/null 2>&1 || true
+    fi
 fi
 
 # --- 4. Hyprland: цвета рамок -------------------------------------------
@@ -181,7 +176,8 @@ hyprctl eval "hl.config({ general = { col = {
 } } })" >/dev/null 2>&1
 
 # --- 5. Nvim: пнуть все живые инстансы ----------------------------------
-for sock in /run/user/1000/nvim.*.0 /tmp/nvim.*/0; do
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+for sock in "$RUNTIME_DIR"/nvim.*.0 /tmp/nvim.*/0; do
     [ -e "$sock" ] || continue
     nvim --server "$sock" --remote-send ":set background=$MODE<CR>" 2>/dev/null
 done
@@ -213,7 +209,8 @@ refresh_codex_tui_palette
 if [ "$MODE" = "light" ] && command -v notify-send >/dev/null 2>&1; then
     if pgrep -x chrome >/dev/null 2>&1 || pgrep -x brave >/dev/null 2>&1 || pgrep -x electron >/dev/null 2>&1; then
         notify-send -a "theme" -u low "Тема: light" \
-            "Chromium/Electron не умеют возвращаться в светлую тему на лету — перезапусти браузер." 2>/dev/null &
+            "Chromium/Electron не умеют возвращаться в светлую тему на лету — перезапусти браузер." \
+            9>&- 2>/dev/null &
     fi
 fi
 

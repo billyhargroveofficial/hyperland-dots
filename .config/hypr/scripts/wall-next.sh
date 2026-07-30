@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WALLDIR="$HOME/wallsmacos"
+WALLDIR="$HOME/wallpapers"
 CACHE_FILE="$HOME/.cache/current_wallpaper"
 
 # Скрипт запускается с бинда (Ctrl+Alt+A) — вывода в терминал никто не увидит,

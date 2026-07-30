@@ -9,7 +9,7 @@ AGENTS_SOURCE="$REPO_ROOT/.config/agents"
 AGENTS_HOME="$HOME/.config/agents"
 RULESYNC_VERSION="15.1.0"
 CHROME_MCP_VERSION="1.6.0"
-CODEX_VERSION="0.145.0"
+CODEX_VERSION="0.146.0"
 GEMINI_SEARCH_MCP_VERSION="0.1.1"
 PI_VERSION="0.82.1"
 PI_MCP_ADAPTER_VERSION="2.15.0"
@@ -49,14 +49,20 @@ install_sources() {
     install -Dm755 \
         "$REPO_ROOT/.local/bin/gemini-search-mcp" \
         "$HOME/.local/bin/gemini-search-mcp"
-    install -Dm600 "$REPO_ROOT/.grok/config.toml" "$HOME/.grok/config.toml"
+    # Hermes остаётся отдельным от Rulesync, но его launcher и unit должны
+    # переживать полный restore. Код и приватный ~/.hermes/ восстанавливаются
+    # отдельно по docs/hermes-agent.md.
+    install -Dm755 "$REPO_ROOT/.local/bin/hermes" "$HOME/.local/bin/hermes"
 
     local unit
-    for unit in qwen-serve qwen-channel-telegram telegram-mcp; do
+    for unit in telegram-mcp hermes-agent; do
         install -Dm644 \
             "$REPO_ROOT/.config/systemd/user/$unit.service" \
             "$HOME/.config/systemd/user/$unit.service"
     done
+    rm -f \
+        "$HOME/.config/systemd/user/qwen-serve.service" \
+        "$HOME/.config/systemd/user/qwen-channel-telegram.service"
 
     local chrome_flags
     chrome_flags="$(mktemp)"
@@ -99,7 +105,6 @@ initialize_secrets() {
 
     python3 - "$secrets_file" "$legacy_telegram_env" <<'PY'
 import re
-import secrets
 import shlex
 import sys
 from pathlib import Path
@@ -110,7 +115,6 @@ names = {
     "TELEGRAM_API_ID",
     "TELEGRAM_API_HASH",
     "TELEGRAM_SESSION_STRING",
-    "QWEN_SERVER_TOKEN",
 }
 
 
@@ -138,8 +142,6 @@ legacy_values = parse(legacy)
 for name in names:
     if not values.get(name) and legacy_values.get(name):
         values[name] = legacy_values[name]
-if not values.get("QWEN_SERVER_TOKEN"):
-    values["QWEN_SERVER_TOKEN"] = secrets.token_urlsafe(48)
 
 lines = target.read_text(encoding="utf-8").splitlines()
 seen = set()
@@ -204,8 +206,9 @@ install_dependencies() {
     fi
 }
 
-# gcloud нужен только ради ADC для gemini-search. Ставим в $HOME, без sudo и без
-# правки PATH: бинарники прокидываются симлинками в ~/.local/bin.
+# gcloud нужен только ради ADC для gemini-search в ручном конфиге Hermes.
+# Ставим в $HOME, без sudo и без правки PATH: бинарники прокидываются
+# симлинками в ~/.local/bin.
 # Нативного MCP у Pi нет — авторы отказались от него намеренно. Его даёт
 # расширение pi-mcp-adapter: оно читает стандартный mcpServers и само
 # разворачивает ${VAR}, поэтому конфиг Pi — симлинк прямо на канон, без
@@ -259,10 +262,7 @@ generate_native_configs() {
     "$HOME/.local/bin/mcp-sync"
 
     systemctl --user daemon-reload
-    systemctl --user try-restart \
-        telegram-mcp.service \
-        qwen-serve.service \
-        qwen-channel-telegram.service || true
+    systemctl --user try-restart telegram-mcp.service hermes-agent.service || true
 }
 
 report() {
@@ -277,14 +277,15 @@ report() {
 
     if command -v gcloud >/dev/null 2>&1 &&
         ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
-        warn "ADC не настроен: gemini-search не заработает до gcloud auth application-default login"
+        warn "ADC не настроен: gemini-search в ручном конфиге Hermes не заработает"
     fi
 
     info "Готово. Заполни $AGENTS_HOME/secrets.env и снова выполни mcp-sync"
     printf '%s\n' \
         "Для автозапуска:" \
-        "  systemctl --user enable --now telegram-mcp.service qwen-serve.service" \
-        "  systemctl --user enable --now qwen-channel-telegram.service"
+        "  systemctl --user enable --now telegram-mcp.service" \
+        "Hermes: восстанови ~/.hermes и код по docs/hermes-agent.md, затем:" \
+        "  systemctl --user enable --now hermes-agent.service"
 }
 
 install_sources

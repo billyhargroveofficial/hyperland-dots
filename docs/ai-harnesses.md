@@ -29,7 +29,7 @@ ls -l ~/.claude/CLAUDE.md ~/.codex/AGENTS.md ~/.qwen/QWEN.md \
 # нативные проверки подключения (единственное, что доказывает живость)
 claude mcp list ; qwen mcp list ; codex mcp list ; opencode mcp list ; kimi doctor
 
-systemctl --user is-active telegram-mcp qwen-serve qwen-channel-telegram
+systemctl --user is-active telegram-mcp
 
 curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8765/mcp \
   -H 'Content-Type: application/json' \
@@ -39,9 +39,10 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8765/mcp \
 curl -s http://127.0.0.1:9222/json/version | head -3                                        # Chrome CDP
 ```
 
-Состояние на 2026-07-28: все шесть харнессов показывают пять серверов
-`connected`, `gemini-search` проверен боевым поиском через codex, kimi и прямым
-вызовом. Telegram MCP — 200 за 13 мс.
+Состояние на 2026-07-30: пять нативных MCP-клиентов получают четыре сервера
+`github`, `telegram`, `chrome-devtools`, `brave-devtools`; Pi читает тот же
+набор через адаптер. Старые Qwen user-демоны не нужны и удалены. Telegram MCP
+отвечает локально по HTTP.
 
 ## Pi: MCP приходит расширением, а не каноном
 
@@ -56,7 +57,7 @@ curl -s http://127.0.0.1:9222/json/version | head -3                            
 видны Pi сразу. В `rulesync.jsonc` у target `pi` только `rules` и `skills` —
 фичи `mcp` там не существует, и это не недосмотр.
 
-Проверка: `pi -p 'вызови mcp с {"search":"google_search"}'`.
+Проверка: `pi -p 'вызови mcp с {"search":"telegram"}'`.
 
 Модели Pi берёт из `~/.pi/agent/models.json`. Для Alibaba Token Plan нужны два
 compat-флага, иначе endpoint отвечает 400: `supportsDeveloperRole: false`
@@ -87,7 +88,7 @@ bearer_token_env_var = "GITHUB_PERSONAL_ACCESS_TOKEN"   # codex
 авторизовываться**, при том что `mcp-sync --check` останется зелёным. Проверка:
 
 ```bash
-zsh -ic 'echo ${#GITHUB_PERSONAL_ACCESS_TOKEN}'   # должно быть 93
+zsh -ic 'test -n "$GITHUB_PERSONAL_ACCESS_TOKEN" && echo present'
 ```
 
 У Claude, Qwen и OpenCode токен приезжает как `${GITHUB_PERSONAL_ACCESS_TOKEN}`
@@ -113,10 +114,10 @@ RUST_LOG=info codex exec --skip-git-repo-check "привет" 2>&1 | grep 'MCP s
 
 Вывод: **на наследование окружения полагаться нельзя**. Если серверу нужна
 переменная, а нативного поля вроде `bearer_token_env_var` нет — заворачивать
-запуск в скрипт. Так сделан `gemini-search`: в каноне одна строка
-`command: gemini-search-mcp`, окружение собирает
-[`.local/bin/gemini-search-mcp`](../.local/bin/gemini-search-mcp). Проверять
-обёртку надо с пустым окружением, иначе тест ничего не доказывает:
+запуск в скрипт. Сохранённый только для ручного конфига Hermes
+[`gemini-search-mcp`](../.local/bin/gemini-search-mcp) собирает окружение сам.
+В rulesync основных харнессов его больше нет. Проверять обёртку надо с пустым
+окружением, иначе тест ничего не доказывает:
 
 ```bash
 env -i HOME="$HOME" gemini-search-mcp </dev/null    # должен написать "running on stdio"
@@ -124,35 +125,33 @@ env -i HOME="$HOME" gemini-search-mcp </dev/null    # должен написа�
 
 ## Codex прячет MCP-инструменты за tool_search
 
-У codex 0.145 MCP-инструменты отложенные: в списке у модели их нет, пока она не
+У codex 0.146 MCP-инструменты отложенные: в списке у модели их нет, пока она не
 вызовет `tool_search`. Модель при этом охотно врёт, что инструмент недоступен, и
 даже выдумывает текст ошибки. Не принимай её слова за диагностику — смотри
 `codex mcp list` и лог. В `codex exec` вызов ещё и упрётся в апрув: для разовой
 проверки нужен `--dangerously-bypass-approvals-and-sandbox`.
 
-## gemini-search живёт на ADC, а не на ключе
+## gemini-search остался только у Hermes
 
-Веб-поиск идёт через Vertex AI grounding. Авторизация — Application Default
-Credentials, JSON-ключи сервис-аккаунтов запрещены org policy. Локация обязана
-быть `global`: на региональных эндпоинтах модели Gemini 3.x отдают 404.
+С 2026-07-30 сервер удалён из rulesync шести основных харнессов. Ручной конфиг
+Hermes продолжает использовать Vertex AI grounding. Авторизация — Application
+Default Credentials, локация `global`.
 
 ```bash
 gcloud auth application-default print-access-token | cut -c1-10   # ya29.…
 ```
 
-**«Connected» у сервера ничего не доказывает.** Без ADC он поднимается и
-отдаёт `tools/list`, а падает только на самом вызове. Проверять реальным
-запросом.
+В rulesync его не восстанавливать без явного решения владельца.
 
 ## Кто какие серверы получает
 
 | Сервер | Кому |
 |---|---|
-| `github`, `telegram`, `chrome-devtools`, `brave-devtools`, `gemini-search` | всем пяти |
+| `github`, `telegram`, `chrome-devtools`, `brave-devtools` | пяти нативным MCP-клиентам и Pi через адаптер |
+| `gemini-search` | только Hermes, ручной конфиг вне Rulesync |
 
-Проверено 2026-07-28: у всех пяти ровно эти пять серверов, лишнего ни у кого.
-Поисковый MCP ровно один — `gemini-search`; `open-websearch` и SearXNG-мост
-выпилены осознанно, обратно не заводить.
+Проверено 2026-07-30: у основных харнессов ровно четыре shared-сервера.
+`open-websearch`, SearXNG и `gemini-search` обратно в rulesync не заводить.
 
 ## Qwen: только `httpUrl`, никогда `url`
 
@@ -182,7 +181,8 @@ scope. Skipping.` Поэтому вендор-нейтральный `~/.agents/
 
 `mcp-sync` в конце ставит `0600` на все чувствительные файлы
 (`~/.claude.json`, `~/.codex/config.toml`, `~/.qwen/settings.json`,
-`~/.kimi-code/mcp.json`, `opencode.json`, `secrets.env`, `*-service.env`).
+`~/.kimi-code/mcp.json`, `opencode.json`, `secrets.env`,
+`telegram-service.env`).
 Проверено: реальных токенов в открытом виде в сгенерированных конфигах нет —
 только имена переменных и `${...}`.
 

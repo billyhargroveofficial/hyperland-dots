@@ -10,6 +10,7 @@
 set +e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WARN_COUNT=0
 
 echo "=========================================="
 echo "  Hyprland Dotfiles Restore Script"
@@ -22,7 +23,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_warn() {
+    ((WARN_COUNT += 1))
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Проверка root
@@ -61,6 +65,7 @@ install_pacman_packages() {
         # Базовые
         git
         base-devel
+        openssh
 
         # Shell
         zsh
@@ -619,6 +624,52 @@ enable_system_services() {
 }
 
 # ==========================================
+# Постоянный удалённый доступ к mujik через nareshka.ru
+# ==========================================
+setup_remote_ssh() {
+    log_info "Настройка SSH и обратного туннеля..."
+
+    sudo install -Dm644 \
+        "$SCRIPT_DIR/system/ssh/10-billy.conf" \
+        /etc/ssh/sshd_config.d/10-billy.conf
+    if sudo /usr/bin/sshd -t; then
+        sudo systemctl enable --now sshd.service \
+            || log_warn "sshd не включился"
+        sudo systemctl restart sshd.service \
+            || log_warn "sshd не перечитал безопасный конфиг"
+    else
+        log_warn "sshd_config невалиден — sshd не включён"
+        return
+    fi
+
+    # User manager должен жить уже на экране входа: иначе user-unit туннеля
+    # появится только после первого графического логина.
+    sudo loginctl enable-linger "$USER" \
+        || log_warn "linger для $USER не включился"
+
+    install -Dm644 \
+        "$SCRIPT_DIR/.config/systemd/user/mujik-ssh-tunnel.service" \
+        "$HOME/.config/systemd/user/mujik-ssh-tunnel.service"
+    install -Dm755 \
+        "$SCRIPT_DIR/.local/bin/mujik-ssh-tunnel" \
+        "$HOME/.local/bin/mujik-ssh-tunnel"
+    systemctl --user daemon-reload
+    systemctl --user enable --now mujik-ssh-tunnel.service \
+        || log_warn "обратный SSH-туннель не включился"
+
+    log_info "SSH и обратный туннель настроены"
+}
+
+# Локальный pre-commit является частью репозитория, но Git не включает его
+# автоматически после clone. Настройка локальная для этого checkout.
+setup_repo_guards() {
+    if git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+        git -C "$SCRIPT_DIR" config core.hooksPath .githooks \
+            || log_warn "не удалось включить локальные git-хуки"
+    fi
+}
+
+# ==========================================
 # Bluetooth-аудио: автопереключение на наушники + обход бага WirePlumber
 # ==========================================
 # Подробности в docs/bluetooth-audio.md. Коротко, зачем оба юнита:
@@ -1001,6 +1052,7 @@ set_default_shell() {
 # MAIN
 # ==========================================
 main() {
+    setup_repo_guards
     install_yay
     install_pacman_packages
     install_aur_packages
@@ -1013,6 +1065,7 @@ main() {
     install_kbd_layout_toggle
     install_ddcci_backlight
     enable_system_services
+    setup_remote_ssh
     install_bt_audio      # после enable_system_services: ему нужны поднятые pipewire и bluetooth
     install_ohmyzsh
     # setup_voice_input — отключено. Голосовой ввод висел на голом F11 и
@@ -1048,26 +1101,35 @@ main() {
 
     # Перезагрузка Hyprland конфига и перезапуск панели/обоев
     hyprctl reload 2>/dev/null && log_info "Hyprland конфиг перезагружен" || true
-    pkill -x waybar 2>/dev/null || true; waybar &disown
+    pkill -x waybar 2>/dev/null || true
+    if [[ -x "$HOME/.local/bin/waybar" ]]; then
+        "$HOME/.local/bin/waybar" &disown
+    else
+        waybar &disown
+    fi
     # awww-daemon НЕ уходит в фон сам (ключа --daemonize у него нет), поэтому
     # `awww-daemon && awww img ...` зависал бы на первой команде и обои никогда
     # не ставились. Запускаем в фон явно.
     pkill -x awww-daemon 2>/dev/null || true; awww-daemon &disown; sleep 1
-    WALL=$(cat ~/.cache/current_wallpaper 2>/dev/null || echo "$HOME/wallsmacos/1.jpg")
+    WALL=$(cat ~/.cache/current_wallpaper 2>/dev/null || echo "$HOME/wallpapers/1.jpg")
     if [ -f "$WALL" ]; then
         awww img "$WALL" --transition-type none
     else
-        log_warn "Обоев нет ($WALL) — рабочий стол останется чёрным. Положи файлы в ~/wallsmacos/"
+        log_warn "Обоев нет ($WALL) — рабочий стол останется чёрным. Положи файлы в ~/wallpapers/"
     fi
     log_info "waybar и awww перезапущены"
 
     echo ""
     echo "=========================================="
-    echo -e "${GREEN}  Установка завершена!${NC}"
+    if (( WARN_COUNT > 0 )); then
+        echo -e "${YELLOW}  Установка завершена с предупреждениями: $WARN_COUNT${NC}"
+    else
+        echo -e "${GREEN}  Установка завершена без предупреждений!${NC}"
+    fi
     echo "=========================================="
     echo ""
     echo "Следующие шаги:"
-    echo "  1. Просмотри лог выше на [WARN] — скрипт не падает на сбоях, он их логирует"
+    echo "  1. Если были [WARN], исправь их и повтори соответствующий шаг"
     echo "  2. Добавь в параметры ядра: nvidia_drm.modeset=1 nvidia_drm.fbdev=1"
     echo "  3. ПЕРЕЗАГРУЗИСЬ — greeter SDDM, GPU fan control, zsh, кривая nct6798"
     echo "  4. Запусти nvim для установки LazyVim плагинов"
@@ -1086,6 +1148,10 @@ main() {
     echo ""
     echo "Если что-то из этого пусто — смотри соответствующий раздел README."
     echo ""
+
+    if (( WARN_COUNT > 0 )); then
+        return 1
+    fi
 }
 
 main "$@"

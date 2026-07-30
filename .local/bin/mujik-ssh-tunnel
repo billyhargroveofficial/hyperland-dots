@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Reverse SSH tunnel to nareshka.ru.
+#
+# После рестарта user-unit старое SSH-соединение иногда ещё держит удалённый
+# порт. ExitOnForwardFailure тогда мгновенно роняет новый процесс, а systemd
+# начинает спамить рестартами. Пока порт занят, спокойно ждём; когда прежний
+# туннель исчезнет, следующий запуск ssh заберёт порт сам.
+
+set -u
+
+REMOTE="root@nareshka.ru"
+REMOTE_PORT=2223
+LOCAL_PORT=22
+RETRY_DELAY=60
+
+COMMON_OPTS=(
+    -o BatchMode=yes
+    -o ConnectTimeout=10
+    -o ServerAliveInterval=30
+    -o ServerAliveCountMax=3
+    -o StrictHostKeyChecking=accept-new
+)
+
+remote_port_is_busy() {
+    /usr/bin/ssh "${COMMON_OPTS[@]}" "$REMOTE" \
+        "ss -H -ltn 'sport = :${REMOTE_PORT}' | grep -q ." \
+        >/dev/null 2>&1
+}
+
+while remote_port_is_busy; do
+    echo "mujik-ssh-tunnel: nareshka.ru:${REMOTE_PORT} уже занят; повтор через ${RETRY_DELAY}s"
+    sleep "$RETRY_DELAY"
+done
+
+exec /usr/bin/ssh -N -T \
+    "${COMMON_OPTS[@]}" \
+    -o ExitOnForwardFailure=yes \
+    -R "127.0.0.1:${REMOTE_PORT}:127.0.0.1:${LOCAL_PORT}" \
+    "$REMOTE"

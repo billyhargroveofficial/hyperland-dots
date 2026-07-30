@@ -1,6 +1,6 @@
 # Hyperland Dots
 
-Dotfiles для Hyprland + waybar + swww + rofi на Arch Linux.
+Dotfiles для Hyprland + waybar + awww + rofi на Arch Linux.
 
 ## Структура репозитория
 
@@ -18,15 +18,16 @@ hyperland-dots/
 │   ├── notifications.md      #   swaync и переключение тем
 │   ├── hyprland.md           #   Alt+Tab без оверлея, два монитора
 │   ├── ai-harnesses.md       #   проверка control plane харнессов
-│   └── bluetooth-audio.md    #   наушники: кодек AAC вместо LDAC, баг WirePlumber
+│   ├── bluetooth-audio.md    #   наушники: кодек AAC вместо LDAC, баг WirePlumber
+│   └── private-state.md      #   секреты и runtime, которые бэкапятся отдельно
 ├── .local/bin/mcp-sync       # Генератор нативных AI-конфигов
-├── .local/bin/gemini-search-mcp  # Обёртка MCP веб-поиска (Vertex AI)
+├── .local/bin/gemini-search-mcp  # Обёртка поиска только для ручного Hermes
 ├── .local/bin/bt-audio-*     # Автопереключение звука на BT и его починка
 ├── .grok/config.toml         # Grok выведен 2026-07-26, вне control plane
 │
 └── .config/
     ├── agents/               # Канон rules/MCP/skills без секретов
-    ├── systemd/user/         # Qwen daemon/channel, Telegram MCP, bt-audio
+    ├── systemd/user/         # AI-демоны, bt-audio, обратный SSH-туннель
     ├── hypr/                 # Hyprland конфиг
     │   ├── hyprland.lua      # Основной конфиг (Lua, с 0.55; см. docs/hyprland.md)
     │   └── scripts/          # Скрипты автоматизации
@@ -35,7 +36,7 @@ hyperland-dots/
     │       ├── transcribe.py         # faster-whisper CUDA транскрибация
     │       ├── gpu-fan-control.sh    # NVIDIA fan control
     │       ├── singbox-toggle.sh     # VPN toggle
-    │       ├── restart_hyprland.sh   # Restart waybar + swww + Hyprland
+    │       ├── restart_hyprland.sh   # Restart waybar + awww + Hyprland
     │       ├── toggle-mainmod.sh     # Главный модификатор ALT <-> SUPER (F10)
     │       └── get-keyboard-layout.sh # Current keyboard layout
     │
@@ -86,6 +87,7 @@ hyperland-dots/
     ├── hk-translator/        # хоткеи в кириллице (-> /opt) — форк, апстрим сломан
     ├── kbd-layout-toggle/    # Alt+Shift (-> /opt)
     ├── ddcci/                # яркость монитора (-> /usr/local/bin + systemd)
+    ├── ssh/                  # key-only sshd + обратный туннель
     ├── udev/                 # права на /sys/class/backlight
     └── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
 ```
@@ -105,7 +107,7 @@ hyperland-dots/
 | `.config/cship.toml` | Statusline Claude Code (папка, модель, контекст, лимиты) |
 | `.config/agents/.rulesync/` | Общие AI rules, MCP и Agent Skills |
 | `.local/bin/mcp-sync` | Синхронизация во все поддерживаемые харнессы |
-| `.local/bin/gemini-search-mcp` | Обёртка MCP веб-поиска: собирает окружение из `secrets.env` |
+| `.local/bin/gemini-search-mcp` | Обёртка MCP-поиска для отдельного ручного конфига Hermes |
 | `.local/bin/bt-audio-autoswitch` | Звук на BT-наушники при подключении (`docs/bluetooth-audio.md`) |
 | `.local/bin/bt-audio-recover` | Обход бага WirePlumber с потерей BlueZ-endpoints |
 | `scripts/install-ai-harnesses.sh` | Отдельный bootstrap AI-системы |
@@ -120,14 +122,15 @@ hyperland-dots/
 - `skills/<name>/SKILL.md` — переносимые Agent Skills;
 - `../rulesync.jsonc` — targets Rulesync.
 
-Под управлением **пять харнессов** — Claude Code, Codex CLI, Kimi Code,
-OpenCode, Qwen Code — и все получают одинаковые правила, MCP и skills. Grok
-выведен 2026-07-26 и target-ом не является: `.grok/config.toml` в репозитории
-остаётся как есть, но канон до него не доезжает. Подробности и чек-лист живой
-системы — [docs/ai-harnesses.md](docs/ai-harnesses.md).
+Под управлением **шесть харнессов** — Claude Code, Codex CLI, Kimi Code,
+OpenCode, Pi и Qwen Code. Pi получает rules/skills через Rulesync, а MCP через
+`pi-mcp-adapter`. Grok выведен 2026-07-26 и target-ом не является:
+`.grok/config.toml` в репозитории остаётся только заготовкой. Подробности и
+чек-лист живой системы — [docs/ai-harnesses.md](docs/ai-harnesses.md).
 
-Не добавляй в репозиторий `secrets.env`, `qwen-service.env`,
-`telegram-service.env` или generated vendor-конфиги. Для применения:
+Не добавляй в репозиторий `secrets.env`, `telegram-service.env` или generated
+vendor-конфиги. Старый `qwen-service.env` удаляется `mcp-sync`: Qwen Code
+активен как CLI, но его user-демоны выведены. Для применения:
 
 ```bash
 ./scripts/install-ai-harnesses.sh --no-network
@@ -142,13 +145,12 @@ mcp-sync --check
 2. **Bootstrap делает `rm -rf ~/.config/agents/.rulesync`.** Правку живого
    канона всегда зеркаль в репозиторий, иначе следующий прогон её снесёт.
 3. **Репозиторий публичный.** Значение секрета в канон не пишется никогда —
-   только `${VAR}`, нативное поле с именем переменной или обёртка вроде
-   `.local/bin/gemini-search-mcp` (Codex не отдаёт MCP-серверу родительское
-   окружение, Kimi не разворачивает подстановки).
+   только `${VAR}` или нативное поле с именем переменной. Codex и Kimi имеют
+   отдельные tool-scoped поля для GitHub-токена.
 
-Веб-поиск для всех пяти — MCP `gemini-search` через Vertex AI grounding,
-авторизация ADC (`gcloud auth application-default login`), локация обязательно
-`global`. Других поисковых MCP в системе нет намеренно.
+`gemini-search` отключён в rulesync шести основных харнессов 2026-07-30.
+Обёртка сохранена только для отдельного ручного конфига Hermes; обратно в
+rulesync её не возвращать без явного решения владельца.
 
 ## Тема (Gruvbox)
 
@@ -197,7 +199,7 @@ mcp-sync --check
 
 ## Демоны вне $HOME — каталог `system/`
 
-Три вещи ставятся в системные каталоги, исходники лежат в репозитории
+Четыре вещи ставятся в системные каталоги, исходники лежат в репозитории
 (подробное объяснение каждой — `system/README.md`):
 
 | Что | Зачем |
@@ -205,6 +207,7 @@ mcp-sync --check
 | `hk-translator` | хоткеи в кириллице. **Форк, а не апстрим**: в оригинале отбор клавиатуры шёл по числу объявленных клавиш, и `grab()` доставался HID-интерфейсу мыши |
 | `kbd-layout-toggle` | Alt+Shift. Штатный `grp:alt_shift_toggle` тут не работает: **в Hyprland раскладка живёт отдельно у каждого устройства ввода** |
 | `ddcci` | яркость внешнего монитора через `/sys/class/backlight` |
+| `ssh` | key-only sshd и обратный туннель через `nareshka.ru:2223` |
 
 ## Voice Input (faster-whisper) — ОТКЛЮЧЁН
 
@@ -440,7 +443,7 @@ stdin ещё нет (первые секунды сессии), с кэшем `t
 - **`awww` — бывший `swww`**, бинарники `awww` / `awww-daemon`. Демон не уходит
   в фон сам: `awww-daemon && awww img ...` зависает на первой команде, обои не
   ставятся вообще. Запускать двумя отдельными `exec-once`.
-- **Обоев в репозитории нет** — используются локальные файлы из `~/wallsmacos/`.
+- **Обоев в репозитории нет** — используются локальные файлы из `~/wallpapers/`.
 - **BT-наушники «подключены», а звука нет — это не BlueZ.** WirePlumber на долгом
   аптайме теряет регистрацию своих BlueZ media-endpoints, и `MediaTransport1` не
   создаётся: `bluetoothctl` при этом честно пишет `Connected: yes`, а логи

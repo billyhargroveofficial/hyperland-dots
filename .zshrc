@@ -56,7 +56,8 @@ alias nrb='npm run build'
 
 # Poetry
 alias pl='poetry lock'
-alias pi='poetry install'
+# `pi` занят агентом Pi (~/.local/bin/pi), poetry install переехал на `poi`.
+alias poi='poetry install'
 pr() { poetry run "$@" }
 alias pm='poetry run python main.py'
 
@@ -77,7 +78,12 @@ alias ....='cd ../../..'
 # Cleanup
 clean-node() { rm -rf node_modules }
 clean-logs() { rm -f *.log }
-clean-temp() { rm -rf /tmp/* }
+clean-temp() {
+  local tmpdir="${TMPDIR:-/tmp}"
+  # Только собственные обычные файлы старше недели. Каталоги, сокеты и чужое
+  # runtime-состояние не трогаем: прежний `rm -rf /tmp/*` ломал живые процессы.
+  find "$tmpdir" -mindepth 1 -maxdepth 1 -user "$USER" -type f -mtime +7 -print -delete
+}
 
 # Disk space
 alias df='df -h'
@@ -182,7 +188,7 @@ conda() {
 
 
 # pnpm
-export PNPM_HOME="/home/billy/.local/share/pnpm"
+export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
@@ -190,28 +196,33 @@ esac
 # pnpm end
 
 # Qwen Code PATH block begin
-export PATH='/home/billy/.local/bin':$PATH
+export PATH="$HOME/.local/bin:$PATH"
 # Qwen Code PATH block end
 
-# Яркость внешнего монитора по DDC/CI (см. ~/.config/hypr/scripts/brightness.sh)
+# Яркость внешних мониторов по DDC/CI (см. ~/.config/hypr/scripts/brightness.sh)
+# Значение выставляется сразу на все подключённые экраны.
 #   bright 50   выставить 50%      bright up / bright down   шаг 5%
 #   bright      показать текущую
 bright() {
-    local s=~/.config/hypr/scripts/brightness.sh
+    local s=~/.config/hypr/scripts/brightness.sh d
     case "${1:-}" in
         # command cat, а не cat: он заалиасен на bat, а тот спотыкается о
         # симлинк /sys/class/backlight/ddcciN и печатает ошибку вместо числа
-        ""|show) command cat /sys/class/backlight/ddcci*/brightness 2>/dev/null ;;
+        ""|show)
+            # (N) — nullglob: без подсветок молчим, а не ругаемся на no matches
+            for d in /sys/class/backlight/ddcci*(N); do
+                print -r -- "${d:t}: $(command cat $d/brightness 2>/dev/null)%"
+            done ;;
         up|down) "$s" "$1" ;;
         *)       "$s" set "$1" ;;
     esac
 }
 
 # kimi-code
-export PATH="/home/billy/.kimi-code/bin:$PATH"
+export PATH="$HOME/.kimi-code/bin:$PATH"
 
 # opencode
-export PATH=/home/billy/.opencode/bin:$PATH
+export PATH="$HOME/.opencode/bin:$PATH"
 
 # общие секреты для AI-харнессов (GitHub PAT, Telegram) — читает mcp-sync и харнессы
 [ -f "$HOME/.config/agents/secrets.env" ] && source "$HOME/.config/agents/secrets.env"
@@ -221,3 +232,8 @@ export PATH="$HOME/.grok/bin:$PATH"
 fpath=(~/.grok/completions/zsh $fpath)
 autoload -Uz compinit && compinit -C
 # <<< grok installer <<<
+
+# billytelega использует другие имена тех же Telegram API credentials.
+# Значения остаются только в secrets.env и никогда не попадают в Git.
+export TG_API_ID="${TELEGRAM_API_ID:-}"
+export TG_API_HASH="${TELEGRAM_API_HASH:-}"

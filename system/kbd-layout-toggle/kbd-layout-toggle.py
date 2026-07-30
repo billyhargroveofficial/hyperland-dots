@@ -39,14 +39,16 @@ RESCAN_INTERVAL = 5.0  # секунд — подхват горячего под
 def hyprctl(*args):
     """Вызвать hyprctl. Демон работает от root, поэтому сокет ищем сами:
     HYPRLAND_INSTANCE_SIGNATURE меняется при каждом рестарте Hyprland."""
-    dirs = glob.glob('/run/user/1000/hypr/*')
+    dirs = glob.glob('/run/user/*/hypr/*')
     dirs = [d for d in dirs if os.path.isdir(d)]
     if not dirs:
         return
-    his = os.path.basename(max(dirs, key=os.path.getmtime))
+    instance_dir = max(dirs, key=os.path.getmtime)
+    his = os.path.basename(instance_dir)
+    runtime_dir = os.path.dirname(os.path.dirname(instance_dir))
     env = dict(os.environ,
                HYPRLAND_INSTANCE_SIGNATURE=his,
-               XDG_RUNTIME_DIR='/run/user/1000')
+               XDG_RUNTIME_DIR=runtime_dir)
     try:
         subprocess.run(['hyprctl', *args], env=env,
                        capture_output=True, timeout=5)

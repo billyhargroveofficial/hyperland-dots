@@ -8,6 +8,8 @@ Telegram-гейтвей на базе [Hermes Agent](https://github.com/NousRese
 (`.config/systemd/user/hermes-agent.service`) и обёртка (`.local/bin/hermes`).
 `~/.hermes/config.yaml` сюда не кладётся: там chat_id и user_id Telegram, а
 репозиторий публичный. Секреты — в `~/.hermes/.env`, тоже вне репозитория.
+Общий bootstrap устанавливает юнит и обёртку, но код Hermes и приватный
+профиль восстанавливаются этим ручным шагом.
 
 ## Установка
 
@@ -68,7 +70,8 @@ Hermes **не разворачивает `${VAR}`** в `config.yaml` — где 
 
 Серверный веб-поиск DashScope (`enable_search`) на этом endpoint **не
 работает** — проверено curl'ом, ответ приходит без `search_info`. Веб-поиск
-идёт общим MCP `gemini-search`, как у остальных харнессов.
+идёт через `gemini-search` только в ручном конфиге Hermes; из rulesync
+остальных харнессов он удалён 2026-07-30.
 
 ### Ложный варнинг про TERMINAL_CWD
 

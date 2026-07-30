@@ -19,7 +19,6 @@ cd ~/hyperland-dots
 - `.rulesync/skills/<name>/SKILL.md` — переносимые skills.
 - `rulesync.jsonc` — список харнессов и включённых возможностей.
 - `secrets.env` — локальные runtime-секреты, права `600`, не хранится в Git.
-- `qwen-service.env` — генерируемое окружение user-systemd сервисов Qwen.
 - `telegram-service.env` — генерируемое окружение общего Telegram MCP.
 
 Совместимые пути `AGENTS.md`, `mcp.json` и `skills/` являются ссылками на
@@ -27,7 +26,7 @@ cd ~/hyperland-dots
 
 ## Генерируемые харнессы
 
-Под управлением пять харнессов — все, которыми пользуется владелец:
+Под управлением шесть харнессов:
 
 | Target Rulesync | Нативные правила | MCP | Skills |
 | --- | --- | --- | --- |
@@ -36,6 +35,7 @@ cd ~/hyperland-dots
 | `qwencode` | `~/.qwen/QWEN.md` | `~/.qwen/settings.json` | `~/.qwen/skills/` |
 | `kimi-code` | `~/.kimi-code/AGENTS.md` | `~/.kimi-code/mcp.json` | `~/.kimi-code/skills/` |
 | `opencode` | `~/.config/opencode/AGENTS.md` | OpenCode config | `~/.config/opencode/skills/` |
+| `pi` | `~/.pi/agent/AGENTS.md` | через `pi-mcp-adapter` | `~/.pi/agent/skills/` |
 
 Общий стандартный файл находится в `~/.agents/AGENTS.md`. `~/AGENTS.md`
 намеренно не создаётся: в домашнем каталоге он дублирует нативные user-scope
@@ -108,10 +108,9 @@ OpenCode. **Codex и Kimi подстановки не разворачивают
 - **Нативное поле для имени переменной**, если харнесс его поддерживает:
   `bearer_token_env_var` (Codex) и `bearerTokenEnvVar` (Kimi) вместо заголовка
   `Authorization` у GitHub. Задаётся tool-scoped блоками.
-- **Обёртка-скрипт**, если поля нет. Так сделан `gemini-search`: в каноне одна
-  строка `command: gemini-search-mcp`, а `~/.local/bin/gemini-search-mcp` сам
-  подтягивает `secrets.env` и экспортирует нужное. Работает одинаково во всех
-  пяти харнессах, проверено запуском с полностью пустым окружением.
+- **Обёртка-скрипт**, если поля нет. Так устроен сохранённый для Hermes
+  `gemini-search-mcp`: он сам подтягивает `secrets.env` и экспортирует нужное.
+  В rulesync шести основных харнессов этот сервер с 2026-07-30 отключён.
 
 Обёртка предпочтительнее tool-scoped костылей: один файл вместо блока на
 каждый харнесс, и канон остаётся читаемым.
@@ -125,10 +124,9 @@ Qwen Code трактует `url` как устаревший SSE, а streamable 
 
 ### Веб-поиск
 
-Общий сервер `gemini-search` (`mcp-gemini-google-search`) даёт Google Search
-через Vertex AI grounding: Gemini здесь прокси к поиску, а не рабочая модель.
-Модель `gemini-3.6-flash`, локация обязательно `global` — на региональных
-эндпоинтах модели Gemini 3.x отдают 404. Авторизация — ADC, без JSON-ключей:
+`gemini-search` отключён в rulesync шести основных харнессов 2026-07-30.
+Обёртка и зависимость сохранены только для отдельного ручного конфига Hermes.
+Авторизация там — ADC, без JSON-ключей:
 
 ```bash
 gcloud auth application-default login
@@ -136,18 +134,16 @@ gcloud auth application-default set-quota-project "$VERTEX_PROJECT_ID"
 gcloud auth application-default print-access-token   # проверка
 ```
 
-Бесплатный лимит — 5 000 grounding-запросов в месяц на аккаунт.
+В rulesync не восстанавливать его без явного решения владельца.
 
-Других поисковых MCP в системе нет намеренно: `open-websearch` убран
-2026-07-28, SearXNG — 2026-07-27. Возвращать их не нужно.
-
-`mcp-sync` атомарно создаёт отдельные `qwen-service.env` и
-`telegram-service.env` с минимальным набором переменных. После изменения
-секретов выполни:
+`mcp-sync` атомарно создаёт `telegram-service.env` с минимальным набором
+переменных. Qwen Code остаётся активным CLI-харнессом, но его старые
+`qwen-serve`/`qwen-channel-telegram` user-демоны выведены из эксплуатации.
+После изменения секретов выполни:
 
 ```bash
 mcp-sync
-systemctl --user restart qwen-serve.service qwen-channel-telegram.service telegram-mcp.service
+systemctl --user restart telegram-mcp.service
 ```
 
 ## Skills и память
@@ -178,6 +174,11 @@ Skill хранится каталогом:
 Нативная автоматическая память харнессов, sessions, OAuth cache и история
 остаются runtime-состоянием и между клиентами не зеркалятся.
 
+Для Codex CLI `mcp-sync` после генерации постоянно обеспечивает YOLO mode:
+`approval_policy = "never"` и `sandbox_mode = "danger-full-access"`. Это
+осознанное решение владельца; Codex запускает команды без подтверждений и без
+sandbox.
+
 ## Новый сторонний харнесс
 
 1. Найти target в документации Rulesync.
@@ -192,10 +193,10 @@ Skill хранится каталогом:
 ## Grok Build — вне системы
 
 Grok выведен из эксплуатации 2026-07-26 и не является target-ом Rulesync:
-канон до него не доезжает. Раздел оставлен на случай возврата — тогда
-достаточно добавить `grokcli` в `rulesync.jsonc`.
+канон до него не доезжает, bootstrap его не устанавливает. Версионируемый
+`.grok/config.toml` оставлен только как заготовка на случай явного возврата.
 
-В `~/.grok/config.toml` настроены:
+В заготовке настроены:
 
 - `kimi-k3` и `kimi-k3-256k` через Kimi Coding Plan;
 - `qwen-token-plan` и `qwen-max-token-plan` через Alibaba/Qwen Token Plan;

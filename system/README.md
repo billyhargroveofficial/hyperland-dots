@@ -153,3 +153,31 @@ multi-user.target: Job ddcci-bind.service/start deleted to break ordering cycle
 Права на `/sys/class/backlight/*/brightness` даёт udev-правило (группа `video`),
 пользователь добавляется в эту группу. **Членство в группе подхватывается только
 при следующем логине.**
+
+## SSH и обратный туннель
+
+[`ssh/10-billy.conf`](ssh/10-billy.conf) включает вход только по ключам:
+password и keyboard-interactive отключены, root разрешён только с ключом.
+`restore-config.sh` сначала проверяет итоговый конфиг через `sshd -t` и лишь
+потом перезапускает сервис.
+
+Локальный вход: `ssh billy@mujik.local`. Имя публикует `avahi-daemon`, поэтому
+оно не зависит от DHCP-адреса (сейчас `192.168.1.8`). `NetworkManager`, `sshd`
+и `avahi-daemon` включены в system boot, а Wi-Fi-профиль — в autoconnect.
+В TUN inbound sing-box обязательно должен оставаться
+`"route_exclude_address": ["192.168.0.0/16"]`: без него ответы локальным
+клиентам перехватывает policy-таблица VPN и отправляет в `tun0`.
+
+User-unit `mujik-ssh-tunnel.service` публикует локальный SSH на loopback-порту
+`127.0.0.1:2223` хоста `nareshka.ru`. Сам unit запускает wrapper
+`~/.local/bin/mujik-ssh-tunnel`: перед `ssh -R` тот проверяет порт. Если старое
+соединение ещё живо и держит `2223`, wrapper спокойно ждёт, вместо бесконечных
+падений и рестартов systemd.
+
+Проверка:
+
+```bash
+sudo sshd -t
+systemctl --user status mujik-ssh-tunnel.service
+ssh root@nareshka.ru 'ss -lntp | grep 127.0.0.1:2223'
+```

@@ -1,0 +1,17 @@
+[Unit]
+Description=Reverse SSH tunnel: nareshka.ru:2223 -> mujik sshd
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/mujik-ssh-tunnel
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

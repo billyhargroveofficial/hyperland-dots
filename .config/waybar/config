@@ -162,8 +162,7 @@
     "format": "{name}",
     "all-outputs": false,
     "on-scroll-up": "hyprctl dispatch '(function() hyprWsCycle(1) return hl.dsp.no_op() end)()'",
-    "on-scroll-down": "hyprctl dispatch '(function() hyprWsCycle(-1) return hl.dsp.no_op() end)()'",
-    "on-click": "activate"
+    "on-scroll-down": "hyprctl dispatch '(function() hyprWsCycle(-1) return hl.dsp.no_op() end)()'"
   },
   "custom/singbox": {
     "exec": "~/.config/waybar/scripts/singbox-status.sh",

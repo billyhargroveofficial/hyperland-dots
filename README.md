@@ -1,6 +1,6 @@
 # Мои Dotfiles для Hyprland
 
-Персональная конфигурация для Hyprland + waybar + swww + rofi на Arch Linux.
+Персональная конфигурация для Hyprland + waybar + awww + rofi на Arch Linux.
 
 Целевая машина: Ryzen 9 5950X / 96 ГБ DDR4 / RTX 3080 Ti / 2× Samsung 980 PRO 1TB
 на ASUS ROG STRIX X570-F GAMING. Часть конфигов привязана именно к этому железу
@@ -25,10 +25,12 @@
   5h и недельная квота с таймерами сброса (8 мс на отрисовку против 70 у npx)
 - **AI-агенты во вкладках tmux** — иконка харнесса и состояние
   (работает / ждёт ввода / готово) прямо в сегменте вкладки, для всех
-  шести: Claude Code, Codex, OpenCode, Qwen, Kimi, Hermes
+  семи: Claude Code, Codex, OpenCode, Qwen, Kimi, Pi и Hermes
   (см. `harness-hooks/README.md`)
 - **Hermes Agent** — Telegram-гейтвей как systemd user-сервис, модель
   через Alibaba Token Plan, все MCP из канона
+- **Обратный SSH-туннель** — постоянный доступ через `nareshka.ru:2223`,
+  без password login и без restart-loop при занятом удалённом порте
 - **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
   Claude, Codex, Qwen, Kimi, OpenCode и Pi через Rulesync
 
@@ -45,8 +47,8 @@ chmod +x restore-config.sh
 plane. Voice Input сейчас намеренно отключён.
 
 Запускать **обычным пользователем**, не от root — скрипт сам зовёт `sudo` там, где нужно.
-Он не падает от единичного сбоя сети: каждый шаг логирует свой результат сам,
-поэтому после прогона стоит просмотреть лог на `[WARN]`.
+Он продолжает работу после единичного сбоя сети, собирает все `[WARN]` и
+возвращает ненулевой код, если восстановление получилось неполным.
 
 ## Прежде чем что-то править
 
@@ -62,13 +64,14 @@ plane. Voice Input сейчас намеренно отключён.
 | [`docs/notifications.md`](docs/notifications.md) | swaync и почему он не следует за системной темой сам |
 | [`docs/ai-harnesses.md`](docs/ai-harnesses.md) | чек-лист живой проверки control plane |
 | [`docs/bluetooth-audio.md`](docs/bluetooth-audio.md) | наушники: заикания на LDAC и почему кодек прибит к AAC, потеря BlueZ-endpoints |
+| [`docs/private-state.md`](docs/private-state.md) | что намеренно не лежит в публичной репе и нужно бэкапить отдельно |
 
 ## AI-харнессы
 
 Канонические общие правила, MCP и skills хранятся в
-`.config/agents/.rulesync/`. `mcp-sync` генерирует нативные конфиги Claude Code,
-Codex CLI, Qwen Code, Kimi Code, OpenCode, Grok Build и fallback
-`~/.agents/AGENTS.md`.
+`.config/agents/.rulesync/`. `mcp-sync` обслуживает шесть харнессов: Claude
+Code, Codex CLI, Qwen Code, Kimi Code, OpenCode и Pi. У Pi правила и skills
+генерирует Rulesync, а MCP даёт `pi-mcp-adapter`.
 
 Отдельная установка без полного системного restore:
 
@@ -83,8 +86,8 @@ mcp-sync
 `~/.config/agents/secrets.env` из шаблона и генерирует отдельные env-файлы
 user-systemd. Полная схема описана в `.config/agents/README.md`.
 
-Grok получает Kimi/Qwen plan-модели, GitHub/Telegram/Chrome MCP и
-постоянный `yolo = true`.
+Grok Build выведен из эксплуатации и bootstrap его не устанавливает.
+`.grok/config.toml` хранится только как заготовка на случай явного возврата.
 
 ## Драйвер NVIDIA — проприетарный, не open
 
@@ -218,7 +221,7 @@ DHCP при этом продолжает работать, адрес прос�
 |---------|----------|
 | `Alt + P` | Toggle VPN (sing-box) |
 | `Alt + Ctrl + T` | Mission Center |
-| `Alt + Ctrl + W` | Restart Hyprland + waybar + swww |
+| `Alt + Ctrl + W` | Restart Hyprland + waybar + awww |
 | `Print` / `Alt + Ctrl + S` | Скриншот области |
 
 ### Навигация (Vim-style)
@@ -475,10 +478,12 @@ Speech-to-text через faster-whisper large-v3-turbo на CUDA. **Сейча�
 
 ## Ghostty
 
-- **НЕТ hot-reload** — `pkill -USR1 ghostty` крашит терминал
-- Тема применяется только при открытии нового окна
-- toggle-theme.sh использует atomic write (tmpfile + mv), не sed -i
-- sed -i на ghostty config создаёт дубли строк — не использовать
+- Конфиг перечитывается по `Ctrl+Shift+,` или `pkill -USR2 -x ghostty`;
+  `SIGUSR1` использовать нельзя — он завершает процесс.
+- Тема меняется в уже открытом окне через системный портал; скрипт конфиг
+  Ghostty не переписывает.
+- `font-size = 20` — базовый размер для каждого нового окна, локальный zoom
+  окна не наследуется (`window-inherit-font-size = false`).
 
 ## sing-box VPN
 
@@ -498,7 +503,7 @@ nano ~/.config/sing-box/config.json
 Шаг настройки VPN в скрипте **интерактивный** — ждёт VLESS-ссылку со stdin.
 При неинтерактивном прогоне он просто пропускается с предупреждением.
 
-### Перенос конфига с macOS — три обязательные правки
+### Перенос конфига с macOS — четыре обязательные правки
 
 Конфиг с мака НЕ работает на Linux как есть. Симптом один и тот же на всё:
 
@@ -512,7 +517,8 @@ dial udp <сервер>:<порт>: route ip+net : no such network interface
 | Что | Почему |
 |-----|--------|
 | Убрать `"bind_interface": "en0"` из **всех** исходов и endpoint'ов | `en0` — имя интерфейса macOS, на Linux его нет. Именно это и даёт ошибку выше. Не менять на `wlan0`: имя интерфейса нестабильно, а при переходе на витую пару сломается снова |
-| Добавить `"auto_detect_interface": true` в `route` | На Linux при `auto_route` трафик самого прокси обязан выходить мимо TUN. Без флага в TUN уходит всё, включая ответы в локалку — рвётся даже SSH |
+| Добавить `"auto_detect_interface": true` в `route` | На Linux при `auto_route` трафик самого прокси обязан выходить мимо TUN |
+| Добавить `"route_exclude_address": ["192.168.0.0/16"]` в TUN inbound | Иначе sing-box ставит свою policy-таблицу выше обычного LAN-маршрута: запрос к SSH приходит по Wi‑Fi, а ответ уходит в `tun0` |
 | Пути к `rule_set` сделать абсолютными | Конфиг с мака ссылается на `rule-sets/*.srs` относительно рабочего каталога, а `singbox-toggle.sh` запускает демон без `-D`. Либо абсолютные пути, либо `-D ~/.config/sing-box` в скрипте — сделано и то и то |
 
 Проверять правки до запуска: `sing-box check -D ~/.config/sing-box -c ~/.config/sing-box/config.json`.
@@ -560,7 +566,7 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 ```
 .config/
 ├── agents/               # единый source of truth для AI rules/MCP/skills
-├── systemd/user/         # Qwen и общий Telegram MCP
+├── systemd/user/         # AI-демоны, bt-audio, обратный SSH-туннель
 ├── hypr/                 # Hyprland + скрипты (theme toggle, вентиляторы, обои)
 ├── waybar/               # Панель (Gruvbox dark/light CSS, звук + яркость)
 ├── ghostty/              # Терминал + themes/gruvbox-mine-{dark,light}

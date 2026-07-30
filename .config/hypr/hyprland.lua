@@ -102,7 +102,7 @@ end)
 ------------------------------------------------------------------- АВТОЗАПУСК
 
 hl.on("hyprland.start", function()
-	hl.exec_cmd("waybar &")
+	hl.exec_cmd("pgrep -x waybar >/dev/null || { test ! -x \"$HOME/.local/bin/waybar\" || exec \"$HOME/.local/bin/waybar\"; exec waybar; }")
 	-- awww-daemon НЕ уходит в фон (ключа --daemonize у него нет), поэтому
 	-- `awww-daemon && awww img ...` никогда не доходило до второй команды: &&
 	-- ждёт завершения демона. Обои не ставились вообще — `awww query` показывал
@@ -111,7 +111,7 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("sleep 1 && " .. wallpaperCmd())
 	hl.exec_cmd("~/.config/hypr/scripts/gpu-fan-control.sh")
 	hl.exec_cmd("sleep 2 && sudo sing-box run -c ~/.config/sing-box/config.json >> ~/.local/share/singbox.log 2>&1 &")
-	hl.exec_cmd("swaync &")
+	hl.exec_cmd("pgrep -x swaync >/dev/null || exec swaync")
 	hl.exec_cmd("nm-applet &")
 	-- hl.exec_cmd("pavucontrol --tab=3 &")  -- убран: открывал микшер при каждом логине
 	hl.exec_cmd("wl-paste --type text --watch cliphist store")

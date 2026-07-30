@@ -72,16 +72,15 @@
       "auto_route": true,
       "strict_route": false,
       "stack": "system",
-      "sniff": true,
-      "sniff_override_destination": false
+      "route_exclude_address": [
+        "192.168.0.0/16"
+      ]
     },
     {
       "type": "mixed",
       "tag": "mixed-in",
       "listen": "127.0.0.1",
-      "listen_port": 1080,
-      "sniff": true,
-      "sniff_override_destination": false
+      "listen_port": 1080
     }
   ],
   "outbounds": [
@@ -117,6 +116,9 @@
       "rewrite_ttl": 60
     },
     "rules": [
+      {
+        "action": "sniff"
+      },
       {
         "protocol": "dns",
         "action": "hijack-dns"

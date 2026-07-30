@@ -61,15 +61,12 @@
 !.config/agents/
 !.config/agents/**
 .config/agents/secrets.env
-.config/agents/qwen-service.env
 .config/agents/telegram-service.env
 .config/agents/AGENTS.md
 .config/agents/mcp.json
 .config/agents/skills
 !.config/systemd/
 !.config/systemd/user/
-!.config/systemd/user/qwen-serve.service
-!.config/systemd/user/qwen-channel-telegram.service
 !.config/systemd/user/telegram-mcp.service
 # Bluetooth-аудио: автопереключение на наушники и обход бага WirePlumber
 # с потерей BlueZ-endpoints (docs/bluetooth-audio.md).
@@ -78,9 +75,11 @@
 # Hermes Agent (Telegram gateway). PATH в юните обязателен: без него
 # stdio-MCP из ~/.local/bin не стартуют.
 !.config/systemd/user/hermes-agent.service
+# Обратный SSH-туннель для входа на mujik через loopback-порт nareshka.ru:2223.
+!.config/systemd/user/mujik-ssh-tunnel.service
 !.config/chrome-flags.conf.template
 
-# AI control plane executables and Grok base config
+# AI control plane executables and dormant Grok base config
 !.local/
 !.local/bin/
 !.local/bin/mcp-sync
@@ -89,6 +88,7 @@
 !.local/bin/bt-audio-recover
 !.local/bin/cship-wrap
 !.local/bin/hermes
+!.local/bin/mujik-ssh-tunnel
 !.grok/
 !.grok/config.toml
 
@@ -106,6 +106,12 @@
 # Скрипты установки
 !scripts/
 !scripts/**
+
+# Локальные и CI-проверки репозитория.
+!.github/
+!.github/**
+!.githooks/
+!.githooks/**
 
 # Системные файлы: демоны в /opt, юниты systemd, udev-правила.
 # Лежат здесь, а не качаются со стороны, потому что в апстриме их либо нет,

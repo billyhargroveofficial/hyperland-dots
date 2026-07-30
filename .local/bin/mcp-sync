@@ -17,8 +17,9 @@ HOME = Path.home()
 ROOT = HOME / ".config" / "agents"
 CONFIG = ROOT / "rulesync.jsonc"
 SECRETS = ROOT / "secrets.env"
-QWEN_SERVICE_ENV = ROOT / "qwen-service.env"
+RETIRED_QWEN_SERVICE_ENV = ROOT / "qwen-service.env"
 TELEGRAM_SERVICE_ENV = ROOT / "telegram-service.env"
+CODEX_CONFIG = HOME / ".codex" / "config.toml"
 STATE = HOME / ".local" / "state" / "agents-sync"
 BACKUP_LIMIT = 10
 SERVICE_PATH = ":".join(
@@ -31,15 +32,6 @@ SERVICE_PATH = ":".join(
         "/usr/bin",
     )
 )
-QWEN_SERVICE_DEFAULTS = (
-    ("PATH", SERVICE_PATH),
-)
-QWEN_SERVICE_VARS = (
-    "QWEN_SERVER_TOKEN",
-    "GITHUB_PERSONAL_ACCESS_TOKEN",
-    "KIMI_CODING_API_KEY",
-    "BAILIAN_TOKEN_PLAN_API_KEY",
-)
 TELEGRAM_SERVICE_DEFAULTS = (
     ("PATH", SERVICE_PATH),
     ("MCP_TRANSPORT", "http"),
@@ -51,9 +43,14 @@ TELEGRAM_SERVICE_VARS = (
     "TELEGRAM_API_HASH",
     "TELEGRAM_SESSION_STRING",
 )
+CODEX_YOLO_SETTINGS = (
+    ("approval_policy", '"never"'),
+    ("sandbox_mode", '"danger-full-access"'),
+)
 
 NATIVE_FILES = (
-    QWEN_SERVICE_ENV,
+    # Последний backup перед удалением legacy env выведенных Qwen-демонов.
+    RETIRED_QWEN_SERVICE_ENV,
     TELEGRAM_SERVICE_ENV,
     HOME / ".claude.json",
     HOME / ".claude" / "CLAUDE.md",
@@ -66,8 +63,6 @@ NATIVE_FILES = (
     HOME / ".config" / "opencode" / "opencode.json",
     HOME / ".config" / "opencode" / "opencode.jsonc",
     HOME / ".config" / "opencode" / "AGENTS.md",
-    HOME / ".grok" / "config.toml",
-    HOME / ".grok" / "AGENTS.md",
     HOME / ".agents" / "AGENTS.md",
     HOME / "AGENTS.md",
     HOME / ".kimi" / "AGENTS.md",
@@ -80,9 +75,8 @@ SENSITIVE_FILES = (
     HOME / ".kimi-code" / "mcp.json",
     HOME / ".config" / "opencode" / "opencode.json",
     HOME / ".config" / "opencode" / "opencode.jsonc",
-    HOME / ".grok" / "config.toml",
     SECRETS,
-    QWEN_SERVICE_ENV,
+    RETIRED_QWEN_SERVICE_ENV,
     TELEGRAM_SERVICE_ENV,
 )
 
@@ -173,6 +167,65 @@ def sync_service_env(
     temporary.write_text(expected, encoding="utf-8")
     temporary.chmod(0o600)
     temporary.replace(path)
+    return True
+
+
+def cleanup_retired_qwen_env(dry_run=False, check=False):
+    """Remove the obsolete env left by retired Qwen user daemons."""
+    if not RETIRED_QWEN_SERVICE_ENV.exists():
+        return True
+    if check:
+        print(
+            f"DRIFT: legacy-файл {RETIRED_QWEN_SERVICE_ENV} всё ещё существует.",
+            file=sys.stderr,
+        )
+        return False
+    if dry_run:
+        print(f"[dry] удалить legacy-файл {RETIRED_QWEN_SERVICE_ENV}")
+        return True
+    RETIRED_QWEN_SERVICE_ENV.unlink()
+    return True
+
+
+def sync_codex_yolo(dry_run=False, check=False):
+    """Keep owner-approved Codex YOLO settings across Rulesync generation."""
+    if not CODEX_CONFIG.exists():
+        if check:
+            print(f"DRIFT: не найден {CODEX_CONFIG}.", file=sys.stderr)
+            return False
+        if dry_run:
+            print(f"[dry] создать YOLO-настройки в {CODEX_CONFIG}")
+            return True
+        current = ""
+    else:
+        current = CODEX_CONFIG.read_text(encoding="utf-8")
+
+    expected = current
+    for key, value in CODEX_YOLO_SETTINGS:
+        line = f"{key} = {value}"
+        pattern = rf"(?m)^{re.escape(key)}\s*=.*$"
+        if re.search(pattern, expected):
+            expected = re.sub(pattern, line, expected, count=1)
+        else:
+            expected = f"{line}\n{expected}"
+
+    if expected == current:
+        return True
+    if check:
+        print(
+            f"DRIFT: {CODEX_CONFIG} не содержит постоянный Codex YOLO mode.",
+            file=sys.stderr,
+        )
+        return False
+    if dry_run:
+        print(f"[dry] включить постоянный Codex YOLO mode в {CODEX_CONFIG}")
+        return True
+
+    CODEX_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    temporary = CODEX_CONFIG.with_suffix(".toml.tmp")
+    temporary.write_text(expected, encoding="utf-8")
+    temporary.chmod(0o600)
+    temporary.replace(CODEX_CONFIG)
     return True
 
 
@@ -301,7 +354,6 @@ def warn_missing_secrets(secrets):
             source.read_text(encoding="utf-8"),
         )
     )
-    referenced.update(QWEN_SERVICE_VARS)
     referenced.update(TELEGRAM_SERVICE_VARS)
     missing = sorted(name for name in referenced if not secrets.get(name))
     if missing:
@@ -355,14 +407,7 @@ def main():
         backup_native_files()
     service_env_ok = all(
         (
-            sync_service_env(
-                QWEN_SERVICE_ENV,
-                secrets,
-                QWEN_SERVICE_DEFAULTS,
-                QWEN_SERVICE_VARS,
-                dry_run=args.dry_run,
-                check=args.check,
-            ),
+            cleanup_retired_qwen_env(args.dry_run, args.check),
             sync_service_env(
                 TELEGRAM_SERVICE_ENV,
                 secrets,
@@ -374,11 +419,12 @@ def main():
         )
     )
     run_rulesync(rulesync, args, config)
+    codex_yolo_ok = sync_codex_yolo(args.dry_run, args.check)
     if not args.skip_links:
         ensure_compat_links(args.dry_run or args.check)
     if not args.dry_run and not args.check:
         harden_modes()
-    if args.check and not service_env_ok:
+    if args.check and not all((service_env_ok, codex_yolo_ok)):
         raise SystemExit(1)
     print("Готово.")
 
