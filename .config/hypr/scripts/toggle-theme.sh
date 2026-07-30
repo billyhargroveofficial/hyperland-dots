@@ -16,7 +16,7 @@
 #     * ghostty >= 1.2  — сам читает портал, theme = light:...,dark:...
 #     * Qt6             — QT_QPA_PLATFORMTHEME=xdgdesktopportal
 #
-#   Требуют явного пинка (делаем ниже): hyprland, nvim, VSCode
+#   Требуют явного пинка (делаем ниже): hyprland, nvim, VSCode, Codex CLI
 #
 #   НЕ переключаются вживую вообще: Chromium/Chrome/Brave/Electron.
 #   Они уходят в тёмную тему по сигналу портала, но обратно в светлую
@@ -32,6 +32,87 @@ WAYBAR_DIR="$HOME/.config/waybar"
 SWAYNC_DIR="$HOME/.config/swaync"
 WEZTERM_THEME="$HOME/.config/wezterm/theme.txt"
 GTK3_INI="$HOME/.config/gtk-3.0/settings.ini"
+
+# Codex CLI кэширует foreground/background терминала и перечитывает их при
+# FocusGained. После глобального хоткея Ghostty остаётся в фокусе, поэтому
+# событие само не приходит. Коротко фокусируем другие видимые поверхности
+# Ghostty и возвращаем исходную: уже запущенные TUI получают штатный refresh,
+# а ввод, черновики и выполняющийся turn не затрагиваются.
+refresh_codex_tui_palette() {
+    command -v hyprctl >/dev/null 2>&1 || return 0
+    command -v jq >/dev/null 2>&1 || return 0
+
+    local initial_window active_address active_class current_address
+    local monitors_json clients_json visible_workspaces bounce_address window_address
+    local -a ghostty_windows=()
+    local -a focus_targets=()
+
+    initial_window=$(hyprctl activewindow -j 2>/dev/null) || return 0
+    active_address=$(jq -r '.address // empty' <<<"$initial_window")
+    active_class=$(jq -r '.class // empty' <<<"$initial_window")
+    [ -n "$active_address" ] || return 0
+
+    case "${active_class,,}" in
+        *ghostty*) ;;
+        *) return 0 ;;
+    esac
+
+    # Дать Ghostty получить новое значение color-scheme из портала.
+    sleep 0.30
+
+    # Не перетягивать фокус обратно, если пользователь уже сменил окно.
+    current_address=$(hyprctl activewindow -j 2>/dev/null | jq -r '.address // empty')
+    [ "$current_address" = "$active_address" ] || return 0
+
+    monitors_json=$(hyprctl monitors -j 2>/dev/null) || return 0
+    clients_json=$(hyprctl clients -j 2>/dev/null) || return 0
+    visible_workspaces=$(jq -c \
+        '[.[] | .activeWorkspace.id, .specialWorkspace.id] | map(select(. != 0)) | unique' \
+        <<<"$monitors_json")
+
+    mapfile -t ghostty_windows < <(
+        jq -r --argjson visible "$visible_workspaces" '
+            .[]
+            | select((.workspace.id as $workspace | $visible | index($workspace)) != null)
+            | select(((.class // "") | ascii_downcase | contains("ghostty")))
+            | .address
+        ' <<<"$clients_json"
+    )
+
+    for window_address in "${ghostty_windows[@]}"; do
+        if [ "$window_address" != "$active_address" ]; then
+            focus_targets+=("$window_address")
+        fi
+    done
+
+    # Если Ghostty на видимых workspace один, используем любое другое видимое
+    # окно только как безопасную промежуточную точку фокуса.
+    if [ "${#focus_targets[@]}" -eq 0 ]; then
+        bounce_address=$(jq -r --arg active "$active_address" \
+            --argjson visible "$visible_workspaces" '
+                first(
+                    .[]
+                    | select(.address != $active)
+                    | select((.workspace.id as $workspace | $visible | index($workspace)) != null)
+                    | .address
+                ) // empty
+            ' <<<"$clients_json")
+        [ -n "$bounce_address" ] && focus_targets+=("$bounce_address")
+    fi
+
+    [ "${#focus_targets[@]}" -gt 0 ] || return 0
+
+    for window_address in "${focus_targets[@]}"; do
+        hyprctl eval \
+            "return hl.dispatch(hl.dsp.focus({ window = \"address:$window_address\" }))" \
+            >/dev/null 2>&1
+        sleep 0.04
+    done
+
+    hyprctl eval \
+        "return hl.dispatch(hl.dsp.focus({ window = \"address:$active_address\" }))" \
+        >/dev/null 2>&1
+}
 
 current=$(cat "$STATE_FILE" 2>/dev/null || echo "dark")
 
@@ -122,7 +203,10 @@ fi
 
 echo "$MODE" > "$STATE_FILE"
 
-# --- 8. Предупреждение про Chromium -------------------------------------
+# --- 8. Codex CLI: обновить палитру уже запущенного TUI -----------------
+refresh_codex_tui_palette
+
+# --- 9. Предупреждение про Chromium -------------------------------------
 # Переход dark -> light Chromium-приложения не отрабатывают (баг апстрима).
 # Перезапуск порталов тут НЕ помогает (проверено), помогает только рестарт
 # самого приложения. Поэтому просто предупреждаем.

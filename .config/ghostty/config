@@ -1,5 +1,6 @@
 font-family = "MapleMono NF CN"
-font-size = 16
+font-size = 20
+window-inherit-font-size = false
 window-padding-x = 25
 window-padding-y = 25
 
