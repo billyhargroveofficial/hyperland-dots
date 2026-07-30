@@ -50,6 +50,18 @@ plane. Voice Input сейчас намеренно отключён.
 Он продолжает работу после единичного сбоя сети, собирает все `[WARN]` и
 возвращает ненулевой код, если восстановление получилось неполным.
 
+## Проверка репозитория
+
+```bash
+./scripts/check-repo.sh
+git config core.hooksPath .githooks
+```
+
+Скрипт проверяет Bash/Zsh/Python, JSON/JSONC, TOML, Lua, whitespace и типичные
+литералы секретов. `restore-config.sh` включает тот же pre-commit автоматически.
+Workflow `.github/workflows/validate.yml` повторяет проверку на GitHub, если
+Actions разрешены в настройках репозитория.
+
 ## Прежде чем что-то править
 
 В [`docs/`](docs/) собраны грабли, на которые уже наступали — с причинами, а не
