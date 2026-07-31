@@ -1,7 +1,0 @@
-#!/bin/sh
-# --extra mcp: MCP SDK — опциональный extra в pyproject; без него Hermes молча
-# отключает всю MCP-подсистему (_MCP_AVAILABLE=False, ноль тулов).
-# --extra cli: simple-term-menu для интерактивных пикеров (/mcp и прочие).
-exec "$HOME/.local/bin/uv" run --project "$HOME/.local/share/hermes-agent" \
-    --extra mcp --extra cli --inexact \
-    python -m hermes_cli.main "$@"

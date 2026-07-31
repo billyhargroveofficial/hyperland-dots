@@ -34,9 +34,7 @@
   "workbench.activityBar.location": "top",
   "git.confirmSync": false,
   "security.workspace.trust.untrustedFiles": "open",
-  "claudeCode.preferredLocation": "sidebar",
   "git.enableSmartCommit": true,
-  "claudeCode.selectedModel": "opus",
   "explorer.confirmPasteNative": false,
   "explorer.compactFolders": false,
   "custom-ui-style.stylesheet": {

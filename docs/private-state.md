@@ -6,15 +6,13 @@
 
 ## Что бэкапить отдельно
 
-- `~/.config/agents/secrets.env` — токены MCP и Telegram API credentials;
+- `~/.config/agents/` — локальные targets, MCP, секреты и target-specific настройки;
 - `~/.ssh/` — приватные ключи, `known_hosts` и параметры хостов;
-- `~/.hermes/` — профиль, сессии и приватный runtime Hermes;
 - `~/.agents/memory/` — общая долговременная память AI-харнессов;
 - `~/.config/sing-box/config.json` — рабочая конфигурация VPN;
 - `~/wallpapers/` — коллекция обоев и файл, на который ссылается
   `~/.cache/current_wallpaper`;
-- vendor OAuth/session caches Claude, Codex, Kimi, OpenCode, Pi и Qwen;
-- Telegram session string и локальные сессии клиентов.
+- OAuth/session caches и локальные сессии установленных клиентов.
 
 Хранить это следует в зашифрованном бэкапе вне машины. В Git не добавлять даже
 в приватную ветку этого репозитория: история и форки переживают последующее
@@ -23,12 +21,9 @@
 ## После восстановления
 
 1. Вернуть `~/.ssh/` с правами `0700` на каталог и `0600` на приватные ключи.
-2. Вернуть `~/.config/agents/secrets.env` с правами `0600`.
+2. Вернуть локальный `~/.config/agents/`, выставив `0600` на файлы с секретами.
 3. Выполнить `mcp-sync --dry-run`, `mcp-sync`, затем `mcp-sync --check`.
-4. Вернуть `~/.hermes/` и код Hermes по инструкции
-   [`hermes-agent.md`](hermes-agent.md).
-5. Проверить `telegram-mcp.service`, `hermes-agent.service` и
-   `mujik-ssh-tunnel.service`.
+4. Проверить локально настроенные AI-сервисы и `mujik-ssh-tunnel.service`.
 
 Обратный туннель использует публичный ключ к `root@nareshka.ru` и удалённый
 loopback-порт `2223`. Если порт уже держит старая живая сессия, локальный

@@ -1,433 +1,128 @@
 #!/usr/bin/env python3
-"""Синхронизация user-scope правил, MCP и skills через Rulesync."""
+"""Нейтральная user-scope обёртка над Rulesync."""
 
-import argparse
+from __future__ import annotations
+
 import json
 import os
-import re
-import shlex
 import shutil
 import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 
 
-HOME = Path.home()
-ROOT = HOME / ".config" / "agents"
-CONFIG = ROOT / "rulesync.jsonc"
-SECRETS = ROOT / "secrets.env"
-RETIRED_QWEN_SERVICE_ENV = ROOT / "qwen-service.env"
-TELEGRAM_SERVICE_ENV = ROOT / "telegram-service.env"
-CODEX_CONFIG = HOME / ".codex" / "config.toml"
-STATE = HOME / ".local" / "state" / "agents-sync"
-BACKUP_LIMIT = 10
-SERVICE_PATH = ":".join(
-    (
-        str(HOME / ".local" / "bin"),
-        str(HOME / ".kimi-code" / "bin"),
-        str(HOME / ".opencode" / "bin"),
-        "/usr/local/sbin",
-        "/usr/local/bin",
-        "/usr/bin",
+def strip_jsonc(source: str) -> str:
+    """Remove JSONC comments while preserving comment markers in strings."""
+    result: list[str] = []
+    index = 0
+    in_string = False
+    escaped = False
+
+    while index < len(source):
+        char = source[index]
+        following = source[index + 1] if index + 1 < len(source) else ""
+
+        if in_string:
+            result.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            index += 1
+            continue
+
+        if char == '"':
+            in_string = True
+            result.append(char)
+            index += 1
+        elif char == "/" and following == "/":
+            index += 2
+            while index < len(source) and source[index] not in "\r\n":
+                index += 1
+        elif char == "/" and following == "*":
+            index += 2
+            while index + 1 < len(source) and source[index : index + 2] != "*/":
+                index += 1
+            index += 2
+        elif char in "}]":
+            previous = len(result) - 1
+            while previous >= 0 and result[previous].isspace():
+                previous -= 1
+            if previous >= 0 and result[previous] == ",":
+                result.pop(previous)
+            result.append(char)
+            index += 1
+        else:
+            result.append(char)
+            index += 1
+
+    return "".join(result)
+
+
+def configured_targets(config: Path) -> list[str]:
+    data = json.loads(strip_jsonc(config.read_text(encoding="utf-8")))
+    targets = data.get("targets", {})
+    if not isinstance(targets, dict):
+        raise ValueError('поле "targets" должно быть объектом')
+    return sorted(str(target) for target in targets)
+
+
+def usage() -> None:
+    print(
+        "Использование: mcp-sync [--list-targets] [аргументы rulesync generate]\n"
+        "\n"
+        "Примеры:\n"
+        "  mcp-sync --dry-run\n"
+        "  mcp-sync\n"
+        "  mcp-sync --check\n"
+        "  mcp-sync --list-targets"
     )
-)
-TELEGRAM_SERVICE_DEFAULTS = (
-    ("PATH", SERVICE_PATH),
-    ("MCP_TRANSPORT", "http"),
-    ("MCP_HOST", "127.0.0.1"),
-    ("MCP_PORT", "8765"),
-)
-TELEGRAM_SERVICE_VARS = (
-    "TELEGRAM_API_ID",
-    "TELEGRAM_API_HASH",
-    "TELEGRAM_SESSION_STRING",
-)
-CODEX_YOLO_SETTINGS = (
-    ("approval_policy", '"never"'),
-    ("sandbox_mode", '"danger-full-access"'),
-)
-
-NATIVE_FILES = (
-    # Последний backup перед удалением legacy env выведенных Qwen-демонов.
-    RETIRED_QWEN_SERVICE_ENV,
-    TELEGRAM_SERVICE_ENV,
-    HOME / ".claude.json",
-    HOME / ".claude" / "CLAUDE.md",
-    HOME / ".codex" / "config.toml",
-    HOME / ".codex" / "AGENTS.md",
-    HOME / ".qwen" / "settings.json",
-    HOME / ".qwen" / "QWEN.md",
-    HOME / ".kimi-code" / "mcp.json",
-    HOME / ".kimi-code" / "AGENTS.md",
-    HOME / ".config" / "opencode" / "opencode.json",
-    HOME / ".config" / "opencode" / "opencode.jsonc",
-    HOME / ".config" / "opencode" / "AGENTS.md",
-    HOME / ".agents" / "AGENTS.md",
-    HOME / "AGENTS.md",
-    HOME / ".kimi" / "AGENTS.md",
-)
-
-SENSITIVE_FILES = (
-    HOME / ".claude.json",
-    HOME / ".codex" / "config.toml",
-    HOME / ".qwen" / "settings.json",
-    HOME / ".kimi-code" / "mcp.json",
-    HOME / ".config" / "opencode" / "opencode.json",
-    HOME / ".config" / "opencode" / "opencode.jsonc",
-    SECRETS,
-    RETIRED_QWEN_SERVICE_ENV,
-    TELEGRAM_SERVICE_ENV,
-)
-
-COMPAT_LINKS = (
-    (ROOT / "AGENTS.md", ROOT / ".rulesync" / "rules" / "overview.md"),
-    (ROOT / "mcp.json", ROOT / ".rulesync" / "mcp.jsonc"),
-    (ROOT / "skills", ROOT / ".rulesync" / "skills"),
-    (HOME / ".kimi" / "AGENTS.md", HOME / ".kimi-code" / "AGENTS.md"),
-    # Вендор-нейтральный AGENTS.md. Rulesync умеет target `agentsmd` только в
-    # project scope, поэтому в user scope держим ссылку на сгенерированный файл.
-    (HOME / ".agents" / "AGENTS.md", HOME / ".codex" / "AGENTS.md"),
-)
 
 
-def load_json(path):
-    with path.open(encoding="utf-8") as file:
-        return json.load(file)
+def main() -> int:
+    root = Path(
+        os.environ.get("AGENTS_HOME", str(Path.home() / ".config" / "agents"))
+    ).expanduser()
+    config = root / "rulesync.jsonc"
 
-
-def load_secrets():
-    result = {}
-    if not SECRETS.exists():
-        return result
-    for raw_line in SECRETS.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("export "):
-            line = line[7:].lstrip()
-        if "=" not in line:
-            continue
-        key, raw_value = line.split("=", 1)
-        key = key.strip()
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
-            continue
+    if sys.argv[1:] == ["--help"]:
+        usage()
+        return 0
+    if sys.argv[1:] == ["--list-targets"]:
         try:
-            values = shlex.split(raw_value, comments=True, posix=True)
-        except ValueError:
-            values = [raw_value.strip().strip("\"'")]
-        result[key] = " ".join(values)
-    return result
-
-
-def quote_systemd_env(value):
-    if "\n" in value or "\r" in value:
-        raise ValueError("systemd EnvironmentFile не поддерживает многострочные секреты")
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
-
-
-def render_service_env(secrets, defaults, variable_names):
-    lines = [
-        "# Generated by mcp-sync; edit ~/.config/agents/secrets.env instead.",
-    ]
-    for name, value in defaults:
-        lines.append(f"{name}={quote_systemd_env(value)}")
-    for name in variable_names:
-        value = secrets.get(name)
-        if value:
-            lines.append(f"{name}={quote_systemd_env(value)}")
-    return "\n".join(lines) + "\n"
-
-
-def sync_service_env(
-    path,
-    secrets,
-    defaults,
-    variable_names,
-    dry_run=False,
-    check=False,
-):
-    expected = render_service_env(secrets, defaults, variable_names)
-    current = path.read_text(encoding="utf-8") if path.exists() else None
-    if current == expected:
-        return True
-    if check:
-        print(
-            f"DRIFT: {path} не соответствует {SECRETS}.",
-            file=sys.stderr,
-        )
-        return False
-    if dry_run:
-        print(f"[dry] обновить {path}")
-        return True
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(".env.tmp")
-    temporary.write_text(expected, encoding="utf-8")
-    temporary.chmod(0o600)
-    temporary.replace(path)
-    return True
-
-
-def cleanup_retired_qwen_env(dry_run=False, check=False):
-    """Remove the obsolete env left by retired Qwen user daemons."""
-    if not RETIRED_QWEN_SERVICE_ENV.exists():
-        return True
-    if check:
-        print(
-            f"DRIFT: legacy-файл {RETIRED_QWEN_SERVICE_ENV} всё ещё существует.",
-            file=sys.stderr,
-        )
-        return False
-    if dry_run:
-        print(f"[dry] удалить legacy-файл {RETIRED_QWEN_SERVICE_ENV}")
-        return True
-    RETIRED_QWEN_SERVICE_ENV.unlink()
-    return True
-
-
-def sync_codex_yolo(dry_run=False, check=False):
-    """Keep owner-approved Codex YOLO settings across Rulesync generation."""
-    if not CODEX_CONFIG.exists():
-        if check:
-            print(f"DRIFT: не найден {CODEX_CONFIG}.", file=sys.stderr)
-            return False
-        if dry_run:
-            print(f"[dry] создать YOLO-настройки в {CODEX_CONFIG}")
-            return True
-        current = ""
-    else:
-        current = CODEX_CONFIG.read_text(encoding="utf-8")
-
-    expected = current
-    for key, value in CODEX_YOLO_SETTINGS:
-        line = f"{key} = {value}"
-        pattern = rf"(?m)^{re.escape(key)}\s*=.*$"
-        if re.search(pattern, expected):
-            expected = re.sub(pattern, line, expected, count=1)
+            targets = configured_targets(config)
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            print(f"mcp-sync: не удалось прочитать {config}: {error}", file=sys.stderr)
+            return 1
+        if targets:
+            print("\n".join(targets))
         else:
-            expected = f"{line}\n{expected}"
+            print("(targets не заданы)")
+        return 0
 
-    if expected == current:
-        return True
-    if check:
-        print(
-            f"DRIFT: {CODEX_CONFIG} не содержит постоянный Codex YOLO mode.",
-            file=sys.stderr,
-        )
-        return False
-    if dry_run:
-        print(f"[dry] включить постоянный Codex YOLO mode в {CODEX_CONFIG}")
-        return True
+    if not config.is_file():
+        print(f"mcp-sync: не найден {config}", file=sys.stderr)
+        return 1
 
-    CODEX_CONFIG.parent.mkdir(parents=True, exist_ok=True)
-    temporary = CODEX_CONFIG.with_suffix(".toml.tmp")
-    temporary.write_text(expected, encoding="utf-8")
-    temporary.chmod(0o600)
-    temporary.replace(CODEX_CONFIG)
-    return True
+    executable = os.environ.get("RULESYNC_BIN") or shutil.which("rulesync")
+    if not executable:
+        print("mcp-sync: rulesync не найден в PATH", file=sys.stderr)
+        return 127
 
-
-def configured_targets(config):
-    targets = config.get("targets", {})
-    if isinstance(targets, list):
-        features = config.get("features", [])
-        return {target: features for target in targets}
-    return targets
-
-
-def backup_native_files():
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-    destination = STATE / "backups" / stamp
-    destination.mkdir(parents=True, mode=0o700)
-    copied = 0
-    for source in NATIVE_FILES:
-        if not source.exists() and not source.is_symlink():
-            continue
-        relative = source.relative_to(HOME)
-        target = destination / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if source.is_symlink():
-            target.symlink_to(os.readlink(source))
-        elif source.is_file():
-            shutil.copy2(source, target)
-            target.chmod(0o600)
-        copied += 1
-
-    latest = STATE / "latest-backup"
-    latest.parent.mkdir(parents=True, exist_ok=True)
-    latest.write_text(f"{destination}\n", encoding="utf-8")
-    latest.chmod(0o600)
-
-    backups = sorted(path for path in destination.parent.iterdir() if path.is_dir())
-    for old_backup in backups[:-BACKUP_LIMIT]:
-        shutil.rmtree(old_backup)
-    print(f"Backup: {destination} ({copied} файлов)")
-
-
-def rulesync_command(rulesync, args, targets=None, feature=None):
     command = [
-        rulesync,
+        executable,
         "generate",
-        "--config",
-        str(CONFIG),
         "--global",
+        "--input-root",
+        str(root),
+        "--config",
+        str(config),
+        *sys.argv[1:],
     ]
-    if targets is not None:
-        command.extend(("--targets", ",".join(targets)))
-    if feature is not None:
-        command.extend(("--features", feature))
-    if args.dry_run:
-        command.append("--dry-run")
-    if args.check:
-        command.append("--check")
-    if args.verbose:
-        command.append("--verbose")
-    return command
-
-
-def run_rulesync(rulesync, args, config):
-    target_features = configured_targets(config)
-    if not args.skip_mcp and not args.skip_links:
-        commands = [rulesync_command(rulesync, args)]
-    else:
-        wanted_features = []
-        if not args.skip_links:
-            wanted_features.extend(("rules", "skills"))
-        if not args.skip_mcp:
-            wanted_features.append("mcp")
-        commands = []
-        for feature in wanted_features:
-            targets = [
-                target
-                for target, features in target_features.items()
-                if feature in features or "*" in features
-            ]
-            if targets:
-                commands.append(rulesync_command(rulesync, args, targets, feature))
-
-    if not commands:
-        print("Нечего генерировать: одновременно заданы --skip-mcp и --skip-links.")
-        return
-
-    for command in commands:
-        subprocess.run(command, cwd=ROOT, check=True, env=os.environ.copy())
-
-
-def ensure_symlink(link, target, dry_run=False):
-    if link.is_symlink() and link.resolve(strict=False) == target.resolve(strict=False):
-        return
-    if dry_run:
-        print(f"[dry] ln -s {target} {link}")
-        return
-    link.parent.mkdir(parents=True, exist_ok=True)
-    if link.is_symlink():
-        link.unlink()
-    elif link.exists():
-        if link.is_dir() and not any(link.iterdir()):
-            link.rmdir()
-        else:
-            print(f"ПРОПУСК ссылки {link}: существует обычный файл или непустой каталог.")
-            return
-    link.symlink_to(target)
-
-
-def ensure_compat_links(dry_run=False):
-    for link, target in COMPAT_LINKS:
-        ensure_symlink(link, target, dry_run)
-
-
-def harden_modes():
-    for path in SENSITIVE_FILES:
-        if path.exists() and path.is_file():
-            path.chmod(0o600)
-
-
-def warn_missing_secrets(secrets):
-    source = ROOT / ".rulesync" / "mcp.jsonc"
-    if not source.exists():
-        return
-    referenced = set(
-        re.findall(
-            r"\$\{([A-Za-z_][A-Za-z0-9_]*)",
-            source.read_text(encoding="utf-8"),
-        )
-    )
-    referenced.update(TELEGRAM_SERVICE_VARS)
-    missing = sorted(name for name in referenced if not secrets.get(name))
-    if missing:
-        rendered = ", ".join(f"${{{name}}}" for name in missing)
-        print(f"ВНИМАНИЕ: в {SECRETS} не заданы {rendered}.", file=sys.stderr)
-
-
-def print_targets(config):
-    for target, features in configured_targets(config).items():
-        print(f"{target}: {', '.join(features)}")
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--check", action="store_true")
-    parser.add_argument("--verbose", action="store_true")
-    parser.add_argument("--skip-mcp", action="store_true")
-    parser.add_argument("--skip-links", action="store_true")
-    parser.add_argument("--list-targets", action="store_true")
-    parser.add_argument("--servers", help=argparse.SUPPRESS)
-    args = parser.parse_args()
-
-    if args.dry_run and args.check:
-        parser.error("--dry-run и --check нельзя использовать одновременно")
-    if args.servers:
-        parser.error(
-            "--servers удалён: используй tool-scoped блоки в "
-            "~/.config/agents/.rulesync/mcp.jsonc"
-        )
-    if not CONFIG.exists():
-        parser.error(f"не найден {CONFIG}")
-
-    config = load_json(CONFIG)
-    if args.list_targets:
-        print_targets(config)
-        return
-
-    rulesync = shutil.which("rulesync")
-    if not rulesync:
-        parser.error(
-            "rulesync не установлен; выполни "
-            "`npm install --global --ignore-scripts rulesync@15.1.0`"
-        )
-
-    secrets = load_secrets()
-    os.environ.update(secrets)
-    warn_missing_secrets(secrets)
-
-    if not args.dry_run and not args.check:
-        backup_native_files()
-    service_env_ok = all(
-        (
-            cleanup_retired_qwen_env(args.dry_run, args.check),
-            sync_service_env(
-                TELEGRAM_SERVICE_ENV,
-                secrets,
-                TELEGRAM_SERVICE_DEFAULTS,
-                TELEGRAM_SERVICE_VARS,
-                dry_run=args.dry_run,
-                check=args.check,
-            ),
-        )
-    )
-    run_rulesync(rulesync, args, config)
-    codex_yolo_ok = sync_codex_yolo(args.dry_run, args.check)
-    if not args.skip_links:
-        ensure_compat_links(args.dry_run or args.check)
-    if not args.dry_run and not args.check:
-        harden_modes()
-    if args.check and not all((service_env_ok, codex_yolo_ok)):
-        raise SystemExit(1)
-    print("Готово.")
+    return subprocess.run(command, check=False).returncode
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -403,8 +403,8 @@ end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 
 -- cliphist прибит к SUPER, а не к mainMod: на mainMod = ALT он занимал Alt+V и
--- съедал его до терминала, а Alt+V нужен CLI-агентам (claude/codex/qwen/opencode/
--- kimi) — ghostty шлёт по нему сырой ^V, по которому агент забирает из буфера
+-- съедал его до терминала, а Alt+V нужен совместимым CLI-агентам: ghostty
+-- шлёт по нему сырой ^V, по которому агент забирает из буфера
 -- картинку. Явный SUPER переживает переключение mainMod по F10.
 hl.bind("SUPER + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))
 

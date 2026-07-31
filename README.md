@@ -21,18 +21,11 @@
 - **NVIDIA GPU fan control** — динамическое управление вентиляторами на Wayland
 - **LazyVim** — nvim с прозрачным gruvbox-material
 - **SwayNC** — уведомления в палитре панели, две темы, переключаются вместе со всем
-- **Statusline Claude Code** — cship: папка, модель, effort, контекст в токенах,
-  5h и недельная квота с таймерами сброса (8 мс на отрисовку против 70 у npx)
-- **AI-агенты во вкладках tmux** — иконка харнесса и состояние
-  (работает / ждёт ввода / готово) прямо в сегменте вкладки, для всех
-  семи: Claude Code, Codex, OpenCode, Qwen, Kimi, Pi и Hermes
-  (см. `harness-hooks/README.md`)
-- **Hermes Agent** — Telegram-гейтвей как systemd user-сервис, модель
-  через Alibaba Token Plan, все MCP из канона
+- **AI-агенты во вкладках tmux** — нейтральный индикатор с локально задаваемыми
+  процессами, иконками и hooks (см. `harness-hooks/README.md`)
 - **Обратный SSH-туннель** — постоянный доступ через `nareshka.ru:2223`,
   без password login и без restart-loop при занятом удалённом порте
-- **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
-  Claude, Codex, Qwen, Kimi, OpenCode и Pi через Rulesync
+- **AI control plane** — пустая стартовая заготовка правил, MCP и skills через Rulesync
 
 ## Быстрая установка
 
@@ -80,26 +73,20 @@ Actions разрешены в настройках репозитория.
 
 ## AI-харнессы
 
-Канонические общие правила, MCP и skills хранятся в
-`.config/agents/.rulesync/`. `mcp-sync` обслуживает шесть харнессов: Claude
-Code, Codex CLI, Qwen Code, Kimi Code, OpenCode и Pi. У Pi правила и skills
-генерирует Rulesync, а MCP даёт `pi-mcp-adapter`.
+`.config/agents/` содержит нейтральную стартовую заготовку Rulesync без списка
+и количества харнессов. Актуальный control plane живёт только локально и не
+обязан совпадать с репозиторием.
 
 Отдельная установка без полного системного restore:
 
 ```bash
 cd ~/hyperland-dots
 ./scripts/install-ai-harnesses.sh
-$EDITOR ~/.config/agents/secrets.env
-mcp-sync
 ```
 
-Секреты никогда не лежат в Git: bootstrap создаёт локальный
-`~/.config/agents/secrets.env` из шаблона и генерирует отдельные env-файлы
-user-systemd. Полная схема описана в `.config/agents/README.md`.
-
-Grok Build выведен из эксплуатации и bootstrap его не устанавливает.
-`.grok/config.toml` хранится только как заготовка на случай явного возврата.
+Bootstrap копирует только отсутствующие файлы: существующие локальные targets,
+харнессы, Rulesync, сервисы и runtime-состояние остаются без изменений. Полная
+схема описана в `.config/agents/README.md`.
 
 ## Драйвер NVIDIA — проприетарный, не open
 
@@ -577,8 +564,8 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 
 ```
 .config/
-├── agents/               # единый source of truth для AI rules/MCP/skills
-├── systemd/user/         # AI-демоны, bt-audio, обратный SSH-туннель
+├── agents/               # нейтральная заготовка AI rules/MCP/skills
+├── systemd/user/         # bt-audio и обратный SSH-туннель
 ├── hypr/                 # Hyprland + скрипты (theme toggle, вентиляторы, обои)
 ├── waybar/               # Панель (Gruvbox dark/light CSS, звук + яркость)
 ├── ghostty/              # Терминал + themes/gruvbox-mine-{dark,light}
@@ -589,7 +576,6 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 ├── niri/                 # Niri compositor
 ├── kitty/                # Терминал
 ├── alacritty/            # Терминал
-├── cship.toml            # Statusline Claude Code (см. CLAUDE.md)
 ├── gtk-3.0/              # GTK темы
 └── gtk-4.0/              # GTK темы
 

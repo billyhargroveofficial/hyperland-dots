@@ -734,79 +734,12 @@ install_ohmyzsh() {
 }
 
 # ==========================================
-# 7.4. cship — statusline для Claude Code
-# ==========================================
-install_cship() {
-    log_info "Установка cship (statusline для Claude Code)..."
-
-    # Официальный установщик с cship.dev не годится на Arch: на шаге 4 он делает
-    # `sudo apt-get install libsecret-tools`, а на шаге 5 тянет Starship ещё одним
-    # `curl | sh`. Берём бинарь из релизов сами — он статический (musl), рантайма
-    # не требует.
-    #
-    # Почему не ccstatusline (12k звёзд против 406): он запускается как
-    # `npx -y ccstatusline@latest`, это ~70 мс на КАЖДУЮ отрисовку строки.
-    # У cship — 1 мс, с обёрткой cship-wrap — 8 мс.
-    local url="https://github.com/stephenleo/cship/releases/latest/download/cship-x86_64-unknown-linux-musl"
-    mkdir -p "$HOME/.local/bin"
-    if curl -fsSL "$url" -o "$HOME/.local/bin/cship.new"; then
-        chmod +x "$HOME/.local/bin/cship.new"
-        mv -f "$HOME/.local/bin/cship.new" "$HOME/.local/bin/cship"
-        log_info "cship установлен: $("$HOME/.local/bin/cship" --version 2>/dev/null | head -1)"
-    else
-        rm -f "$HOME/.local/bin/cship.new"
-        log_warn "cship не скачался — statusline в Claude Code останется дефолтным"
-        return 0
-    fi
-
-    # Обёртка. Правит stdin-JSON от Claude Code до того, как он попадёт в cship:
-    # basename папки, «Opus 5 1M» вместо «Opus 5 (1M context)», токены в тысячах.
-    # Ничего этого cship не умеет — подробности в шапке самого файла. Ставится
-    # ПОСЛЕ бинаря: без cship она бесполезна.
-    install -Dm755 "$SCRIPT_DIR/.local/bin/cship-wrap" "$HOME/.local/bin/cship-wrap"
-
-    # secret-tool из libsecret. Лимиты cship берёт из stdin-JSON, который отдаёт
-    # сам Claude Code, но когда их там ещё нет (первые секунды сессии) — ходит
-    # за ними в API, и вот там нужен доступ к кредам.
-    sudo pacman -S --needed --noconfirm libsecret >/dev/null 2>&1 \
-        || log_warn "libsecret не поставился — фоллбэк за лимитами через API не заработает"
-
-    # statusLine дописывается в ~/.claude/settings.json МЕРЖЕМ, а не заменой файла.
-    # Самого settings.json в репозитории нет намеренно: Claude Code переписывает
-    # его на каждый /model и /config, и в репе он давал бы вечный грязный diff.
-    local settings="$HOME/.claude/settings.json"
-    mkdir -p "$HOME/.claude"
-    [[ -f "$settings" ]] || echo '{}' > "$settings"
-    python3 - "$settings" <<'PYEOF' || log_warn "не удалось прописать statusLine — добавь вручную"
-import json, os, sys
-path = sys.argv[1]
-try:
-    with open(path) as f:
-        data = json.load(f)
-except (ValueError, OSError) as e:
-    print('settings.json нечитаем (%s) — statusLine не прописан' % e)
-    sys.exit(1)
-data['statusLine'] = {
-    'type': 'command',
-    # cship-wrap, а не cship: обёртка препроцессит JSON и сама зовёт бинарь.
-    'command': os.path.expanduser('~/.local/bin/cship-wrap'),
-}
-with open(path, 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
-print('statusLine прописан в ' + path)
-PYEOF
-
-    log_info "cship настроен (конфиг: ~/.config/cship.toml)"
-}
-
-# ==========================================
-# 7.4. Общий control plane AI-харнессов
+# 7.4. Нейтральная заготовка AI control plane
 # ==========================================
 install_ai_harnesses() {
-    log_info "Установка общей системы AI-харнессов..."
+    log_info "Инициализация шаблона AI control plane..."
     bash "$SCRIPT_DIR/scripts/install-ai-harnesses.sh" \
-        || log_warn "AI control plane установлен не полностью"
+        || log_warn "Шаблон AI control plane инициализирован не полностью"
 }
 
 # ==========================================
@@ -967,12 +900,6 @@ copy_configs() {
         # Каталог целиком: rm -rf выше снёс бы rename-random.sh и
         # agent-win.sh, если положить только часть файлов.
         ".config/tmux"
-        # Только models.json: рядом лежат auth.json и сессии Pi, а выше
-        # по циклу идёт rm -rf — каталогом сюда нельзя.
-        ".pi/agent/models.json"
-        ".pi/agent/settings.json"
-        ".config/cship.toml"
-        ".config/cship.toml.compact-variant"
         ".config/swaykbdd"
         ".config/neofetch"
         ".config/scripts"
@@ -1074,7 +1001,6 @@ main() {
     # здесь и бинды F11 в .config/hypr/hyprland.lua.
     copy_configs
     install_ai_harnesses
-    install_cship         # после copy_configs: ему нужен уже лежащий ~/.config/cship.toml
     setup_singbox
     make_scripts_executable
     install_lazyvim
@@ -1134,7 +1060,7 @@ main() {
     echo "  3. ПЕРЕЗАГРУЗИСЬ — greeter SDDM, GPU fan control, zsh, кривая nct6798"
     echo "  4. Запусти nvim для установки LazyVim плагинов"
     echo "  5. sing-box VPN toggle: Alt+P (сервер настроить в ~/.config/sing-box/config.json)"
-    echo "  6. Заполни ~/.config/agents/secrets.env и выполни mcp-sync"
+    echo "  6. При необходимости настрой локальный ~/.config/agents/"
     echo ""
     echo "Проверки после ребута:"
     echo "  nvidia-smi -q | grep 'GSP Firmware'                 # должно быть N/A"

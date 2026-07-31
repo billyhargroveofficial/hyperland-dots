@@ -10,7 +10,7 @@
 #     задаёт цвета инлайн внутри window-status-format, а инлайн перебивает
 #     style — штатная подсветка вкладок с ней не видна.
 # Источник данных общий с плагином: глобальный tmux environment, куда
-# scripts/agent-state.sh пишет состояние из хуков агентов.
+# локальные hooks пишут состояние агентов.
 
 set -uo pipefail
 
@@ -58,9 +58,9 @@ while IFS=' ' read -r pane tty; do
     agent=$(get_env "TMUX_AGENT_PANE_${pane}_AGENT")
 
     if [ -z "$state" ] || [ "$state" = "off" ]; then
-        # Хуков нет (qwen/kimi/hermes) или агент их ещё не слал — ищем процесс
-        # среди всех процессов на tty пана. Именно командная строка, а не имя
-        # процесса: qwen и codex — node-обёртки, hermes идёт через `uv run`.
+        # Если hook ещё не прислал состояние — ищем настроенный локально
+        # процесс среди всех процессов на tty пана. Проверяется полная
+        # командная строка, поэтому работают и команды-обёртки.
         state=""; agent=""
         if [ -n "$tty" ]; then
             cmds=$(ps -t "$(basename "$tty")" -o command= 2>/dev/null || true)
