@@ -9,6 +9,7 @@ hyperland-dots/
 ├── .zshrc                    # Zsh конфиг (Oh My Zsh + Powerlevel10k + алиасы)
 ├── .p10k.zsh                 # Powerlevel10k конфиг
 ├── restore-config.sh         # Скрипт полной установки системы
+├── PROMPT-INSTALL.md         # Preflight/postflight установки через LLM
 ├── AGENTS.md                 # Вход в проектные инструкции AI-харнессов
 ├── README.md                 # Документация
 ├── CLAUDE.md                 # Этот файл
@@ -101,6 +102,7 @@ hyperland-dots/
 | `.local/bin/bt-audio-autoswitch` | Звук на BT-наушники при подключении (`docs/bluetooth-audio.md`) |
 | `.local/bin/bt-audio-recover` | Обход бага WirePlumber с потерей BlueZ-endpoints |
 | `restore-config.sh` | Скрипт установки |
+| `PROMPT-INSTALL.md` | Gates зависимостей, шрифтов, железа и postflight для LLM |
 
 ## AI-харнессы
 
