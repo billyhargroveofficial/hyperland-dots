@@ -10,9 +10,9 @@ source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 # Basic exports
 export PATH="$HOME/.local/bin:$PATH"
+# OpenCode намеренно доступен через ~/.local/bin/opencode; не фильтровать.
 # Удаляем устаревшие каталоги выведенных AI-харнессов из унаследованного PATH.
 path=(${path:#$HOME/.grok/bin})
-path=(${path:#$HOME/.opencode/bin})
 path=(${path:#$HOME/.kimi-code/bin})
 export EDITOR='nvim'
 export VISUAL='nvim'

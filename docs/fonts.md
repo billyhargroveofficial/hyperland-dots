@@ -20,7 +20,7 @@ fc-match 'Suisse Intl'
 - `.config/gtk-3.0/settings.ini` — `gtk-font-name=...`;
 - `.config/gtk-4.0/settings.ini` — `gtk-font-name=...`;
 - `.config/fontconfig/conf.d/60-interface-fonts.conf` — семейства
-  `sans-serif` и `system-ui`;
+  `sans-serif` и `system-ui`, а также alias `SF Pro` → `SF Pro Display`;
 - `restore-config.sh` — три значения `gsettings` для обычного, документного и
   titlebar-шрифта.
 

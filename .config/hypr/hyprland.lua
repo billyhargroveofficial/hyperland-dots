@@ -478,12 +478,6 @@ hl.bind(
 	{ repeating = true }
 )
 
--- Голосовой ввод удалён по просьбе пользователя. Он висел на голом F11 и
--- глобально съедал фуллскрин в браузерах и видеоплеерах. Скрипт voice-input.sh
--- и его venv остались на диске — вернуть можно так:
--- hl.bind("F11", hl.dsp.exec_cmd("~/.config/hypr/scripts/voice-input.sh start"))
--- hl.bind("F11", hl.dsp.exec_cmd("~/.config/hypr/scripts/voice-input.sh stop"), { release = true })
-
 -- Обои
 hl.bind("CTRL + ALT + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/wall-next.sh"))
 hl.bind("CTRL + SHIFT + ALT + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/wall-select.sh"))

@@ -5,7 +5,7 @@
 
 # Намеренно НЕ set -e: скрипт качает из десятка внешних источников (GitHub, PyPI,
 # AUR, зеркала шрифтов). При set -e один обрыв сети на шрифтах убивал весь остаток
-# прогона — GPU-вентиляторы, oh-my-zsh, voice input, копирование конфигов. Каждая
+# прогона — GPU-вентиляторы, oh-my-zsh, копирование конфигов. Каждая
 # функция логирует свой результат сама, после прогона искать по логу [WARN].
 set +e
 
@@ -166,7 +166,6 @@ install_pacman_packages() {
         libplacebo
         vulkan-headers
         xdotool
-        wtype
         zellij
         imagemagick
         nwg-dock-hyprland
@@ -791,27 +790,6 @@ NVIMEOF
 }
 
 # ==========================================
-# 8.5. Voice input (faster-whisper venv)
-# ==========================================
-setup_voice_input() {
-    log_info "Настройка voice input (faster-whisper)..."
-
-    local venv_dir="$HOME/.local/share/voice-input/venv"
-
-    if [[ ! -d "$venv_dir" ]]; then
-        mkdir -p "$(dirname "$venv_dir")"
-        python -m venv "$venv_dir"
-        "$venv_dir/bin/pip" install --upgrade pip
-        "$venv_dir/bin/pip" install faster-whisper nvidia-cublas-cu12 nvidia-cudnn-cu12
-        # Pre-download model
-        "$venv_dir/bin/python" -c "from faster_whisper import WhisperModel; WhisperModel('large-v3-turbo', device='cpu', compute_type='int8')" 2>/dev/null
-        log_info "Voice input venv создан: $venv_dir"
-    else
-        log_info "Voice input venv уже существует"
-    fi
-}
-
-# ==========================================
 # 8.6. Проприетарный драйвер NVIDIA (из AUR) + выключение GSP
 # ==========================================
 # Открытые модули (nvidia-open) построены на GSP, а GSP — причина рваных анимаций и
@@ -1013,10 +991,6 @@ main() {
     setup_remote_ssh
     install_bt_audio      # после enable_system_services: ему нужны поднятые pipewire и bluetooth
     install_ohmyzsh
-    # setup_voice_input — отключено. Голосовой ввод висел на голом F11 и
-    # глобально съедал фуллскрин в браузерах и видеоплеерах. Venv на 2.7 ГБ
-    # с CUDA-библиотеками ставился при каждом прогоне. Вернуть: раскомментировать
-    # здесь и бинды F11 в .config/hypr/hyprland.lua.
     copy_configs
     setup_singbox
     make_scripts_executable

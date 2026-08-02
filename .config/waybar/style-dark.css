@@ -25,7 +25,7 @@ window#waybar {
 
 #workspaces-island,
 #accent {
-  background-color: rgba(0, 0, 0, 0.95);
+  background-color: rgba(0, 0, 0, 0.72);
   border-radius: 25px;
   padding: 0 10px;
   border: none;
@@ -47,14 +47,14 @@ window#waybar {
 
 /* Правый блок */
 .modules-right {
-  background-color: rgba(0, 0, 0, 0.95);
+  background-color: rgba(0, 0, 0, 0.72);
   border-radius: 25px;
   padding: 0 20px 0 15px;
   border: none;
 }
 
 .modules-center {
-  background-color: rgba(0, 0, 0, 0.95);
+  background-color: rgba(0, 0, 0, 0.72);
   border-radius: 25px;
   padding: 0 8px;
   border: none;

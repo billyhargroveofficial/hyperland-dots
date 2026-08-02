@@ -1,6 +1,6 @@
 foreground = fbf1c7
 background = 000000
-background-opacity = 0.9
+background-opacity = 0.7
 selection-foreground = 282828
 selection-background = d5c4a1
 cursor-color = d65d0e

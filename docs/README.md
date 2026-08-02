@@ -10,11 +10,13 @@
 | Файл | О чём |
 |---|---|
 | [waybar.md](waybar.md) | Панель: островки, телеметрия, монохромные иконки приложений, акценты и особенности GTK3 |
+| [video-wallpaper.md](video-wallpaper.md) | Ручные видеообои: play/pause, установка рендерера и сохранение позиции |
 | [screen-recording.md](screen-recording.md) | `wf-recorder` + NVENC: несуществующие флаги, обязательные флаги, минимальный размер кадра |
 | [notifications.md](notifications.md) | `swaync`: почему не следует за системной темой сам |
-| [fonts.md](fonts.md) | где менять системный, Waybar/Rofi/SwayNC, Ghostty и отдельный шрифт Chrome |
+| [fonts.md](fonts.md) | где менять единый системный шрифт, Waybar/Rofi/SwayNC и Ghostty |
 | [hyprland.md](hyprland.md) | Alt+Tab без оверлея; чем болел hyprshell |
 | [bluetooth-audio.md](bluetooth-audio.md) | Наушники: WirePlumber теряет BlueZ-endpoints, автопереключение на BT-вывод |
+| [private-state.md](private-state.md) | Секреты и runtime, которые намеренно не попадают в Git |
 
 Разделы про темы, монитор, звук, кириллицу и прочее исторически лежат в
 [../README.md](../README.md) и [../CLAUDE.md](../CLAUDE.md) — они там и остаются.

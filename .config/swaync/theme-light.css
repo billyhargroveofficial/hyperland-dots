@@ -1,7 +1,0 @@
-@define-color swaync_accent @swaync_accent_light;
-@define-color swaync_accent_dim alpha(@swaync_accent_light, 0.78);
-@define-color swaync_accent_muted alpha(@swaync_accent_light, 0.60);
-@define-color swaync_accent_faint alpha(@swaync_accent_light, 0.08);
-@define-color swaync_accent_soft alpha(@swaync_accent_light, 0.14);
-@define-color swaync_surface rgba(255, 255, 255, 0.95);
-@define-color swaync_on_accent #FFFFFF;

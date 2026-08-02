@@ -9,7 +9,7 @@ hyperland-dots/
 ├── .zshrc                    # Zsh конфиг (Oh My Zsh + Powerlevel10k + алиасы)
 ├── .p10k.zsh                 # Powerlevel10k конфиг
 ├── restore-config.sh         # Скрипт полной установки системы
-├── AGENTS.md                 # Вендор-нейтральный вход в проектные инструкции
+├── AGENTS.md                 # Вход в проектные инструкции AI-харнессов
 ├── README.md                 # Документация
 ├── CLAUDE.md                 # Этот файл
 ├── docs/                     # Грабли и замечания — читать ПЕРЕД правкой
@@ -28,8 +28,6 @@ hyperland-dots/
     │   ├── hyprland.lua      # Основной конфиг (Lua, с 0.55; см. docs/hyprland.md)
     │   └── scripts/          # Скрипты автоматизации
     │       ├── toggle-theme.sh       # Dark/Light theme toggle (Ctrl+Y)
-    │       ├── voice-input.sh        # Voice-to-text (Ctrl+Super)
-    │       ├── transcribe.py         # faster-whisper CUDA транскрибация
     │       ├── gpu-fan-control.sh    # NVIDIA fan control
     │       ├── singbox-toggle.sh     # VPN toggle
     │       ├── restart_hyprland.sh   # Restart waybar + awww + Hyprland
@@ -54,7 +52,7 @@ hyperland-dots/
     ├── ghostty/              # Ghostty терминал
     │   ├── config            # Основной конфиг
     │   └── themes/           # Активные gruvbox-mine темы
-    │       ├── gruvbox-mine-dark   # opacity 0.9
+    │       ├── gruvbox-mine-dark   # opacity 0.7
     │       └── gruvbox-mine-light  # opacity 0.7
     │
     ├── Code/User/            # VSCode настройки
@@ -96,8 +94,6 @@ hyperland-dots/
 |------|----------|
 | `.config/hypr/hyprland.lua` | Основной конфиг Hyprland — формат Lua |
 | `.config/hypr/scripts/toggle-theme.sh` | Переключение dark/light (Ctrl+Y) |
-| `.config/hypr/scripts/voice-input.sh` | Voice-to-text (Ctrl+Super) |
-| `.config/hypr/scripts/transcribe.py` | faster-whisper транскрибация |
 | `.config/waybar/config` | Waybar модули и layout |
 | `.config/ghostty/config` | Ghostty терминал конфиг |
 | `.config/Code/User/settings.json` | VSCode настройки |
@@ -106,11 +102,13 @@ hyperland-dots/
 | `.local/bin/bt-audio-recover` | Обход бага WirePlumber с потерей BlueZ-endpoints |
 | `restore-config.sh` | Скрипт установки |
 
-## Codex CLI
+## AI-харнессы
 
-Codex — единственный поддерживаемый AI-харнесс на машине. Его нативные
-настройки, MCP, авторизация и история живут в `~/.codex/`; dotfiles не
-устанавливают и не генерируют их.
+На машине поддерживаются Codex CLI и OpenCode. Нативные настройки, MCP,
+авторизация и история Codex живут в `~/.codex/`; состояние OpenCode — в
+`~/.opencode/`, `~/.config/opencode/` и `~/.local/share/opencode/`. Dotfiles не
+устанавливают и не генерируют их. OpenCode не удалять и не вырезать из `PATH`
+без нового явного запроса владельца.
 
 ## Тема (Gruvbox)
 
@@ -118,7 +116,7 @@ Codex — единственный поддерживаемый AI-харнес�
 
 | Компонент | Dark | Light |
 |-----------|------|-------|
-| Ghostty | Gruvbox Dark (0.9 opacity) | Gruvbox Light (0.7 opacity) |
+| Ghostty | Gruvbox Dark (0.7 opacity) | Gruvbox Light (0.7 opacity) |
 | Waybar | чёрные островки + выбранный акцент | белые островки + выбранный акцент |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Hyprland border | White (#ffffffcc) | White (#ffffffcc) |
@@ -168,25 +166,6 @@ Codex — единственный поддерживаемый AI-харнес�
 | `kbd-layout-toggle` | Alt+Shift. Штатный `grp:alt_shift_toggle` тут не работает: **в Hyprland раскладка живёт отдельно у каждого устройства ввода** |
 | `ddcci` | яркость внешнего монитора через `/sys/class/backlight` |
 | `ssh` | key-only sshd и обратный туннель через `nareshka.ru:2223` |
-
-## Voice Input (faster-whisper) — ОТКЛЮЧЁН
-
-**Сейчас выключен**: бинд висел на голом `F11`, то есть глобально съедал фуллскрин
-в браузерах и видеоплеерах. Вернуть — раскомментировать `setup_voice_input` в
-`main()` и бинды в `hyprland.lua`, но перевесить на комбинацию с модификатором.
-
-Speech-to-text через CTRL+Super (toggle: первое нажатие — запись, второе — транскрибация).
-
-- **Модель**: large-v3-turbo на CUDA (float16)
-- **Venv**: `~/.local/share/voice-input/venv`
-- **Индикатор**: красный ● в waybar (запись), жёлтый ● (обработка)
-- **Вставка**: wl-copy + wtype (Ctrl+V в активное поле)
-
-### Известные проблемы и решения
-
-- **libcublas.so.12 not found**: ctranslate2 собран под CUDA 12, а в системе CUDA 13. Решение: `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12` в venv, скрипт transcribe.py загружает их через ctypes перед импортом.
-- **bindr не работает с Super_L**: `bindr = CTRL, Super_L` не срабатывает на отпускание. Решение: toggle-скрипт вместо hold-to-record (одно нажатие старт, второе стоп).
-- **wtype не установлен**: текст попадает в буфер (wl-copy), но не вставляется. Решение: `sudo pacman -S wtype`.
 
 ## Ghostty — важные особенности
 
