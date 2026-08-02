@@ -66,7 +66,9 @@ end
 
 -------------------------------------------------------------------- ПРОГРАММЫ
 
-local terminal = "ghostty"
+-- Ghostty's detected single-instance IPC creates a surface without a shell
+-- when launched from this Lua dispatcher. Force a real process per window.
+local terminal = "ghostty --gtk-single-instance=false"
 local fileManager = "nautilus"
 local menu = "rofi -show drun -show-icons -icon-theme Papirus-Dark -theme ~/.config/rofi/launcher.rasi"
 local browser = "google-chrome-stable --enable-features=UseOzonePlatform --ozone-platform=wayland --gtk-version=4"
@@ -102,7 +104,7 @@ end)
 ------------------------------------------------------------------- АВТОЗАПУСК
 
 hl.on("hyprland.start", function()
-	hl.exec_cmd("pgrep -x waybar >/dev/null || { test ! -x \"$HOME/.local/bin/waybar\" || exec \"$HOME/.local/bin/waybar\"; exec waybar; }")
+	hl.exec_cmd("pgrep -x waybar >/dev/null || { \"$HOME/.config/waybar/scripts/accent.sh\" refresh; test ! -x \"$HOME/.local/bin/waybar\" || exec \"$HOME/.local/bin/waybar\"; exec waybar; }")
 	-- awww-daemon НЕ уходит в фон (ключа --daemonize у него нет), поэтому
 	-- `awww-daemon && awww img ...` никогда не доходило до второй команды: &&
 	-- ждёт завершения демона. Обои не ставились вообще — `awww query` показывал
@@ -164,18 +166,18 @@ hl.env("QT_QPA_PLATFORMTHEME", "xdgdesktopportal")
 
 hl.config({
 	general = {
-		gaps_in = 5,
-		-- В hyprlang это было `gaps_out = 5, 10, 10, 10` — порядок как в CSS:
-		-- сверху, справа, снизу, слева. Lua требует либо число, либо таблицу
+		gaps_in = 20,
+		-- Увеличенные в 4 раза внешние отступы; порядок как в CSS: сверху,
+		-- справа, снизу, слева. Lua требует либо число, либо таблицу
 		-- с именованными полями; строка со списком не принимается.
-		gaps_out = { top = 5, right = 10, bottom = 10, left = 10 },
+		gaps_out = { top = 20, right = 40, bottom = 40, left = 40 },
 
 		col = {
 			active_border = "rgba(cba6f7ff)",
 			inactive_border = "rgba(28282800)",
 		},
 
-		border_size = 1,
+		border_size = 0,
 		resize_on_border = true,
 		allow_tearing = false,
 
@@ -589,6 +591,30 @@ hl.window_rule({
 	name = "vscode-opacity",
 	match = { class = "code" },
 	opacity = "0.85 override 0.85 override",
+})
+
+-- Flov рисует pill внутри прозрачной поверхности 800x200. Глобальные blur,
+-- opacity, rounding и border иначе проявляют прямоугольник всей поверхности.
+hl.window_rule({
+	name = "flov-pill",
+	match = {
+		class = "^flov_app$",
+		title = "^flov$",
+	},
+	float = true,
+	pin = true,
+	no_focus = true,
+	no_initial_focus = true,
+	render_unfocused = true,
+	no_anim = true,
+	no_blur = true,
+	no_shadow = true,
+	decorate = false,
+	border_size = 0,
+	rounding = 0,
+	opacity = "1 override 1 override",
+	size = "800 200",
+	move = "monitor_w/2-400 monitor_h-224",
 })
 
 ----------------------------------------------------------- ПРАВИЛА СЛОЁВ ----

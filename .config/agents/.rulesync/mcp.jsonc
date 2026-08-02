@@ -1,7 +1,0 @@
-{
-  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
-  "mcpServers": {
-    // Add shared MCP servers to the local copy of this object.
-    // Target-specific blocks may be added next to mcpServers when required.
-  }
-}

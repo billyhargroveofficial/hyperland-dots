@@ -9,11 +9,10 @@
 
 | Файл | О чём |
 |---|---|
-| [waybar.md](waybar.md) | Панель: свои модули CPU/памяти/диска, отступы у иконок, `interval: once`, CSS-анимации в GTK3, воркспейсы |
+| [waybar.md](waybar.md) | Панель: островки, телеметрия, монохромные иконки приложений, акценты и особенности GTK3 |
 | [screen-recording.md](screen-recording.md) | `wf-recorder` + NVENC: несуществующие флаги, обязательные флаги, минимальный размер кадра |
 | [notifications.md](notifications.md) | `swaync`: почему не следует за системной темой сам |
 | [hyprland.md](hyprland.md) | Alt+Tab без оверлея; чем болел hyprshell |
-| [ai-harnesses.md](ai-harnesses.md) | Нейтральная заготовка Rulesync и границы локального control plane |
 | [bluetooth-audio.md](bluetooth-audio.md) | Наушники: WirePlumber теряет BlueZ-endpoints, автопереключение на BT-вывод |
 
 Разделы про темы, монитор, звук, кириллицу и прочее исторически лежат в

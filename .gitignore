@@ -29,6 +29,8 @@
 !.config/neofetch/**
 !.config/gtk-3.0/**
 !.config/gtk-4.0/**
+!.config/fontconfig/
+!.config/fontconfig/**
 !.config/alacritty/**
 # tmux: тема из macdots + скрипты (случайные имена окон, индикатор
 # AI-агентов во вкладках). Каталог целиком — restore-config.sh делает
@@ -54,13 +56,6 @@
 !.config/hyprshell/**
 !.config/wireplumber/
 !.config/wireplumber/**
-!.config/agents/
-!.config/agents/**
-.config/agents/secrets.env
-.config/agents/*.env
-.config/agents/AGENTS.md
-.config/agents/mcp.json
-.config/agents/skills
 !.config/systemd/
 !.config/systemd/user/
 # Bluetooth-аудио: автопереключение на наушники и обход бага WirePlumber
@@ -74,10 +69,10 @@
 # AI control plane executables
 !.local/
 !.local/bin/
-!.local/bin/mcp-sync
 !.local/bin/bt-audio-autoswitch
 !.local/bin/bt-audio-recover
 !.local/bin/mujik-ssh-tunnel
+!.local/bin/waybar-mono-icons
 
 # Скрипты установки
 !scripts/

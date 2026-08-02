@@ -30,7 +30,6 @@ output "DP-1" {
 }
 
 // Autostart
-spawn-at-startup "dms" "run"
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
 spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
@@ -155,13 +154,13 @@ binds {
     Alt+O { spawn "obs"; }
     Alt+Ctrl+T { spawn "missioncenter"; }
 
-    // DMS
-    Alt+Space { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
-    Alt+N { spawn "dms" "ipc" "call" "notifications" "toggle"; }
-    Alt+V { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
-    Alt+X { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
-    Alt+Grave { spawn "dms" "ipc" "call" "overview" "toggle"; }
-    Alt+Ctrl+A { spawn "dms" "ipc" "call" "dankdash" "wallpaper"; }
+    // Rofi / SwayNC / cliphist
+    Alt+Space { spawn-sh "rofi -show drun -show-icons -icon-theme Papirus-Dark -theme ~/.config/rofi/launcher.rasi"; }
+    Alt+N { spawn "swaync-client" "-t"; }
+    Alt+V { spawn-sh "cliphist list | rofi -dmenu | cliphist decode | wl-copy"; }
+    Alt+X { spawn-sh "~/.config/waybar/scripts/leave.sh"; }
+    Alt+Grave { spawn "rofi" "-show" "window"; }
+    Alt+Ctrl+A { spawn-sh "~/.config/hypr/scripts/wall-select.sh"; }
 
     // Alt+Tab теперь overview (см. ниже)
     // Для переключения колонок используй Alt+H/L

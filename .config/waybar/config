@@ -1,30 +1,21 @@
 {
   "layer": "top",
   "position": "top",
-  "margin-top": 5,
-  "margin-bottom": 5,
-  "margin-left": 10,
-  "margin-right": 10,
+  "margin-top": 20,
+  "margin-bottom": 10,
+  "margin-left": 40,
+  "margin-right": 40,
   "modules-left": [
-    "custom/cpu",
-    "custom/cpu-temp",
-    "custom/fan",
-    "custom/sep",
-    "custom/gpu-temp",
-    "custom/gpu-fan",
-    "custom/gpu-vram",
-    "custom/sep2",
-    "custom/memory",
-    "custom/disk",
-    "custom/sep3",
-    "network",
-    "custom/singbox",
-    "tray"
+    "group/workspaces-island",
+    "group/accent"
   ],
   "modules-center": [
-    "hyprland/workspaces"
+    "custom/telemetry"
   ],
   "modules-right": [
+    "tray",
+    "network",
+    "custom/singbox",
     "hyprland/language",
     "bluetooth",
     "pulseaudio",
@@ -34,6 +25,52 @@
     "clock",
     "custom/power"
   ],
+  "group/workspaces-island": {
+    "orientation": "horizontal",
+    "modules": [
+      "hyprland/workspaces"
+    ]
+  },
+  "group/accent": {
+    "orientation": "horizontal",
+    "modules": [
+      "custom/accent-purple",
+      "custom/accent-blue",
+      "custom/accent-teal",
+      "custom/accent-amber",
+      "custom/theme-toggle"
+    ]
+  },
+  "custom/accent-purple": {
+    "exec": "~/.config/waybar/scripts/accent.sh status purple",
+    "return-type": "json",
+    "interval": 5,
+    "on-click": "~/.config/waybar/scripts/accent.sh set purple"
+  },
+  "custom/accent-blue": {
+    "exec": "~/.config/waybar/scripts/accent.sh status blue",
+    "return-type": "json",
+    "interval": 5,
+    "on-click": "~/.config/waybar/scripts/accent.sh set blue"
+  },
+  "custom/accent-teal": {
+    "exec": "~/.config/waybar/scripts/accent.sh status teal",
+    "return-type": "json",
+    "interval": 5,
+    "on-click": "~/.config/waybar/scripts/accent.sh set teal"
+  },
+  "custom/accent-amber": {
+    "exec": "~/.config/waybar/scripts/accent.sh status amber",
+    "return-type": "json",
+    "interval": 5,
+    "on-click": "~/.config/waybar/scripts/accent.sh set amber"
+  },
+  "custom/theme-toggle": {
+    "exec": "~/.config/waybar/scripts/accent.sh theme-status",
+    "return-type": "json",
+    "interval": 2,
+    "on-click": "~/.config/hypr/scripts/toggle-theme.sh"
+  },
   "custom/sep": {
     "format": "|",
     "tooltip": false
@@ -94,6 +131,13 @@
   "clock": {
     "format": "󰃰  {:%d.%m.%Y   %H:%M}",
     "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>"
+  },
+  "custom/telemetry": {
+    "exec": "~/.config/waybar/scripts/telemetry.py",
+    "return-type": "json",
+    "interval": 5,
+    "format": "{}",
+    "tooltip": true
   },
   "custom/cpu-temp": {
     "exec": "sensors k10temp-pci-00c3 | grep 'Tctl:' | awk '{print $2}' | sed 's/+//;s/°C//'",
@@ -159,8 +203,27 @@
     "tooltip": "Power Menu"
   },
   "hyprland/workspaces": {
-    "format": "{name}",
+    "format": "{icon}{windows}",
+    "format-icons": {
+      "active": " ",
+      "visible": " ",
+      "persistent": " ",
+      "empty": " ",
+      "default": " "
+    },
+    "workspace-taskbar": {
+      "enable": true,
+      "update-active-window": true,
+      "format": "{icon}",
+      "icon-size": 16,
+      "icon-theme": [
+        "WaybarMono"
+      ],
+      "on-click-window": "hyprctl eval 'local target = hl.get_window(\"address:{address}\"); if target then return hl.dispatch(hl.dsp.focus({ window = target })) end'"
+    },
     "all-outputs": false,
+    "show-special": false,
+    "sort-by": "number",
     "on-scroll-up": "hyprctl dispatch '(function() hyprWsCycle(1) return hl.dsp.no_op() end)()'",
     "on-scroll-down": "hyprctl dispatch '(function() hyprWsCycle(-1) return hl.dsp.no_op() end)()'"
   },

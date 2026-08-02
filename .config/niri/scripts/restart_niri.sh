@@ -5,11 +5,6 @@
 
 echo "Restarting Niri services..."
 
-# Kill and restart DMS (DankMaterialShell)
-dms kill
-sleep 1
-dms run &
-
 # Restart clipboard manager if running
 if pgrep wl-paste > /dev/null; then
     pkill wl-paste

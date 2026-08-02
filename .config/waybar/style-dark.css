@@ -1,7 +1,9 @@
+@import url("accent.css");
+
 * {
   border: none;
   border-radius: 0;
-  font-family: "Cantarell", "JetBrainsMono Nerd Font", sans-serif;
+  font-family: "Inter Variable", "JetBrainsMono Nerd Font", sans-serif;
   font-size: 13px;
   min-height: 0;
   font-weight: 600;
@@ -9,15 +11,28 @@
 
 window#waybar {
   background: rgba(0, 0, 0, 0);
-  color: #C9808A;
+  color: @waybar_accent_dark;
 }
 
 /* Левый блок */
 .modules-left {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  border: none;
+}
+
+#workspaces-island,
+#accent {
   background-color: rgba(0, 0, 0, 0.95);
   border-radius: 25px;
-  padding: 0 15px;
+  padding: 0 10px;
   border: none;
+}
+
+#accent {
+  margin-left: 10px;
+  padding: 0 12px;
 }
 
 /* Разделители между секциями */
@@ -46,6 +61,7 @@ window#waybar {
 
 /* Reset all modules */
 #workspaces,
+#custom-telemetry,
 #clock,
 #pulseaudio,
 #custom-mic-volume,
@@ -77,26 +93,29 @@ window#waybar {
   border-radius: 6px;
 }
 
-/* Воркспейсы. Заливка есть у всех кнопок постоянно, просто приглушённая.
-   Активная становится яркой и шире, поэтому выделение плавно переезжает. */
+/* Анонимные воркспейсы: без цифр, внутри — иконки запущенных окон. */
 #workspaces button {
-  padding: 0 8px;
+  padding: 0 7px;
   margin: 4px 3px;
   border-radius: 15px;
   border: none;
-  color: #1A1012;
-  background: #C9808A;
-  opacity: 0.4;
+  box-shadow: none;
+  color: @waybar_accent_dark;
+  background: alpha(@waybar_accent_dark, 0.18);
+  opacity: 1;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #workspaces button:hover {
-  opacity: 0.7;
+  background: alpha(@waybar_accent_dark, 0.30);
+  opacity: 1;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #workspaces button.active {
   min-width: 32px;
+  color: #1A1012;
+  background: @waybar_accent_dark;
   opacity: 1;
   font-weight: 700;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -105,6 +124,31 @@ window#waybar {
 #workspaces button.urgent {
   background: #C0392B;
   color: #FFFFFF;
+  opacity: 1;
+}
+
+#workspaces .taskbar-window {
+  min-width: 20px;
+  padding: 0 3px;
+  margin: 0 1px;
+  border: none;
+  border-radius: 10px;
+  box-shadow: none;
+  color: inherit;
+  background: transparent;
+  opacity: 0.82;
+}
+
+#workspaces .taskbar-window:hover {
+  min-width: 20px;
+  background: transparent;
+  opacity: 1;
+}
+
+#workspaces .taskbar-window.active {
+  min-width: 20px;
+  color: #1A1012;
+  background: transparent;
   opacity: 1;
 }
 
@@ -173,7 +217,7 @@ window#waybar {
   min-width: 12px;
   min-height: 12px;
   border-radius: 9999px;
-  background-color: #C9808A;
+  background-color: @waybar_accent_dark;
 }
 
 /* VPN индикатор */
@@ -318,9 +362,113 @@ window#waybar {
   animation: pulse 0.5s infinite;
 }
 
+/* Единый акцент панели: состояния отличаются формой и прозрачностью, не цветом. */
+.modules-left *,
+.modules-center *,
+.modules-right * {
+  color: @waybar_accent_dark;
+}
+
+/* Старые по-модульные правила имеют ID-специфичность. Перекрываем их здесь,
+   чтобы выбранный акцент действительно применялся ко всему интерфейсу. */
+#custom-telemetry,
+#clock,
+#pulseaudio,
+#custom-mic-volume,
+#pulseaudio-slider,
+#custom-brightness,
+#custom-brightness-up,
+#custom-brightness-down,
+#network,
+#bluetooth,
+#tray,
+#hyprland-language,
+#language,
+#custom-power,
+#custom-launcher,
+#custom-cpu,
+#custom-cpu-temp,
+#custom-fan,
+#custom-gpu-temp,
+#custom-gpu-fan,
+#custom-gpu-vram,
+#custom-memory,
+#custom-disk,
+#custom-vpn,
+#custom-vpn.connected,
+#custom-vpn.disconnected,
+#custom-vpn.connecting,
+#custom-singbox,
+#custom-singbox.connected,
+#custom-singbox.disconnected,
+#custom-recorder,
+#custom-recorder.recording,
+#custom-recorder.idle,
+#custom-recorder.missing,
+#custom-voice,
+#custom-voice.recording,
+#custom-voice.processing {
+  color: @waybar_accent_dark;
+}
+
+#workspaces button.active,
+#workspaces button.active .taskbar-window,
+#workspaces .taskbar-window.active {
+  color: #1A1012;
+}
+
+#workspaces button.urgent {
+  color: #FFFFFF;
+}
+
+#custom-accent-purple,
+#custom-accent-purple * {
+  color: #8D69D5;
+}
+
+#custom-accent-blue,
+#custom-accent-blue * {
+  color: #4B8FD3;
+}
+
+#custom-accent-teal,
+#custom-accent-teal * {
+  color: #36A99B;
+}
+
+#custom-accent-amber,
+#custom-accent-amber * {
+  color: #C78C24;
+}
+
+#custom-accent-purple,
+#custom-accent-blue,
+#custom-accent-teal,
+#custom-accent-amber {
+  padding: 0 4px;
+  font-size: 14px;
+  opacity: 0.55;
+}
+
+#custom-accent-purple.active,
+#custom-accent-blue.active,
+#custom-accent-teal.active,
+#custom-accent-amber.active {
+  font-size: 17px;
+  opacity: 1;
+}
+
+#custom-theme-toggle {
+  color: @waybar_accent_dark;
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 15px;
+  margin-left: 5px;
+  padding: 0 2px 0 7px;
+}
+
 tooltip {
   border-radius: 15px;
   background-color: #111111;
-  color: #C9808A;
+  color: @waybar_accent_dark;
   border: none;
 }

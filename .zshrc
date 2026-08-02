@@ -10,6 +10,10 @@ source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 # Basic exports
 export PATH="$HOME/.local/bin:$PATH"
+# Удаляем устаревшие каталоги выведенных AI-харнессов из унаследованного PATH.
+path=(${path:#$HOME/.grok/bin})
+path=(${path:#$HOME/.opencode/bin})
+path=(${path:#$HOME/.kimi-code/bin})
 export EDITOR='nvim'
 export VISUAL='nvim'
 
@@ -154,5 +158,10 @@ bright() {
     esac
 }
 
-# Локальное окружение AI-харнессов; состав переменных задаётся только на машине.
-[ -f "$HOME/.config/agents/secrets.env" ] && source "$HOME/.config/agents/secrets.env"
+# Секреты Codex и Telegram (файл не входит в dotfiles).
+[ -f "$HOME/.config/codex/secrets.env" ] && source "$HOME/.config/codex/secrets.env"
+
+# billytelega использует другие имена тех же Telegram API credentials.
+# Значения остаются только в secrets.env и никогда не попадают в Git.
+export TG_API_ID="${TELEGRAM_API_ID:-}"
+export TG_API_HASH="${TELEGRAM_API_HASH:-}"

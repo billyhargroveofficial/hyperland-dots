@@ -14,7 +14,7 @@ size = 16
 builtin_box_drawing = true
 
 [font.normal]
-family = "MapleMono NF CN"
+family = "JetBrainsMono Nerd Font"
 style = "Regular"
 
 [font.offset]

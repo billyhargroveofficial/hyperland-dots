@@ -8,7 +8,7 @@
 
     background-color: transparent;
     text-color: @fg;
-    font: "MapleMono NF CN 12";
+    font: "JetBrainsMono Nerd Font 12";
 }
 
 window {
@@ -36,7 +36,7 @@ message {
 textbox {
     horizontal-align: 0.5;
     text-color: @accent;
-    font: "MapleMono NF CN Bold 14";
+    font: "JetBrainsMono Nerd Font Bold 14";
 }
 
 listview {
@@ -60,5 +60,5 @@ element selected {
 
 element-text {
     horizontal-align: 0.5;
-    font: "MapleMono NF CN 22";
+    font: "JetBrainsMono Nerd Font 22";
 }

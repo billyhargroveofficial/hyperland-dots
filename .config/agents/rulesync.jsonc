@@ -1,8 +1,0 @@
-{
-  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/config-schema.json",
-  "global": true,
-  "delete": false,
-  "targets": {
-    // Add the Rulesync targets enabled on this machine.
-  }
-}

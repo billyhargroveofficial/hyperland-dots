@@ -244,19 +244,6 @@ install_aur_packages() {
 install_fonts() {
     log_info "Установка шрифтов..."
 
-    # Maple Mono NF CN
-    if ! fc-list | grep -qi "maple"; then
-        log_info "Установка Maple Mono NF CN..."
-        mkdir -p ~/.local/share/fonts
-        cd /tmp
-        rm -f MapleMono-NF-CN.zip
-        curl -fL "https://github.com/subframe7536/maple-font/releases/latest/download/MapleMono-NF-CN.zip" -o MapleMono-NF-CN.zip
-        unzip -o MapleMono-NF-CN.zip -d ~/.local/share/fonts/
-        fc-cache -fv
-    else
-        log_info "Maple Mono уже установлен"
-    fi
-
     # Playpen Sans
     if ! fc-list | grep -qi "playpen"; then
         log_info "Установка Playpen Sans..."
@@ -273,7 +260,9 @@ install_fonts() {
     fi
 
     # Nerd Fonts (дополнительно)
-    sudo pacman -S --needed --noconfirm ttf-jetbrains-mono-nerd ttf-firacode-nerd 2>/dev/null || true
+    sudo pacman -S --needed --noconfirm \
+        inter-font ttf-jetbrains-mono-nerd ttf-firacode-nerd python-gobject \
+        2>/dev/null || true
 
     # Emoji шрифт (для waybar иконок)
     sudo pacman -S --needed --noconfirm noto-fonts-emoji 2>/dev/null || true
@@ -734,16 +723,7 @@ install_ohmyzsh() {
 }
 
 # ==========================================
-# 7.4. Нейтральная заготовка AI control plane
-# ==========================================
-install_ai_harnesses() {
-    log_info "Инициализация шаблона AI control plane..."
-    bash "$SCRIPT_DIR/scripts/install-ai-harnesses.sh" \
-        || log_warn "Шаблон AI control plane инициализирован не полностью"
-}
-
-# ==========================================
-# 7.5. Установка LazyVim
+# 7.4. Установка LazyVim
 # ==========================================
 install_lazyvim() {
     log_info "Установка LazyVim..."
@@ -909,6 +889,7 @@ copy_configs() {
         ".config/niri"
         ".config/gtk-3.0"
         ".config/gtk-4.0"
+        ".config/fontconfig"
         ".config/swaync"
         ".config/Code/User"
         ".config/zellij"
@@ -919,6 +900,7 @@ copy_configs() {
         # Дефолтные приложения: без него xdg-open после восстановления не знает,
         # чем открывать ссылки, и http/https уходят в случайный .desktop.
         ".config/mimeapps.list"
+        ".local/bin/waybar-mono-icons"
     )
 
     for item in "${items[@]}"; do
@@ -952,6 +934,7 @@ make_scripts_executable() {
     # молча, без единой ошибки в логе.
     chmod +x ~/.config/hypr/scripts/*.py 2>/dev/null || true
     chmod +x ~/.config/waybar/scripts/*.py 2>/dev/null || true
+    chmod +x ~/.local/bin/waybar-mono-icons 2>/dev/null || true
 
     # Каталоги, в которые пишут кнопка записи экрана и hyprshot. Оба
     # инструмента их сами не создают: wf-recorder упадёт на открытии файла,
@@ -1000,30 +983,28 @@ main() {
     # с CUDA-библиотеками ставился при каждом прогоне. Вернуть: раскомментировать
     # здесь и бинды F11 в .config/hypr/hyprland.lua.
     copy_configs
-    install_ai_harnesses
     setup_singbox
     make_scripts_executable
     install_lazyvim
     set_default_shell
 
-    # Установка тёмной темы по умолчанию.
-    # Имя темы — именно 'Adwaita-dark', а НЕ 'Adwaita:dark'. Суффикс ":dark"
-    # GTK3 понимает только у переменной окружения GTK_THEME; через gsettings он
-    # ищется как буквальное имя темы, не находится, и GTK3 молча остаётся на
-    # светлой. Тема Adwaita-dark приезжает из gnome-themes-extra.
-    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
-    gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
+    # Репозиторий хранит текущее светлое состояние; Ctrl+Y по-прежнему
+    # переключает его в Adwaita-dark/Papirus-Dark и обратно.
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'
+    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita'
+    gsettings set org.gnome.desktop.interface icon-theme 'Papirus'
     # Цель относительная, а не полный путь: оба каталога лежат в git, и
     # абсолютная ссылка зашила бы в репу /home/<текущий юзер>.
-    ln -sfn "style-dark.css" "$HOME/.config/waybar/style.css"
+    ln -sfn "style-light.css" "$HOME/.config/waybar/style.css"
     # swaync, в отличие от waybar, портал НЕ слушает: он читает ровно
     # ~/.config/swaync/style.css и ничего сам не выбирает. Поэтому активная
     # тема задаётся симлинком, а переключает его toggle-theme.sh с
     # последующим `swaync-client --reload-css`.
-    ln -sfn "style-dark.css" "$HOME/.config/swaync/style.css"
-    echo "dark" > "$HOME/.config/hypr/.theme-state"
-    log_info "Тёмная тема установлена (переключение: Ctrl+Y)"
+    ln -sfn "style-light.css" "$HOME/.config/swaync/style.css"
+    echo "light" > "$HOME/.config/hypr/.theme-state"
+    "$HOME/.config/waybar/scripts/accent.sh" refresh \
+        || log_warn "Монохромная тема иконок Waybar не сгенерировалась"
+    log_info "Светлая тема установлена (переключение: Ctrl+Y)"
 
     # Перезагрузка Hyprland конфига и перезапуск панели/обоев
     hyprctl reload 2>/dev/null && log_info "Hyprland конфиг перезагружен" || true
@@ -1060,7 +1041,6 @@ main() {
     echo "  3. ПЕРЕЗАГРУЗИСЬ — greeter SDDM, GPU fan control, zsh, кривая nct6798"
     echo "  4. Запусти nvim для установки LazyVim плагинов"
     echo "  5. sing-box VPN toggle: Alt+P (сервер настроить в ~/.config/sing-box/config.json)"
-    echo "  6. При необходимости настрой локальный ~/.config/agents/"
     echo ""
     echo "Проверки после ребута:"
     echo "  nvidia-smi -q | grep 'GSP Firmware'                 # должно быть N/A"

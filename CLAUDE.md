@@ -17,14 +17,11 @@ hyperland-dots/
 │   ├── screen-recording.md   #   wf-recorder + NVENC
 │   ├── notifications.md      #   swaync и переключение тем
 │   ├── hyprland.md           #   Alt+Tab без оверлея, два монитора
-│   ├── ai-harnesses.md       #   проверка control plane харнессов
 │   ├── bluetooth-audio.md    #   наушники: кодек AAC вместо LDAC, баг WirePlumber
 │   └── private-state.md      #   секреты и runtime, которые бэкапятся отдельно
-├── .local/bin/mcp-sync       # Нейтральная обёртка над Rulesync
 ├── .local/bin/bt-audio-*     # Автопереключение звука на BT и его починка
 │
 └── .config/
-    ├── agents/               # Пустой шаблон rules/MCP/skills без секретов
     ├── systemd/user/         # bt-audio и обратный SSH-туннель
     ├── hypr/                 # Hyprland конфиг
     │   ├── hyprland.lua      # Основной конфиг (Lua, с 0.55; см. docs/hyprland.md)
@@ -101,35 +98,15 @@ hyperland-dots/
 | `.config/ghostty/config` | Ghostty терминал конфиг |
 | `.config/Code/User/settings.json` | VSCode настройки |
 | `.zshrc` | Shell конфиг + алиасы |
-| `.config/agents/.rulesync/` | Нейтральный шаблон AI rules, MCP и Agent Skills |
-| `.local/bin/mcp-sync` | Обёртка над локальным Rulesync |
 | `.local/bin/bt-audio-autoswitch` | Звук на BT-наушники при подключении (`docs/bluetooth-audio.md`) |
 | `.local/bin/bt-audio-recover` | Обход бага WirePlumber с потерей BlueZ-endpoints |
-| `scripts/install-ai-harnesses.sh` | Отдельный bootstrap AI-системы |
 | `restore-config.sh` | Скрипт установки |
 
-## Шаблон AI control plane
+## Codex CLI
 
-`.config/agents/` — только стартовая структура Rulesync. Она не фиксирует
-активные харнессы, их количество, MCP-сервисы или vendor-specific настройки.
-Фактический source of truth находится в локальном `~/.config/agents/` и может
-меняться независимо от dotfiles.
-
-Bootstrap копирует только отсутствующие файлы, не перезаписывает локальную
-конфигурацию и не устанавливает или удаляет vendor CLI:
-
-```bash
-./scripts/install-ai-harnesses.sh --no-network
-```
-
-Правила для шаблона:
-
-1. `targets` и `mcpServers` в репозитории остаются пустыми.
-2. Target-specific преобразования, сервисы и версии хранятся только локально.
-3. Секреты, сгенерированные vendor-конфиги и runtime-состояние в Git не входят.
-4. Универсальный `mcp-sync` только передаёт аргументы в `rulesync generate`.
-
-Подробности — [docs/ai-harnesses.md](docs/ai-harnesses.md).
+Codex — единственный поддерживаемый AI-харнесс на машине. Его нативные
+настройки, MCP, авторизация и история живут в `~/.codex/`; dotfiles не
+устанавливают и не генерируют их.
 
 ## Тема (Gruvbox)
 
@@ -138,7 +115,7 @@ Bootstrap копирует только отсутствующие файлы, �
 | Компонент | Dark | Light |
 |-----------|------|-------|
 | Ghostty | Gruvbox Dark (0.8 opacity) | Gruvbox Light (0.3 opacity) |
-| Waybar | розовая на чёрном | розовая на белом |
+| Waybar | чёрные островки + выбранный акцент | белые островки + выбранный акцент |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Hyprland border | White (#ffffffcc) | White (#ffffffcc) |
 | GTK | **`Adwaita-dark`** | `Adwaita` |

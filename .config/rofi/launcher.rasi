@@ -12,7 +12,7 @@
 
     background-color: transparent;
     text-color: @fg;
-    font: "MapleMono NF CN 12";
+    font: "JetBrainsMono Nerd Font 12";
 }
 
 window {
@@ -40,7 +40,7 @@ inputbar {
 
 prompt {
     text-color: @accent;
-    font: "MapleMono NF CN Bold 14";
+    font: "JetBrainsMono Nerd Font Bold 14";
 }
 
 entry {
@@ -83,7 +83,7 @@ element-icon {
 
 element-text {
     vertical-align: 0.5;
-    font: "MapleMono NF CN 12";
+    font: "JetBrainsMono Nerd Font 12";
 }
 
 element selected element-text {

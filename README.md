@@ -8,8 +8,9 @@
 
 ## Особенности
 
-- **Waybar** — панель со своими модулями CPU/памяти/диска: в тексте занято/всего,
-  в попапе при наведении — кто больше всех потребляет, живым списком
+- **Waybar** — три островка: безымянные рабочие столы с монохромными иконками
+  приложений слева, текстовая телеметрия по центру и системные индикаторы справа;
+  рядом переключатели акцента и dark/light
 - **Запись экрана кнопкой** — 720p60, h264_nvenc, в `~/records` (см. `docs/screen-recording.md`)
 - **Два монитора**, столы делятся по экранам и выбираются по курсору (`docs/hyprland.md`)
 - **Конфиг Hyprland на Lua** — формат с 0.55, бинды умеют произвольные функции
@@ -25,7 +26,7 @@
   процессами, иконками и hooks (см. `harness-hooks/README.md`)
 - **Обратный SSH-туннель** — постоянный доступ через `nareshka.ru:2223`,
   без password login и без restart-loop при занятом удалённом порте
-- **AI control plane** — пустая стартовая заготовка правил, MCP и skills через Rulesync
+- **Codex CLI** — единственный AI-харнесс; его нативное состояние остаётся в `~/.codex/`
 
 ## Быстрая установка
 
@@ -36,8 +37,8 @@ chmod +x restore-config.sh
 ./restore-config.sh
 ```
 
-Скрипт установит зависимости, настроит desktop и общий AI control
-plane. Voice Input сейчас намеренно отключён.
+Скрипт установит зависимости и настроит desktop. Voice Input сейчас намеренно
+отключён.
 
 Запускать **обычным пользователем**, не от root — скрипт сам зовёт `sudo` там, где нужно.
 Он продолжает работу после единичного сбоя сети, собирает все `[WARN]` и
@@ -63,30 +64,19 @@ Actions разрешены в настройках репозитория.
 
 | | |
 |---|---|
-| [`docs/waybar.md`](docs/waybar.md) | свои модули CPU/памяти/диска, отступы у иконок, почему `interval: once` не перечитывается, анимации в GTK3 |
+| [`docs/waybar.md`](docs/waybar.md) | островки, телеметрия, монохромные иконки приложений, выбор акцента и особенности GTK3 |
 | [`docs/hyprland.md`](docs/hyprland.md) | конфиг на Lua и что миграция ломает молча, два монитора, Alt+Tab |
 | [`docs/screen-recording.md`](docs/screen-recording.md) | wf-recorder + NVENC: несуществующие флаги, диапазон яркости |
 | [`docs/notifications.md`](docs/notifications.md) | swaync и почему он не следует за системной темой сам |
-| [`docs/ai-harnesses.md`](docs/ai-harnesses.md) | чек-лист живой проверки control plane |
 | [`docs/bluetooth-audio.md`](docs/bluetooth-audio.md) | наушники: заикания на LDAC и почему кодек прибит к AAC, потеря BlueZ-endpoints |
 | [`docs/private-state.md`](docs/private-state.md) | что намеренно не лежит в публичной репе и нужно бэкапить отдельно |
 
 ## AI-харнессы
 
-`.config/agents/` содержит нейтральную стартовую заготовку Rulesync без списка
-и количества харнессов. Актуальный control plane живёт только локально и не
-обязан совпадать с репозиторием.
+На машине оставлен только Codex CLI. Dotfiles не устанавливают его и не
+генерируют `~/.codex/`: авторизация, MCP, история и другие нативные данные
+остаются локальными.
 
-Отдельная установка без полного системного restore:
-
-```bash
-cd ~/hyperland-dots
-./scripts/install-ai-harnesses.sh
-```
-
-Bootstrap копирует только отсутствующие файлы: существующие локальные targets,
-харнессы, Rulesync, сервисы и runtime-состояние остаются без изменений. Полная
-схема описана в `.config/agents/README.md`.
 
 ## Драйвер NVIDIA — проприетарный, не open
 
@@ -326,7 +316,7 @@ bright 1                              # диапазон 1-100, шаг коле�
 | Компонент | Dark | Light |
 |-----------|------|-------|
 | Ghostty | `gruvbox-mine-dark` (0.9 opacity) | `gruvbox-mine-light` (0.9 opacity) |
-| Waybar | Gruvbox Dark monochrome | Gruvbox Light monochrome |
+| Waybar | чёрные островки + выбранный акцент | белые островки + выбранный акцент |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Nvim | gruvbox-material transparent | gruvbox-material transparent |
 | GTK | **`Adwaita-dark`** | `Adwaita` |
@@ -564,10 +554,9 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 
 ```
 .config/
-├── agents/               # нейтральная заготовка AI rules/MCP/skills
 ├── systemd/user/         # bt-audio и обратный SSH-туннель
 ├── hypr/                 # Hyprland + скрипты (theme toggle, вентиляторы, обои)
-├── waybar/               # Панель (Gruvbox dark/light CSS, звук + яркость)
+├── waybar/               # Панель (островки, телеметрия, акценты, dark/light CSS)
 ├── ghostty/              # Терминал + themes/gruvbox-mine-{dark,light}
 ├── Code/User/            # VSCode settings + keybindings
 ├── swaync/               # Уведомления (Gruvbox)
@@ -586,6 +575,5 @@ system/                   # то, что живёт вне $HOME — см. syste
 ├── udev/                 # права на /sys/class/backlight
 └── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
 
-scripts/
-└── install-ai-harnesses.sh # отдельный bootstrap AI control plane
+scripts/                  # вспомогательные системные скрипты
 ```
