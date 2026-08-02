@@ -160,8 +160,10 @@ window#waybar {
 
 #custom-power {
   color: #A85F68;
-  font-size: 16px;
-  padding: 0 15px;
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 15px;
+  padding: 0 4px;
+  margin: 0;
 }
 
 /* Style for specific icons/modules that need it */
@@ -183,10 +185,13 @@ window#waybar {
 
 #network {
   color: #A85F68;
+  padding: 0 5px;
 }
 
 #bluetooth {
   color: #8F5560;
+  padding: 4px 4px 4px 2px;
+  margin: 0 1px 0 0;
 }
 
 #clock {
@@ -257,7 +262,7 @@ window#waybar {
 /* sing-box VPN индикатор */
 #custom-singbox {
   color: #A85F68;
-  padding: 0 10px;
+  padding: 0 2px 0 7px;
   font-weight: bold;
 }
 
@@ -335,8 +340,8 @@ window#waybar {
 
 /* Языковой индикатор */
 #language {
-  padding: 0 10px;
-  margin: 0 2px;
+  padding: 0 3px 0 1px;
+  margin: 0;
   border-radius: 6px;
   color: #75474F;
   font-weight: bold;
@@ -461,6 +466,17 @@ window#waybar {
   font-size: 15px;
   margin-left: 5px;
   padding: 0 2px 0 7px;
+}
+
+/* Keep the final controls visually paired without widening the whole island. */
+#clock {
+  padding-right: 4px;
+  margin-right: 0;
+}
+
+#custom-power {
+  padding: 0 4px;
+  margin: 0;
 }
 
 tooltip {

@@ -50,9 +50,9 @@ hyperland-dots/
     │
     ├── ghostty/              # Ghostty терминал
     │   ├── config            # Основной конфиг
-    │   └── themes/           # Gruvbox темы
-    │       ├── dark.conf     # Gruvbox Dark (opacity 0.8)
-    │       └── light.conf    # Gruvbox Light (opacity 0.3)
+    │   └── themes/           # Активные gruvbox-mine темы
+    │       ├── gruvbox-mine-dark   # opacity 0.9
+    │       └── gruvbox-mine-light  # opacity 0.7
     │
     ├── Code/User/            # VSCode настройки
     │   ├── settings.json     # Gruvbox Dark Hard / Bearded Milkshake Mint
@@ -67,7 +67,7 @@ hyperland-dots/
     │   ├── style-light.css   # Светлая тема
     │   └── style.css         # Симлинк на активную (swaync портал НЕ слушает)
     │
-    ├── rofi/                 # App launcher (Gruvbox темы)
+    ├── rofi/                 # Borderless light/dark launcher + общий акцент
     ├── niri/                 # Niri compositor конфиг
     ├── kitty/                # Kitty терминал
     ├── alacritty/            # Alacritty терминал
@@ -114,13 +114,13 @@ Codex — единственный поддерживаемый AI-харнес�
 
 | Компонент | Dark | Light |
 |-----------|------|-------|
-| Ghostty | Gruvbox Dark (0.8 opacity) | Gruvbox Light (0.3 opacity) |
+| Ghostty | Gruvbox Dark (0.9 opacity) | Gruvbox Light (0.7 opacity) |
 | Waybar | чёрные островки + выбранный акцент | белые островки + выбранный акцент |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Hyprland border | White (#ffffffcc) | White (#ffffffcc) |
 | GTK | **`Adwaita-dark`** | `Adwaita` |
 | Nvim | gruvbox-material (transparent) | gruvbox-material (transparent) |
-| Rofi | Gruvbox Dark (muted #a89984) | — |
+| Rofi | чёрный полупрозрачный + акцент | белый полупрозрачный + акцент |
 | SwayNC | палитра waybar | палитра waybar |
 
 ### Правила, которые нельзя нарушать

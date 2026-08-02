@@ -1,14 +1,16 @@
-/* Gruvbox Dark - Application Launcher */
+/* Borderless application launcher; colors.rasi follows system theme/accent. */
+
+@import "colors.rasi"
 
 * {
-    bg: #282828;
-    bg-alt: #3c3836;
-    bg-hover: #504945;
-    fg: #ebdbb2;
-    fg-alt: #a89984;
-    accent: #a89984;
-    accent-alt: #bdae93;
-    urgent: #cc241d;
+    bg: @rofi-bg;
+    bg-alt: @rofi-surface;
+    bg-hover: @rofi-hover;
+    fg: @rofi-fg;
+    fg-alt: @rofi-fg-dim;
+    accent: @rofi-accent;
+    accent-alt: @rofi-accent-hover;
+    urgent: @rofi-urgent;
 
     background-color: transparent;
     text-color: @fg;
@@ -16,9 +18,9 @@
 }
 
 window {
+    transparency: "real";
     background-color: @bg;
-    border: 3px solid;
-    border-color: @accent;
+    border: 0px;
     border-radius: 16px;
     padding: 20px;
     width: 650px;
@@ -45,7 +47,7 @@ prompt {
 
 entry {
     placeholder: "Search apps...";
-    placeholder-color: #665c54;
+    placeholder-color: @rofi-placeholder;
 }
 
 listview {
@@ -69,7 +71,7 @@ element normal.normal {
 
 element selected.normal {
     background-color: @accent;
-    text-color: @bg;
+    text-color: @rofi-selected-fg;
 }
 
 element alternate.normal {
@@ -79,15 +81,14 @@ element alternate.normal {
 element-icon {
     size: 36px;
     vertical-align: 0.5;
+    background-color: inherit;
 }
 
 element-text {
     vertical-align: 0.5;
     font: "JetBrainsMono Nerd Font 12";
-}
-
-element selected element-text {
-    text-color: @bg;
+    background-color: inherit;
+    text-color: inherit;
 }
 
 scrollbar {

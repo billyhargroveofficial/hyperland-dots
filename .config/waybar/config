@@ -84,9 +84,9 @@
     "tooltip": false
   },
   "hyprland/language": {
-    "format": " {}",
-    "format-en": " EN",
-    "format-ru": " RU"
+    "format": "{}",
+    "format-en": "EN",
+    "format-ru": "RU"
   },
   "pulseaudio": {
     "tooltip": false,
@@ -109,11 +109,11 @@
     "expand": false
   },
   "network": {
-    "format-wifi": "󰤨   {essid}",
-    "format-ethernet": "󰈀  Connected",
+    "format-wifi": "󰤨",
+    "format-ethernet": "󰈀",
     "tooltip-format": "{essid} ({signalStrength}%)",
-    "format-linked": "{ifname} (No IP)",
-    "format-disconnected": "󰤭   Disconnected",
+    "format-linked": "󰈀",
+    "format-disconnected": "󰤭",
     "format-alt": "{ifname}: {ipaddr}/{cidr}"
   },
   "bluetooth": {
@@ -126,7 +126,12 @@
   },
   "tray": {
     "icon-size": 18,
-    "spacing": 10
+    "spacing": 10,
+    "icons": {
+      "TelegramDesktop": "waybar-tray-telegram",
+      "nm-applet": "waybar-tray-network",
+      "tray-icon tray app flov-tray": "waybar-tray-flov"
+    }
   },
   "clock": {
     "format": "󰃰  {:%d.%m.%Y   %H:%M}",
@@ -198,7 +203,7 @@
     "format": "{}"
   },
   "custom/power": {
-    "format": "󰐥",
+    "format": "⏻",
     "on-click": "bash ~/.config/waybar/scripts/leave.sh",
     "tooltip": "Power Menu"
   },

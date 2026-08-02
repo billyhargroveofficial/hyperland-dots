@@ -1,10 +1,12 @@
-/* Gruvbox Dark - Power Menu */
+/* Borderless power menu; colors.rasi follows system theme/accent. */
+
+@import "colors.rasi"
 
 * {
-    bg: #282828;
-    bg-alt: #3c3836;
-    fg: #ebdbb2;
-    accent: #a89984;
+    bg: @rofi-bg;
+    bg-alt: @rofi-surface;
+    fg: @rofi-fg;
+    accent: @rofi-accent;
 
     background-color: transparent;
     text-color: @fg;
@@ -12,9 +14,9 @@
 }
 
 window {
+    transparency: "real";
     background-color: @bg;
-    border: 2px solid;
-    border-color: @accent;
+    border: 0px;
     border-radius: 16px;
     padding: 20px;
     width: 320px;
@@ -55,10 +57,12 @@ element {
 
 element selected {
     background-color: @accent;
-    text-color: @bg;
+    text-color: @rofi-selected-fg;
 }
 
 element-text {
     horizontal-align: 0.5;
     font: "JetBrainsMono Nerd Font 22";
+    background-color: inherit;
+    text-color: inherit;
 }

@@ -16,7 +16,7 @@
 #     * ghostty >= 1.2  — сам читает портал, theme = light:...,dark:...
 #     * Qt6             — QT_QPA_PLATFORMTHEME=xdgdesktopportal
 #
-#   Требуют явного пинка (делаем ниже): hyprland, nvim, VSCode, Codex CLI
+#   Требуют явного пинка (делаем ниже): Rofi, hyprland, nvim, VSCode, Codex CLI
 #
 #   НЕ переключаются вживую вообще: Chromium/Chrome/Brave/Electron.
 #   Они уходят в тёмную тему по сигналу портала, но обратно в светлую
@@ -29,6 +29,7 @@ set -u
 
 STATE_FILE="$HOME/.config/hypr/.theme-state"
 WAYBAR_DIR="$HOME/.config/waybar"
+ROFI_ACCENT_SCRIPT="$WAYBAR_DIR/scripts/accent.sh"
 SWAYNC_DIR="$HOME/.config/swaync"
 WEZTERM_THEME="$HOME/.config/wezterm/theme.txt"
 GTK3_INI="$HOME/.config/gtk-3.0/settings.ini"
@@ -126,6 +127,11 @@ fi
 #                  из пакета gnome-themes-extra)
 gsettings set org.gnome.desktop.interface color-scheme "$COLOR_SCHEME"
 gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME_NAME"
+
+# Rofi не слушает портал: генерируем общие переменные для следующего запуска.
+if [[ -x "$ROFI_ACCENT_SCRIPT" ]]; then
+    "$ROFI_ACCENT_SCRIPT" rofi-refresh
+fi
 
 # --- 2. settings.ini для GTK3 -------------------------------------------
 # Приложения читают его при старте (портал потом перекрывает). Держим в

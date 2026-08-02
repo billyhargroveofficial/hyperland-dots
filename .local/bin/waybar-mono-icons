@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -18,9 +19,15 @@ from gi.repository import Gtk  # noqa: E402
 
 THEME_DIR = Path.home() / ".local/share/icons/WaybarMono"
 OUTPUT_DIR = THEME_DIR / "64x64/apps"
+UNTHEMED_ICON_DIR = Path.home() / ".local/share/icons"
 SIGNATURE_FILE = THEME_DIR / ".source-signature"
 INDEX_FILE = THEME_DIR / "index.theme"
-THEME_VERSION = "3"
+THEME_VERSION = "4"
+TRAY_ICON_ALIASES = {
+    "waybar-tray-telegram": "TelegramDesktop",
+    "waybar-tray-network": "nm-applet",
+    "waybar-tray-flov": "flov_app",
+}
 INDEX_CONTENT = """[Icon Theme]
 Name=WaybarMono
 Comment=Monochrome application silhouettes generated for Waybar
@@ -195,6 +202,19 @@ def render_source(source: Path, destination: Path, color: str) -> bool:
     return destination.is_file()
 
 
+def publish_tray_icons() -> int:
+    """Expose selected generated icons to Waybar's default GTK icon theme."""
+    UNTHEMED_ICON_DIR.mkdir(parents=True, exist_ok=True)
+    published = 0
+    for icon_name, alias in TRAY_ICON_ALIASES.items():
+        source = OUTPUT_DIR / f"{alias}.png"
+        if not source.is_file():
+            continue
+        shutil.copyfile(source, UNTHEMED_ICON_DIR / f"{icon_name}.png")
+        published += 1
+    return published
+
+
 def rebuild(aliases: dict[str, Path], color: str) -> tuple[int, int]:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     for old_file in OUTPUT_DIR.iterdir():
@@ -231,6 +251,7 @@ def rebuild(aliases: dict[str, Path], color: str) -> tuple[int, int]:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
+    publish_tray_icons()
     return linked, len(failed_sources)
 
 
@@ -257,6 +278,7 @@ def main() -> int:
         pass
 
     if not args.force and previous_signature == signature and any(OUTPUT_DIR.glob("*.png")):
+        publish_tray_icons()
         if not args.quiet:
             print(f"WaybarMono is current ({len(aliases)} aliases)")
         return 0

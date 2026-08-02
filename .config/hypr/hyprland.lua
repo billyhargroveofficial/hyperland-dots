@@ -70,7 +70,7 @@ end
 -- when launched from this Lua dispatcher. Force a real process per window.
 local terminal = "ghostty --gtk-single-instance=false"
 local fileManager = "nautilus"
-local menu = "rofi -show drun -show-icons -icon-theme Papirus-Dark -theme ~/.config/rofi/launcher.rasi"
+local menu = "~/.config/rofi/launcher.sh"
 local browser = "google-chrome-stable --enable-features=UseOzonePlatform --ozone-platform=wayland --gtk-version=4"
 
 ---------------------------------------------------------------------- ОБОИ --
@@ -408,7 +408,7 @@ hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 -- съедал его до терминала, а Alt+V нужен совместимым CLI-агентам: ghostty
 -- шлёт по нему сырой ^V, по которому агент забирает из буфера
 -- картинку. Явный SUPER переживает переключение mainMod по F10.
-hl.bind("SUPER + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))
+hl.bind("SUPER + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu -theme ~/.config/rofi/launcher.rasi | cliphist decode | wl-copy"))
 
 -- Переключение раскладки по Alt+Shift делает сервис kbd-layout-toggle
 -- (/opt/kbd-layout-toggle, читает evdev без перехвата и дёргает

@@ -175,8 +175,8 @@ install_pacman_packages() {
         # gnome-themes-extra даёт Adwaita-dark. Без него в /usr/share/themes/
         # лежат только Default, Emacs и HighContrast — то есть ни одной тёмной
         # GTK3-темы, и переключать light/dark физически не на что.
-        # papirus-icon-theme: hyprland.lua запускает rofi с
-        # `-icon-theme Papirus-Dark`, без пакета иконки в лаунчере пустые.
+        # papirus-icon-theme: launcher.sh выбирает Papirus/Papirus-Dark по
+        # системной теме; без пакета иконки в Rofi пустые.
         gnome-themes-extra
         papirus-icon-theme
 
@@ -926,6 +926,7 @@ make_scripts_executable() {
     log_info "Делаем скрипты исполняемыми..."
 
     chmod +x ~/.config/hypr/scripts/*.sh 2>/dev/null || true
+    chmod +x ~/.config/rofi/*.sh 2>/dev/null || true
     chmod +x ~/.config/waybar/scripts/*.sh 2>/dev/null || true
     chmod +x ~/.config/scripts/*.sh 2>/dev/null || true
 

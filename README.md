@@ -315,12 +315,12 @@ bright 1                              # диапазон 1-100, шаг коле�
 
 | Компонент | Dark | Light |
 |-----------|------|-------|
-| Ghostty | `gruvbox-mine-dark` (0.9 opacity) | `gruvbox-mine-light` (0.9 opacity) |
+| Ghostty | `gruvbox-mine-dark` (0.9 opacity) | `gruvbox-mine-light` (0.7 opacity) |
 | Waybar | чёрные островки + выбранный акцент | белые островки + выбранный акцент |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Nvim | gruvbox-material transparent | gruvbox-material transparent |
 | GTK | **`Adwaita-dark`** | `Adwaita` |
-| Rofi | Gruvbox Dark (muted) | — |
+| Rofi | чёрный полупрозрачный без рамки + акцент | белый полупрозрачный без рамки + акцент |
 | SwayNC | Gruvbox Dark | — |
 
 ### Три вещи, которые ломали переключение
@@ -561,7 +561,7 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 ├── Code/User/            # VSCode settings + keybindings
 ├── swaync/               # Уведомления (Gruvbox)
 ├── sing-box/             # VPN (только шаблон!)
-├── rofi/                 # Launcher темы (Gruvbox)
+├── rofi/                 # Borderless launcher: light/dark + общий акцент Waybar
 ├── niri/                 # Niri compositor
 ├── kitty/                # Терминал
 ├── alacritty/            # Терминал
