@@ -18,6 +18,16 @@ build_icon() {
     mv -f "$icon_tmp" "$destination"
 }
 
+theme_variant() {
+    local scheme
+    scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null || true)
+    if [[ "$scheme" == *dark* ]]; then
+        printf '%s\n' dark
+    else
+        printf '%s\n' light
+    fi
+}
+
 write_swatch() {
     local name=$1 color=$2 active=$3 swatch_tmp
     local radius opacity ring suffix=''
@@ -41,24 +51,31 @@ write_swatch() {
 }
 
 build() {
-    local color=${1:-}
-    local source name
+    local light=${1:-} dark=${2:-}
+    local source stem
 
-    [[ "$color" =~ ^#[0-9A-Fa-f]{6}$ ]] || {
-        printf 'invalid SVG accent color: %s\n' "$color" >&2
+    [[ "$light" =~ ^#[0-9A-Fa-f]{6}$ ]] || {
+        printf 'invalid light SVG accent color: %s\n' "$light" >&2
+        return 2
+    }
+    [[ -n "$dark" ]] || dark=$light
+    [[ "$dark" =~ ^#[0-9A-Fa-f]{6}$ ]] || {
+        printf 'invalid dark SVG accent color: %s\n' "$dark" >&2
         return 2
     }
 
     mkdir -p "$CACHE_DIR"
     for source in "$SOURCE_DIR"/*.svg; do
         [[ -f "$source" ]] || continue
-        name=$(basename "$source")
-        build_icon "$source" "$CACHE_DIR/$name" "$color"
+        stem=$(basename "$source" .svg)
+        build_icon "$source" "$CACHE_DIR/$stem-light.svg" "$light"
+        build_icon "$source" "$CACHE_DIR/$stem-dark.svg" "$dark"
     done
 
     # Recording is the only semantic warning state; everything else remains
     # on the selected accent so both islands stay visually unified.
-    build_icon "$SOURCE_DIR/video.svg" "$CACHE_DIR/video-active.svg" '#D93025'
+    build_icon "$SOURCE_DIR/video.svg" "$CACHE_DIR/video-active-light.svg" '#D93025'
+    build_icon "$SOURCE_DIR/video.svg" "$CACHE_DIR/video-active-dark.svg" '#D93025'
 
     write_swatch purple '#8D69D5' false
     write_swatch purple '#8D69D5' true
@@ -71,17 +88,23 @@ build() {
 }
 
 ensure_cache() {
-    [[ -f "$CACHE_DIR/cpu.svg" ]] && return 0
+    [[ -f "$CACHE_DIR/cpu-light.svg" && -f "$CACHE_DIR/cpu-dark.svg" ]] && return 0
     if [[ -x "$ACCENT_SCRIPT" ]]; then
         "$ACCENT_SCRIPT" refresh >/dev/null
     fi
-    [[ -f "$CACHE_DIR/cpu.svg" ]] || build '#8D69D5'
+    [[ -f "$CACHE_DIR/cpu-light.svg" && -f "$CACHE_DIR/cpu-dark.svg" ]] \
+        || build '#6F4AC8' '#B69AF6'
 }
 
 icon_path() {
-    local name=$1 path
+    local name=$1 path variant
     ensure_cache
-    path="$CACHE_DIR/$name.svg"
+    if [[ "$name" == swatch-* ]]; then
+        path="$CACHE_DIR/$name.svg"
+    else
+        variant=$(theme_variant)
+        path="$CACHE_DIR/$name-$variant.svg"
+    fi
     [[ -f "$path" ]] || {
         printf 'unknown SVG icon: %s\n' "$name" >&2
         return 2
@@ -187,7 +210,7 @@ wallpaper_status() {
 }
 
 case "${1:-}" in
-    build) build "${2:-}" ;;
+    build) build "${2:-}" "${3:-}" ;;
     path) show_icon "${2:-}" "${3:-}" ;;
     accent) accent_status "${2:-}" ;;
     theme) theme_status ;;
@@ -198,7 +221,7 @@ case "${1:-}" in
     recorder) recorder_status ;;
     wallpaper) wallpaper_status ;;
     *)
-        printf 'usage: %s {build COLOR|path NAME [TOOLTIP]|accent NAME|theme|network|vpn|bluetooth|volume|recorder|wallpaper}\n' "$0" >&2
+        printf 'usage: %s {build LIGHT [DARK]|path NAME [TOOLTIP]|accent NAME|theme|network|vpn|bluetooth|volume|recorder|wallpaper}\n' "$0" >&2
         exit 2
         ;;
 esac

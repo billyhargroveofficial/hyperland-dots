@@ -55,30 +55,35 @@
   "image#accent-purple": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh accent purple",
     "size": 17,
+    "signal": 12,
     "tooltip": false,
     "on-click": "~/.config/waybar/scripts/accent.sh set purple"
   },
   "image#accent-blue": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh accent blue",
     "size": 17,
+    "signal": 12,
     "tooltip": false,
     "on-click": "~/.config/waybar/scripts/accent.sh set blue"
   },
   "image#accent-teal": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh accent teal",
     "size": 17,
+    "signal": 12,
     "tooltip": false,
     "on-click": "~/.config/waybar/scripts/accent.sh set teal"
   },
   "image#accent-amber": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh accent amber",
     "size": 17,
+    "signal": 12,
     "tooltip": false,
     "on-click": "~/.config/waybar/scripts/accent.sh set amber"
   },
   "image#theme-toggle": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh theme",
     "size": 16,
+    "signal": 12,
     "tooltip": false,
     "on-click": "~/.config/hypr/scripts/toggle-theme.sh"
   },
@@ -110,6 +115,7 @@
   "image#telemetry-cpu": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh path cpu",
     "size": 15,
+    "signal": 12,
     "tooltip": false
   },
   "custom/telemetry-cpu": {
@@ -122,6 +128,7 @@
   "image#telemetry-gpu": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh path gpu",
     "size": 16,
+    "signal": 12,
     "tooltip": false
   },
   "custom/telemetry-gpu": {
@@ -134,6 +141,7 @@
   "image#telemetry-ram": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh path memory-stick",
     "size": 16,
+    "signal": 12,
     "tooltip": false
   },
   "custom/telemetry-ram": {
@@ -147,6 +155,7 @@
   "image#telemetry-vram": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh path microchip",
     "size": 15,
+    "signal": 12,
     "tooltip": false
   },
   "custom/telemetry-vram": {
@@ -159,6 +168,7 @@
   "image#telemetry-ssd": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh path hard-drive",
     "size": 16,
+    "signal": 12,
     "tooltip": false
   },
   "custom/telemetry-ssd": {
@@ -172,18 +182,21 @@
     "exec": "~/.config/waybar/scripts/svg-icons.sh network",
     "size": 16,
     "interval": 3,
+    "signal": 12,
     "tooltip": false
   },
   "image#vpn": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh vpn",
     "size": 15,
     "interval": 3,
+    "signal": 12,
     "tooltip": false
   },
   "image#bluetooth": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh bluetooth",
     "size": 15,
     "interval": 5,
+    "signal": 12,
     "tooltip": false,
     "on-click": "blueman-manager"
   },
@@ -191,12 +204,14 @@
     "exec": "~/.config/waybar/scripts/svg-icons.sh volume",
     "size": 16,
     "interval": 2,
+    "signal": 12,
     "tooltip": false,
     "on-click": "pavucontrol"
   },
   "image#brightness": {
     "exec": "~/.config/waybar/scripts/svg-icons.sh path sun",
     "size": 16,
+    "signal": 12,
     "tooltip": false,
     "on-scroll-up": "~/.config/hypr/scripts/brightness.sh up",
     "on-scroll-down": "~/.config/hypr/scripts/brightness.sh down"

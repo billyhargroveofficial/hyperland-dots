@@ -122,8 +122,19 @@ reload_swaync_css() {
     fi
 }
 
+# SVG image modules keep an already decoded pixbuf even after the file behind
+# its path is rebuilt.  Refresh only those modules after a light/dark switch;
+# unlike SIGUSR2 this does not reload or restart the whole Waybar process.
+refresh_waybar_images() {
+    pgrep -x waybar >/dev/null 2>&1 || return 0
+    pkill -RTMIN+12 -x waybar 2>/dev/null || true
+    # Stateful modules keep their own signals for immediate click feedback.
+    pkill -RTMIN+10 -x waybar 2>/dev/null || true
+    pkill -RTMIN+11 -x waybar 2>/dev/null || true
+}
+
 write_accent_css() {
-    local name=$1 light dark icon label css_tmp scheme svg_color
+    local name=$1 light dark icon label css_tmp
     mapfile -t colors < <(palette "$name") || return 1
     light=${colors[0]}
     dark=${colors[1]}
@@ -137,14 +148,8 @@ write_accent_css() {
     write_rofi_colors "$light" "$dark" || return 1
     write_swaync_colors "$light" "$dark" || return 1
 
-    scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null || true)
-    if [[ "$scheme" == *dark* ]]; then
-        svg_color=$dark
-    else
-        svg_color=$light
-    fi
     if [[ -x "$SVG_ICONS" ]]; then
-        "$SVG_ICONS" build "$svg_color" || return 1
+        "$SVG_ICONS" build "$light" "$dark" || return 1
     fi
 
     if [[ -x "$MONO_ICONS" ]]; then
@@ -166,7 +171,9 @@ apply_color() {
 case "${1:-}" in
     set) apply_color "${2:-}" ;;
     refresh)
-        write_accent_css "$(selected_color)" && reload_swaync_css
+        write_accent_css "$(selected_color)" \
+            && refresh_waybar_images \
+            && reload_swaync_css
         ;;
     rofi-refresh)
         mapfile -t colors < <(palette "$(selected_color)")
