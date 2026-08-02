@@ -158,6 +158,13 @@ install_pacman_packages() {
         libxrandr
         clang
         cmake
+        # Сборка отдельного nv-wallpaper; сам репозиторий этот скрипт не клонирует.
+        pkgconf
+        wayland
+        wayland-protocols
+        ffmpeg
+        libplacebo
+        vulkan-headers
         xdotool
         wtype
         zellij

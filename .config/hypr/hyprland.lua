@@ -125,6 +125,12 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("hyprctl setcursor mcmojave-cursors 20")
 end)
 
+-- Видео запускается только вручную кнопкой Waybar; при выходе не оставляем
+-- пользовательский сервис жить после Wayland-сессии.
+hl.on("hyprland.shutdown", function()
+	hl.exec_cmd("systemctl --user stop nv-wallpaper.target")
+end)
+
 -- hyprshell убран по просьбе: его оверлей вылезал на Alt+Tab и был не нужен.
 -- Переключение окон теперь нативное, биндами ниже — без GUI и без лишнего
 -- процесса в сессии.

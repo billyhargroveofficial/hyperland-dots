@@ -21,6 +21,7 @@
     "pulseaudio",
     "pulseaudio/slider",
     "custom/brightness",
+    "image#wallpaper",
     "custom/recorder",
     "clock",
     "custom/power"
@@ -201,6 +202,14 @@
     "signal": 10,
     "on-click": "~/.config/waybar/scripts/recorder.sh",
     "format": "{}"
+  },
+  "image#wallpaper": {
+    "exec": "~/.config/waybar/scripts/video-wallpaper-icon.sh",
+    "size": 16,
+    "interval": 5,
+    "signal": 11,
+    "tooltip": false,
+    "on-click": "~/.config/waybar/scripts/video-wallpaper.sh toggle"
   },
   "custom/power": {
     "format": "⏻",
