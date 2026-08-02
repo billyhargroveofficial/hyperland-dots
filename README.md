@@ -33,6 +33,13 @@
 
 ## Быстрая установка
 
+> **Установка через LLM:** сначала попроси агента прочитать
+> [`PROMPT-INSTALL.md`](PROMPT-INSTALL.md). Он должен проверить железо,
+> зависимости, настоящие файлы SF Pro/Nerd Font, приватное состояние и
+> существующие live-конфиги, показать отчёт и только затем запускать restore.
+> Простое копирование настроек с молчаливым font fallback не считается
+> успешной установкой.
+
 ```bash
 git clone https://github.com/billyhargroveofficial/hyperland-dots ~/hyperland-dots
 cd ~/hyperland-dots
