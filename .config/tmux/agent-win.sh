@@ -58,9 +58,9 @@ while IFS=' ' read -r pane tty; do
     agent=$(get_env "TMUX_AGENT_PANE_${pane}_AGENT")
 
     if [ -z "$state" ] || [ "$state" = "off" ]; then
-        # Хуков нет (qwen/kimi/hermes) или агент их ещё не слал — ищем процесс
-        # среди всех процессов на tty пана. Именно командная строка, а не имя
-        # процесса: qwen и codex — node-обёртки, hermes идёт через `uv run`.
+        # Если хук Codex ещё не прислал состояние — ищем процесс среди всех
+        # процессов на tty пана. Проверяем полную командную строку, чтобы
+        # поймать node-обёртку Codex.
         state=""; agent=""
         if [ -n "$tty" ]; then
             cmds=$(ps -t "$(basename "$tty")" -o command= 2>/dev/null || true)

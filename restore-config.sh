@@ -5,7 +5,7 @@
 
 # Намеренно НЕ set -e: скрипт качает из десятка внешних источников (GitHub, PyPI,
 # AUR, зеркала шрифтов). При set -e один обрыв сети на шрифтах убивал весь остаток
-# прогона — GPU-вентиляторы, oh-my-zsh, voice input, копирование конфигов. Каждая
+# прогона — GPU-вентиляторы, oh-my-zsh, копирование конфигов. Каждая
 # функция логирует свой результат сама, после прогона искать по логу [WARN].
 set +e
 
@@ -158,8 +158,14 @@ install_pacman_packages() {
         libxrandr
         clang
         cmake
+        # Сборка отдельного nv-wallpaper; сам репозиторий этот скрипт не клонирует.
+        pkgconf
+        wayland
+        wayland-protocols
+        ffmpeg
+        libplacebo
+        vulkan-headers
         xdotool
-        wtype
         zellij
         imagemagick
         nwg-dock-hyprland
@@ -175,8 +181,8 @@ install_pacman_packages() {
         # gnome-themes-extra даёт Adwaita-dark. Без него в /usr/share/themes/
         # лежат только Default, Emacs и HighContrast — то есть ни одной тёмной
         # GTK3-темы, и переключать light/dark физически не на что.
-        # papirus-icon-theme: hyprland.lua запускает rofi с
-        # `-icon-theme Papirus-Dark`, без пакета иконки в лаунчере пустые.
+        # papirus-icon-theme: launcher.sh выбирает Papirus/Papirus-Dark по
+        # системной теме; без пакета иконки в Rofi пустые.
         gnome-themes-extra
         papirus-icon-theme
 
@@ -244,17 +250,16 @@ install_aur_packages() {
 install_fonts() {
     log_info "Установка шрифтов..."
 
-    # Maple Mono NF CN
-    if ! fc-list | grep -qi "maple"; then
-        log_info "Установка Maple Mono NF CN..."
-        mkdir -p ~/.local/share/fonts
-        cd /tmp
-        rm -f MapleMono-NF-CN.zip
-        curl -fL "https://github.com/subframe7536/maple-font/releases/latest/download/MapleMono-NF-CN.zip" -o MapleMono-NF-CN.zip
-        unzip -o MapleMono-NF-CN.zip -d ~/.local/share/fonts/
-        fc-cache -fv
-    else
-        log_info "Maple Mono уже установлен"
+    # Текущий UI использует установленный локально SF Pro Display. Inter Tight
+    # хранится в репозитории как свободный переносимый fallback для машины, на
+    # которой SF Pro отсутствует; проприетарные файлы SF Pro в Git не кладём.
+    if [[ -f "$SCRIPT_DIR/.local/share/fonts/InterTight/InterTight[wght].ttf" ]]; then
+        install -Dm644 \
+            "$SCRIPT_DIR/.local/share/fonts/InterTight/InterTight[wght].ttf" \
+            "$HOME/.local/share/fonts/InterTight/InterTight[wght].ttf"
+        install -Dm644 \
+            "$SCRIPT_DIR/.local/share/fonts/InterTight/OFL.txt" \
+            "$HOME/.local/share/fonts/InterTight/OFL.txt"
     fi
 
     # Playpen Sans
@@ -273,10 +278,14 @@ install_fonts() {
     fi
 
     # Nerd Fonts (дополнительно)
-    sudo pacman -S --needed --noconfirm ttf-jetbrains-mono-nerd ttf-firacode-nerd 2>/dev/null || true
+    sudo pacman -S --needed --noconfirm \
+        inter-font ttf-jetbrains-mono-nerd ttf-firacode-nerd python-gobject \
+        2>/dev/null || true
 
     # Emoji шрифт (для waybar иконок)
     sudo pacman -S --needed --noconfirm noto-fonts-emoji 2>/dev/null || true
+
+    fc-cache -f >/dev/null 2>&1
 
     log_info "Шрифты установлены"
 }
@@ -734,83 +743,7 @@ install_ohmyzsh() {
 }
 
 # ==========================================
-# 7.4. cship — statusline для Claude Code
-# ==========================================
-install_cship() {
-    log_info "Установка cship (statusline для Claude Code)..."
-
-    # Официальный установщик с cship.dev не годится на Arch: на шаге 4 он делает
-    # `sudo apt-get install libsecret-tools`, а на шаге 5 тянет Starship ещё одним
-    # `curl | sh`. Берём бинарь из релизов сами — он статический (musl), рантайма
-    # не требует.
-    #
-    # Почему не ccstatusline (12k звёзд против 406): он запускается как
-    # `npx -y ccstatusline@latest`, это ~70 мс на КАЖДУЮ отрисовку строки.
-    # У cship — 1 мс, с обёрткой cship-wrap — 8 мс.
-    local url="https://github.com/stephenleo/cship/releases/latest/download/cship-x86_64-unknown-linux-musl"
-    mkdir -p "$HOME/.local/bin"
-    if curl -fsSL "$url" -o "$HOME/.local/bin/cship.new"; then
-        chmod +x "$HOME/.local/bin/cship.new"
-        mv -f "$HOME/.local/bin/cship.new" "$HOME/.local/bin/cship"
-        log_info "cship установлен: $("$HOME/.local/bin/cship" --version 2>/dev/null | head -1)"
-    else
-        rm -f "$HOME/.local/bin/cship.new"
-        log_warn "cship не скачался — statusline в Claude Code останется дефолтным"
-        return 0
-    fi
-
-    # Обёртка. Правит stdin-JSON от Claude Code до того, как он попадёт в cship:
-    # basename папки, «Opus 5 1M» вместо «Opus 5 (1M context)», токены в тысячах.
-    # Ничего этого cship не умеет — подробности в шапке самого файла. Ставится
-    # ПОСЛЕ бинаря: без cship она бесполезна.
-    install -Dm755 "$SCRIPT_DIR/.local/bin/cship-wrap" "$HOME/.local/bin/cship-wrap"
-
-    # secret-tool из libsecret. Лимиты cship берёт из stdin-JSON, который отдаёт
-    # сам Claude Code, но когда их там ещё нет (первые секунды сессии) — ходит
-    # за ними в API, и вот там нужен доступ к кредам.
-    sudo pacman -S --needed --noconfirm libsecret >/dev/null 2>&1 \
-        || log_warn "libsecret не поставился — фоллбэк за лимитами через API не заработает"
-
-    # statusLine дописывается в ~/.claude/settings.json МЕРЖЕМ, а не заменой файла.
-    # Самого settings.json в репозитории нет намеренно: Claude Code переписывает
-    # его на каждый /model и /config, и в репе он давал бы вечный грязный diff.
-    local settings="$HOME/.claude/settings.json"
-    mkdir -p "$HOME/.claude"
-    [[ -f "$settings" ]] || echo '{}' > "$settings"
-    python3 - "$settings" <<'PYEOF' || log_warn "не удалось прописать statusLine — добавь вручную"
-import json, os, sys
-path = sys.argv[1]
-try:
-    with open(path) as f:
-        data = json.load(f)
-except (ValueError, OSError) as e:
-    print('settings.json нечитаем (%s) — statusLine не прописан' % e)
-    sys.exit(1)
-data['statusLine'] = {
-    'type': 'command',
-    # cship-wrap, а не cship: обёртка препроцессит JSON и сама зовёт бинарь.
-    'command': os.path.expanduser('~/.local/bin/cship-wrap'),
-}
-with open(path, 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
-print('statusLine прописан в ' + path)
-PYEOF
-
-    log_info "cship настроен (конфиг: ~/.config/cship.toml)"
-}
-
-# ==========================================
-# 7.4. Общий control plane AI-харнессов
-# ==========================================
-install_ai_harnesses() {
-    log_info "Установка общей системы AI-харнессов..."
-    bash "$SCRIPT_DIR/scripts/install-ai-harnesses.sh" \
-        || log_warn "AI control plane установлен не полностью"
-}
-
-# ==========================================
-# 7.5. Установка LazyVim
+# 7.4. Установка LazyVim
 # ==========================================
 install_lazyvim() {
     log_info "Установка LazyVim..."
@@ -854,27 +787,6 @@ return {
 NVIMEOF
 
     log_info "LazyVim установлен (gruvbox-material). Запусти nvim для установки плагинов."
-}
-
-# ==========================================
-# 8.5. Voice input (faster-whisper venv)
-# ==========================================
-setup_voice_input() {
-    log_info "Настройка voice input (faster-whisper)..."
-
-    local venv_dir="$HOME/.local/share/voice-input/venv"
-
-    if [[ ! -d "$venv_dir" ]]; then
-        mkdir -p "$(dirname "$venv_dir")"
-        python -m venv "$venv_dir"
-        "$venv_dir/bin/pip" install --upgrade pip
-        "$venv_dir/bin/pip" install faster-whisper nvidia-cublas-cu12 nvidia-cudnn-cu12
-        # Pre-download model
-        "$venv_dir/bin/python" -c "from faster_whisper import WhisperModel; WhisperModel('large-v3-turbo', device='cpu', compute_type='int8')" 2>/dev/null
-        log_info "Voice input venv создан: $venv_dir"
-    else
-        log_info "Voice input venv уже существует"
-    fi
 }
 
 # ==========================================
@@ -967,21 +879,15 @@ copy_configs() {
         # Каталог целиком: rm -rf выше снёс бы rename-random.sh и
         # agent-win.sh, если положить только часть файлов.
         ".config/tmux"
-        # Только models.json: рядом лежат auth.json и сессии Pi, а выше
-        # по циклу идёт rm -rf — каталогом сюда нельзя.
-        ".pi/agent/models.json"
-        ".pi/agent/settings.json"
-        ".config/cship.toml"
-        ".config/cship.toml.compact-variant"
         ".config/swaykbdd"
         ".config/neofetch"
         ".config/scripts"
         ".config/sing-box"
         ".config/waybar"
         ".config/rofi"
-        ".config/niri"
         ".config/gtk-3.0"
         ".config/gtk-4.0"
+        ".config/fontconfig"
         ".config/swaync"
         ".config/Code/User"
         ".config/zellij"
@@ -992,6 +898,7 @@ copy_configs() {
         # Дефолтные приложения: без него xdg-open после восстановления не знает,
         # чем открывать ссылки, и http/https уходят в случайный .desktop.
         ".config/mimeapps.list"
+        ".local/bin/waybar-mono-icons"
     )
 
     for item in "${items[@]}"; do
@@ -1007,6 +914,20 @@ copy_configs() {
         fi
     done
 
+    # Штатный /usr/bin/google-chrome-stable читает обычный файл флагов, а
+    # репозиторий хранит переносимый шаблон без зашитого имени пользователя.
+    if [[ -f "$SCRIPT_DIR/.config/chrome-flags.conf.template" ]]; then
+        local chrome_flags_tmp
+        chrome_flags_tmp=$(mktemp "$HOME/.config/.chrome-flags.conf.XXXXXX")
+        sed "s|@HOME@|$HOME|g" \
+            "$SCRIPT_DIR/.config/chrome-flags.conf.template" > "$chrome_flags_tmp"
+        mv -f "$chrome_flags_tmp" "$HOME/.config/chrome-flags.conf"
+    fi
+
+    command -v update-desktop-database >/dev/null 2>&1 \
+        && update-desktop-database "$HOME/.local/share/applications" 2>/dev/null \
+        || true
+
     log_info "Конфиги скопированы"
 }
 
@@ -1017,6 +938,7 @@ make_scripts_executable() {
     log_info "Делаем скрипты исполняемыми..."
 
     chmod +x ~/.config/hypr/scripts/*.sh 2>/dev/null || true
+    chmod +x ~/.config/rofi/*.sh 2>/dev/null || true
     chmod +x ~/.config/waybar/scripts/*.sh 2>/dev/null || true
     chmod +x ~/.config/scripts/*.sh 2>/dev/null || true
 
@@ -1025,6 +947,7 @@ make_scripts_executable() {
     # молча, без единой ошибки в логе.
     chmod +x ~/.config/hypr/scripts/*.py 2>/dev/null || true
     chmod +x ~/.config/waybar/scripts/*.py 2>/dev/null || true
+    chmod +x ~/.local/bin/waybar-mono-icons 2>/dev/null || true
 
     # Каталоги, в которые пишут кнопка записи экрана и hyprshot. Оба
     # инструмента их сами не создают: wf-recorder упадёт на открытии файла,
@@ -1068,36 +991,32 @@ main() {
     setup_remote_ssh
     install_bt_audio      # после enable_system_services: ему нужны поднятые pipewire и bluetooth
     install_ohmyzsh
-    # setup_voice_input — отключено. Голосовой ввод висел на голом F11 и
-    # глобально съедал фуллскрин в браузерах и видеоплеерах. Venv на 2.7 ГБ
-    # с CUDA-библиотеками ставился при каждом прогоне. Вернуть: раскомментировать
-    # здесь и бинды F11 в .config/hypr/hyprland.lua.
     copy_configs
-    install_ai_harnesses
-    install_cship         # после copy_configs: ему нужен уже лежащий ~/.config/cship.toml
     setup_singbox
     make_scripts_executable
     install_lazyvim
     set_default_shell
 
-    # Установка тёмной темы по умолчанию.
-    # Имя темы — именно 'Adwaita-dark', а НЕ 'Adwaita:dark'. Суффикс ":dark"
-    # GTK3 понимает только у переменной окружения GTK_THEME; через gsettings он
-    # ищется как буквальное имя темы, не находится, и GTK3 молча остаётся на
-    # светлой. Тема Adwaita-dark приезжает из gnome-themes-extra.
-    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
-    gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
+    # Репозиторий хранит текущее светлое состояние; Ctrl+Y по-прежнему
+    # переключает его в Adwaita-dark/Papirus-Dark и обратно.
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'
+    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita'
+    gsettings set org.gnome.desktop.interface icon-theme 'Papirus'
+    gsettings set org.gnome.desktop.interface font-name 'SF Pro Display, Semi-Bold 11'
+    gsettings set org.gnome.desktop.interface document-font-name 'SF Pro Display, Semi-Bold 11'
+    gsettings set org.gnome.desktop.wm.preferences titlebar-font 'SF Pro Display, Semi-Bold 11'
     # Цель относительная, а не полный путь: оба каталога лежат в git, и
     # абсолютная ссылка зашила бы в репу /home/<текущий юзер>.
-    ln -sfn "style-dark.css" "$HOME/.config/waybar/style.css"
+    ln -sfn "style-light.css" "$HOME/.config/waybar/style.css"
     # swaync, в отличие от waybar, портал НЕ слушает: он читает ровно
     # ~/.config/swaync/style.css и ничего сам не выбирает. Поэтому активная
     # тема задаётся симлинком, а переключает его toggle-theme.sh с
     # последующим `swaync-client --reload-css`.
-    ln -sfn "style-dark.css" "$HOME/.config/swaync/style.css"
-    echo "dark" > "$HOME/.config/hypr/.theme-state"
-    log_info "Тёмная тема установлена (переключение: Ctrl+Y)"
+    ln -sfn "style-light.css" "$HOME/.config/swaync/style.css"
+    echo "light" > "$HOME/.config/hypr/.theme-state"
+    "$HOME/.config/waybar/scripts/accent.sh" refresh \
+        || log_warn "SVG и монохромная тема иконок Waybar не сгенерировались"
+    log_info "Светлая тема установлена (переключение: Ctrl+Y)"
 
     # Перезагрузка Hyprland конфига и перезапуск панели/обоев
     hyprctl reload 2>/dev/null && log_info "Hyprland конфиг перезагружен" || true
@@ -1134,7 +1053,6 @@ main() {
     echo "  3. ПЕРЕЗАГРУЗИСЬ — greeter SDDM, GPU fan control, zsh, кривая nct6798"
     echo "  4. Запусти nvim для установки LazyVim плагинов"
     echo "  5. sing-box VPN toggle: Alt+P (сервер настроить в ~/.config/sing-box/config.json)"
-    echo "  6. Заполни ~/.config/agents/secrets.env и выполни mcp-sync"
     echo ""
     echo "Проверки после ребута:"
     echo "  nvidia-smi -q | grep 'GSP Firmware'                 # должно быть N/A"

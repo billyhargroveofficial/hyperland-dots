@@ -1,23 +1,39 @@
+@import url("accent.css");
+
 * {
   border: none;
   border-radius: 0;
-  font-family: "Cantarell", "JetBrainsMono Nerd Font", sans-serif;
-  font-size: 13px;
+  font-family: "SF Pro Display", sans-serif;
+  font-size: 14px;
+  letter-spacing: -0.1px;
   min-height: 0;
   font-weight: 600;
 }
 
 window#waybar {
   background: rgba(255, 255, 255, 0);
-  color: #A85F68;
+  color: @waybar_accent_light;
 }
 
 /* Левый блок */
 .modules-left {
-  background-color: rgba(255, 255, 255, 0.95);
-  border-radius: 25px;
-  padding: 0 15px;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
   border: none;
+}
+
+#workspaces-island,
+#accent {
+  background-color: rgba(255, 255, 255, 0.72);
+  border-radius: 25px;
+  padding: 0 10px;
+  border: none;
+}
+
+#accent {
+  margin-left: 10px;
+  padding: 0 12px;
 }
 
 /* Разделители между секциями */
@@ -31,21 +47,22 @@ window#waybar {
 
 /* Правый блок */
 .modules-right {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.72);
   border-radius: 25px;
-  padding: 0 15px;
+  padding: 0 20px 0 15px;
   border: none;
 }
 
 .modules-center {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.72);
   border-radius: 25px;
-  padding: 0 5px;
+  padding: 0 8px;
   border: none;
 }
 
 /* Reset all modules */
 #workspaces,
+#custom-telemetry,
 #clock,
 #pulseaudio,
 #custom-mic-volume,
@@ -77,45 +94,51 @@ window#waybar {
   border-radius: 6px;
 }
 
-/* Воркспейсы. Заливка есть у всех кнопок постоянно, просто приглушённая.
-   Активная становится яркой и шире, поэтому выделение плавно переезжает. */
+/* Анонимные воркспейсы: маленькие круги без текста и app-иконок. */
 #workspaces button {
-  padding: 0 8px;
-  margin: 4px 3px;
-  border-radius: 15px;
+  min-width: 14px;
+  min-height: 14px;
+  padding: 0;
+  margin: 7px 5px;
+  border-radius: 50%;
   border: none;
-  color: #FFFFFF;
-  background: #C4707A;
-  opacity: 0.4;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 0 0 1px alpha(@waybar_accent_light, 0.22);
+  color: transparent;
+  background: alpha(@waybar_accent_light, 0.20);
+  opacity: 1;
+  transition: background-color 0.20s ease, box-shadow 0.20s ease, opacity 0.20s ease;
+}
+
+#workspaces button label {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 0;
 }
 
 #workspaces button:hover {
-  opacity: 0.7;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  background: alpha(@waybar_accent_light, 0.38);
+  box-shadow: 0 0 0 3px alpha(@waybar_accent_light, 0.10);
+  opacity: 1;
 }
 
 #workspaces button.active {
-  min-width: 32px;
+  color: transparent;
+  background: @waybar_accent_light;
+  box-shadow: 0 0 0 3px alpha(@waybar_accent_light, 0.20);
   opacity: 1;
-  font-weight: 700;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #workspaces button.urgent {
   background: #C0392B;
-  color: #FFFFFF;
+  color: transparent;
+  box-shadow: 0 0 0 3px alpha(#C0392B, 0.20);
   opacity: 1;
 }
 
 #custom-launcher {
   color: #C4707A;
-  font-size: 16px;
-  padding: 0 15px;
-}
-
-#custom-power {
-  color: #A85F68;
   font-size: 16px;
   padding: 0 15px;
 }
@@ -134,20 +157,21 @@ window#waybar {
 #custom-brightness-down {
   color: #C97B2D;
   padding: 0 5px;
-  font-weight: bold;
 }
 
 #network {
   color: #A85F68;
+  padding: 0 5px;
 }
 
 #bluetooth {
   color: #8F5560;
+  padding: 4px 4px 4px 2px;
+  margin: 0 1px 0 0;
 }
 
 #clock {
   color: #C4707A;
-  font-weight: bold;
 }
 
 /* Hide sliders by default */
@@ -173,14 +197,13 @@ window#waybar {
   min-width: 12px;
   min-height: 12px;
   border-radius: 9999px;
-  background-color: #A85F68;
+  background-color: @waybar_accent_light;
 }
 
 /* VPN индикатор */
 #custom-vpn {
   color: #A85F68;
   padding: 0 10px;
-  font-weight: bold;
 }
 
 #custom-vpn.connected {
@@ -213,8 +236,7 @@ window#waybar {
 /* sing-box VPN индикатор */
 #custom-singbox {
   color: #A85F68;
-  padding: 0 10px;
-  font-weight: bold;
+  padding: 0 2px 0 7px;
 }
 
 #custom-singbox.connected {
@@ -234,7 +256,6 @@ window#waybar {
 #custom-recorder {
   color: #A85F68;
   padding: 0 10px;
-  font-weight: bold;
 }
 
 #custom-recorder.recording {
@@ -286,16 +307,16 @@ window#waybar {
 }
 
 #tray {
-  margin: 0 5px;
+  padding: 0;
+  margin: 0;
 }
 
 /* Языковой индикатор */
 #language {
-  padding: 0 10px;
-  margin: 0 2px;
+  padding: 0 3px 0 1px;
+  margin: 0;
   border-radius: 6px;
   color: #75474F;
-  font-weight: bold;
 }
 
 /* Слайдер громкости */
@@ -318,9 +339,172 @@ window#waybar {
   animation: pulse 0.5s infinite;
 }
 
+/* Единый акцент панели: состояния отличаются формой и прозрачностью, не цветом. */
+.modules-left *,
+.modules-center *,
+.modules-right * {
+  color: @waybar_accent_light;
+}
+
+/* Старые по-модульные правила имеют ID-специфичность. Перекрываем их здесь,
+   чтобы выбранный акцент действительно применялся ко всему интерфейсу. */
+#custom-telemetry-cpu,
+#custom-telemetry-gpu,
+#custom-telemetry-ram,
+#custom-telemetry-vram,
+#custom-telemetry-ssd,
+#clock,
+#pulseaudio,
+#custom-mic-volume,
+#pulseaudio-slider,
+#custom-brightness,
+#custom-brightness-up,
+#custom-brightness-down,
+#network,
+#bluetooth,
+#tray,
+#hyprland-language,
+#language,
+#custom-power,
+#custom-launcher,
+#custom-cpu,
+#custom-cpu-temp,
+#custom-fan,
+#custom-gpu-temp,
+#custom-gpu-fan,
+#custom-gpu-vram,
+#custom-memory,
+#custom-disk,
+#custom-vpn,
+#custom-vpn.connected,
+#custom-vpn.disconnected,
+#custom-vpn.connecting,
+#custom-singbox,
+#custom-singbox.connected,
+#custom-singbox.disconnected,
+#custom-recorder,
+#custom-recorder.recording,
+#custom-recorder.idle,
+#custom-recorder.missing,
+#custom-voice,
+#custom-voice.recording,
+#custom-voice.processing {
+  color: @waybar_accent_light;
+}
+
+#workspaces button.active,
+#workspaces button.urgent {
+  color: #FFFFFF;
+}
+
+/* Native SVG image modules: every pictogram comes from one Lucide set. */
+#image {
+  padding: 0;
+  margin: 0;
+}
+
+#image.accent-purple,
+#image.accent-blue,
+#image.accent-teal,
+#image.accent-amber {
+  padding: 0 2px;
+  margin: 0 1px;
+}
+
+#image.theme-toggle {
+  padding: 0 2px;
+  margin: 0 1px 0 5px;
+}
+
+#image.telemetry-cpu,
+#image.telemetry-gpu,
+#image.telemetry-ram,
+#image.telemetry-vram,
+#image.telemetry-ssd {
+  padding: 0;
+  margin: 0 3px 0 7px;
+  opacity: 1;
+}
+
+#image.telemetry-cpu {
+  margin-left: 2px;
+}
+
+#image.telemetry-ram,
+#image.telemetry-ssd {
+  margin-left: 8px;
+}
+
+#custom-telemetry-cpu,
+#custom-telemetry-gpu,
+#custom-telemetry-ram,
+#custom-telemetry-vram,
+#custom-telemetry-ssd {
+  padding: 4px 2px 4px 0;
+  margin: 0;
+  opacity: 1;
+}
+
+#image.network {
+  margin: 0 3px 0 4px;
+}
+
+#image.vpn,
+#image.bluetooth {
+  margin: 0 3px;
+}
+
+#image.volume {
+  margin: 0 3px 0 4px;
+}
+
+#pulseaudio {
+  padding: 4px 3px 4px 0;
+  margin: 0;
+}
+
+#image.brightness {
+  margin: 0 3px 0 6px;
+}
+
+#custom-brightness {
+  padding: 0 3px 0 0;
+  margin: 0;
+}
+
+#image.recorder {
+  margin: 0 5px;
+}
+
+#image.wallpaper {
+  margin: 0 5px;
+}
+
+#clock {
+  padding: 4px 3px 4px 4px;
+  margin: 0;
+}
+
+#custom-power-button {
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin: 0 0 0 4px;
+  color: transparent;
+  background-image: url("../../.cache/waybar-svg-icons/power-light.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+}
+
 tooltip {
-  border-radius: 15px;
-  background-color: #F5F5F5;
-  color: #A85F68;
+  opacity: 0;
+  background-color: transparent;
+  color: transparent;
   border: none;
+  box-shadow: none;
+}
+
+tooltip label {
+  opacity: 0;
 }

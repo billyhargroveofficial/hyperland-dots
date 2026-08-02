@@ -29,17 +29,15 @@
 !.config/neofetch/**
 !.config/gtk-3.0/**
 !.config/gtk-4.0/**
+!.config/fontconfig/
+!.config/fontconfig/**
 !.config/alacritty/**
 # tmux: тема из macdots + скрипты (случайные имена окон, индикатор
 # AI-агентов во вкладках). Каталог целиком — restore-config.sh делает
 # rm -rf перед cp, неполный набор потерял бы rename-random.sh.
 !.config/tmux/
 !.config/tmux/**
-# statusline для Claude Code (cship). Одиночный файл, не каталог — маска
-# `**` тут не нужна.
-!.config/cship.toml
-!.config/cship.toml.compact-variant
-# Дефолтные приложения (браузер для http/https и схема claude-cli). Одиночный
+# Дефолтные приложения (браузер для http/https). Одиночный
 # файл: без него после восстановления ссылки открывает не Chrome, а что попало.
 !.config/mimeapps.list
 !.config/scripts/**
@@ -49,7 +47,6 @@
 !.config/sing-box/config.json.example
 # Exclude real config with sensitive data
 .config/sing-box/config.json
-!.config/niri/**
 !.config/zellij/
 !.config/zellij/**
 !.config/swaync/
@@ -58,50 +55,27 @@
 !.config/hyprshell/**
 !.config/wireplumber/
 !.config/wireplumber/**
-!.config/agents/
-!.config/agents/**
-.config/agents/secrets.env
-.config/agents/telegram-service.env
-.config/agents/AGENTS.md
-.config/agents/mcp.json
-.config/agents/skills
 !.config/systemd/
 !.config/systemd/user/
-!.config/systemd/user/telegram-mcp.service
 # Bluetooth-аудио: автопереключение на наушники и обход бага WirePlumber
 # с потерей BlueZ-endpoints (docs/bluetooth-audio.md).
 !.config/systemd/user/bt-audio-autoswitch.service
 !.config/systemd/user/bt-audio-recover.service
-# Hermes Agent (Telegram gateway). PATH в юните обязателен: без него
-# stdio-MCP из ~/.local/bin не стартуют.
-!.config/systemd/user/hermes-agent.service
 # Обратный SSH-туннель для входа на mujik через loopback-порт nareshka.ru:2223.
 !.config/systemd/user/mujik-ssh-tunnel.service
 !.config/chrome-flags.conf.template
 
-# AI control plane executables and dormant Grok base config
+# AI control plane executables
 !.local/
 !.local/bin/
-!.local/bin/mcp-sync
-!.local/bin/gemini-search-mcp
 !.local/bin/bt-audio-autoswitch
 !.local/bin/bt-audio-recover
-!.local/bin/cship-wrap
-!.local/bin/hermes
 !.local/bin/mujik-ssh-tunnel
-!.grok/
-!.grok/config.toml
-
-# Pi: только описание провайдера Alibaba Token Plan (ключ — ссылкой на
-# $BAILIAN_TOKEN_PLAN_API_KEY). Остальное в ~/.pi/agent/ — auth.json,
-# сессии, установленные npm-расширения — runtime, в репо ему нельзя.
-!.pi/
-!.pi/agent/
-!.pi/agent/models.json
-# Список установленных расширений (pi-mcp-adapter), провайдер, модель и
-# уровень мышления по умолчанию. Рядом лежат auth.json, сессии и
-# mcp-cache.json — это runtime и секреты, им в репо нельзя.
-!.pi/agent/settings.json
+!.local/bin/waybar-mono-icons
+!.local/share/
+!.local/share/fonts/
+!.local/share/fonts/InterTight/
+!.local/share/fonts/InterTight/**
 
 # Скрипты установки
 !scripts/
@@ -134,18 +108,12 @@
 !docs/
 !docs/**
 
-# Хуки харнессов для tmux-agent-indicator: фрагменты конфигов, которые
-# правятся вручную (сами конфиги харнессов не версионируются).
+# Нейтральная документация hooks для tmux-agent-indicator; конкретные
+# vendor-вставки в репозитории не хранятся.
 !harness-hooks/
 !harness-hooks/**
 !.config/Code/
 !.config/Code/**
-# OpenCode: версионируется только выбор темы TUI (прозрачный фон = тема
-# терминала). Остальное НЕ включаем намеренно: opencode.json содержит MCP и
-# частично генерится mcp-sync (AGENTS.md, skills), node_modules — runtime.
-# Маска узкая, без `**`, чтобы будущий `git add .` не затащил runtime/generated.
-!.config/opencode/tui.json
-
 # Байткод Python. Каталоги скриптов пропущены в whitelist целиком (`!.config/
 # waybar/**`), поэтому без явного правила __pycache__ туда пролезает — его
 # создаёт любой запуск модулей waybar и любая проверка через py_compile.

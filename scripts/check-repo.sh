@@ -34,6 +34,7 @@ done
 zsh -n .zshrc
 
 while IFS= read -r file; do
+    [[ -f "$file" ]] || continue
     python3 - "$file" <<'PY'
 import json
 import pathlib
@@ -123,6 +124,7 @@ PY
 done < <(git ls-files --cached '*.json' '*.jsonc')
 
 while IFS= read -r file; do
+    [[ -f "$file" ]] || continue
     python3 - "$file" <<'PY'
 import pathlib
 import sys
@@ -136,6 +138,7 @@ done < <(git ls-files --cached '*.toml')
 LUAC="$(command -v luac || command -v luac5.4 || true)"
 [[ -n "$LUAC" ]] || fail "luac не найден"
 while IFS= read -r file; do
+    [[ -f "$file" ]] || continue
     "$LUAC" -p "$file"
 done < <(git ls-files --cached '*.lua')
 

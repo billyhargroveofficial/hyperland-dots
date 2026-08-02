@@ -5,8 +5,8 @@
   "editor.codeActionsOnSave": { "source.organizeImports": "explicit" },
   "extensions.experimental.affinity": { "asvetliakov.vscode-neovim": 1 },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.fontFamily": "Maple Mono NF CN",
-  "terminal.integrated.fontFamily": "Maple Mono NF CN",
+  "editor.fontFamily": "JetBrainsMono Nerd Font",
+  "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font",
   "editor.fontWeight": "500",
   "workbench.tree.renderIndentGuides": "none",
   "editor.stickyScroll.enabled": false,
@@ -34,13 +34,11 @@
   "workbench.activityBar.location": "top",
   "git.confirmSync": false,
   "security.workspace.trust.untrustedFiles": "open",
-  "claudeCode.preferredLocation": "sidebar",
   "git.enableSmartCommit": true,
-  "claudeCode.selectedModel": "opus",
   "explorer.confirmPasteNative": false,
   "explorer.compactFolders": false,
   "custom-ui-style.stylesheet": {
-    ".monaco-workbench": "font-family: 'Maple Mono NF CN', monospace !important",
+    ".monaco-workbench": "font-family: 'JetBrainsMono Nerd Font', monospace !important",
   },
   "http.systemCertificatesNode": true,
   // "window.menuBarVisibility": "toggle",
@@ -57,6 +55,6 @@
   "security.promptForLocalFileProtocolHandling": false,
   "kilo-code.allowedCommands": ["git log", "git diff", "git show"],
   "kilo-code.deniedCommands": [],
-  "workbench.colorTheme": "Gruvbox Dark Hard",
+  "workbench.colorTheme": "Bearded Theme Milkshake Mint",
   //sudo chown -R $(whoami) '/opt/visual-studio-code/resources/app'
 }

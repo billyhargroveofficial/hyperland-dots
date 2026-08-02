@@ -1,22 +1,24 @@
-/* Gruvbox Dark - Wallpaper Selector */
+/* Borderless wallpaper selector; colors.rasi follows system theme/accent. */
+
+@import "colors.rasi"
 
 * {
-    bg: #282828;
-    bg-alt: #3c3836;
-    fg: #ebdbb2;
-    accent: #a89984;
-    accent-alt: #bdae93;
-    urgent: #cc241d;
+    bg: @rofi-bg;
+    bg-alt: @rofi-surface;
+    fg: @rofi-fg;
+    accent: @rofi-accent;
+    accent-alt: @rofi-accent-hover;
+    urgent: @rofi-urgent;
 
     background-color: transparent;
     text-color: @fg;
-    font: "MapleMono NF CN 11";
+    font: "SF Pro Display, Semi-Bold 11";
 }
 
 window {
+    transparency: "real";
     background-color: @bg;
-    border: 3px solid;
-    border-color: @accent;
+    border: 0px;
     border-radius: 16px;
     padding: 20px;
     width: 900px;
@@ -38,12 +40,12 @@ inputbar {
 
 prompt {
     text-color: @accent;
-    font: "MapleMono NF CN Bold 12";
+    font: "SF Pro Display, Bold 12";
 }
 
 entry {
     placeholder: "Search...";
-    placeholder-color: #665c54;
+    placeholder-color: @rofi-placeholder;
 }
 
 listview {
@@ -65,16 +67,19 @@ element {
 
 element selected {
     background-color: @accent;
-    text-color: @bg;
+    text-color: @rofi-selected-fg;
 }
 
 element-icon {
     size: 140px;
     horizontal-align: 0.5;
     border-radius: 8px;
+    background-color: inherit;
 }
 
 element-text {
     horizontal-align: 0.5;
-    font: "MapleMono NF CN 9";
+    font: "SF Pro Display, Semi-Bold 9";
+    background-color: inherit;
+    text-color: inherit;
 }

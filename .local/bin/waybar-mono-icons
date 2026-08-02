@@ -1,0 +1,294 @@
+#!/usr/bin/python3
+"""Build a private monochrome application-icon theme for Waybar."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk  # noqa: E402
+
+
+THEME_DIR = Path.home() / ".local/share/icons/WaybarMono"
+OUTPUT_DIR = THEME_DIR / "64x64/apps"
+UNTHEMED_ICON_DIR = Path.home() / ".local/share/icons"
+SIGNATURE_FILE = THEME_DIR / ".source-signature"
+INDEX_FILE = THEME_DIR / "index.theme"
+THEME_VERSION = "4"
+TRAY_ICON_ALIASES = {
+    "waybar-tray-telegram": "TelegramDesktop",
+    "waybar-tray-network": "nm-applet",
+    "waybar-tray-flov": "flov_app",
+}
+INDEX_CONTENT = """[Icon Theme]
+Name=WaybarMono
+Comment=Monochrome application silhouettes generated for Waybar
+Directories=64x64/apps
+
+[64x64/apps]
+Size=64
+Context=Applications
+Type=Scalable
+MinSize=8
+MaxSize=256
+"""
+
+
+def ensure_theme_layout() -> None:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        current = INDEX_FILE.read_text(encoding="utf-8")
+    except OSError:
+        current = ""
+    if current != INDEX_CONTENT:
+        INDEX_FILE.write_text(INDEX_CONTENT, encoding="utf-8")
+
+
+def desktop_directories() -> list[Path]:
+    roots = [Path.home() / ".local/share"]
+    roots.extend(
+        Path(entry)
+        for entry in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")
+        if entry
+    )
+    roots.extend(
+        [
+            Path.home() / ".local/share/flatpak/exports/share",
+            Path("/var/lib/flatpak/exports/share"),
+        ]
+    )
+
+    result: list[Path] = []
+    for root in roots:
+        applications = root / "applications"
+        if applications.is_dir() and applications not in result:
+            result.append(applications)
+    return result
+
+
+def read_desktop_entry(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    in_desktop_entry = False
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return values
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            in_desktop_entry = line == "[Desktop Entry]"
+            continue
+        if not in_desktop_entry or "=" not in line or line.startswith("#"):
+            continue
+        key, value = line.split("=", 1)
+        if key in {"Icon", "StartupWMClass"} and key not in values:
+            values[key] = value.strip()
+    return values
+
+
+def clean_alias(value: str) -> str:
+    alias = value.strip()
+    if alias.startswith("file://"):
+        alias = alias[7:]
+    if "/" in alias:
+        alias = Path(alias).name
+    for suffix in (".png", ".svg", ".svgz", ".xpm"):
+        if alias.lower().endswith(suffix):
+            alias = alias[: -len(suffix)]
+            break
+    return alias.replace("/", "-") if alias not in {"", ".", ".."} else ""
+
+
+def resolve_icon(icon_theme: Gtk.IconTheme, value: str) -> Path | None:
+    raw_value = value.strip()
+    if raw_value.startswith("file://"):
+        raw_value = raw_value[7:]
+
+    direct_path = Path(os.path.expanduser(raw_value))
+    if direct_path.is_absolute() and direct_path.is_file():
+        return direct_path.resolve()
+
+    candidates = [raw_value]
+    cleaned = clean_alias(raw_value)
+    if cleaned and cleaned not in candidates:
+        candidates.append(cleaned)
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        info = icon_theme.lookup_icon(candidate, 128, Gtk.IconLookupFlags.FORCE_SIZE)
+        if info and info.get_filename():
+            source = Path(info.get_filename())
+            if source.is_file():
+                return source.resolve()
+    return None
+
+
+def collect_aliases(icon_theme: Gtk.IconTheme) -> dict[str, Path]:
+    aliases: dict[str, Path] = {}
+    for directory in desktop_directories():
+        for desktop_file in sorted(directory.rglob("*.desktop")):
+            entry = read_desktop_entry(desktop_file)
+            icon_value = entry.get("Icon", "")
+            if not icon_value:
+                continue
+            source = resolve_icon(icon_theme, icon_value)
+            if source is None:
+                continue
+
+            names = {
+                clean_alias(icon_value),
+                clean_alias(entry.get("StartupWMClass", "")),
+                clean_alias(desktop_file.stem),
+            }
+            names |= {name.lower() for name in names if name}
+            for name in names:
+                if name:
+                    aliases.setdefault(name, source)
+
+    missing = resolve_icon(icon_theme, "image-missing")
+    if missing is not None:
+        for name in ("unknown", "image-missing", "application-default-icon"):
+            aliases.setdefault(name, missing)
+    return aliases
+
+
+def source_signature(aliases: dict[str, Path], color: str) -> str:
+    digest = hashlib.sha256()
+    digest.update(f"{THEME_VERSION}\0{color}\0".encode())
+    for alias, source in sorted(aliases.items()):
+        try:
+            stat = source.stat()
+            metadata = f"{alias}\0{source}\0{stat.st_mtime_ns}\0{stat.st_size}\0"
+        except OSError:
+            metadata = f"{alias}\0{source}\0missing\0"
+        digest.update(metadata.encode())
+    return digest.hexdigest()
+
+
+def render_source(source: Path, destination: Path, color: str) -> bool:
+    command = [
+        "magick",
+        str(source),
+        "-background",
+        "none",
+        "-resize",
+        "56x56",
+        "-gravity",
+        "center",
+        "-extent",
+        "64x64",
+        "-colorspace",
+        "gray",
+        "-fill",
+        color,
+        "-tint",
+        "100",
+        str(destination),
+    ]
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return destination.is_file()
+
+
+def publish_tray_icons() -> int:
+    """Expose selected generated icons to Waybar's default GTK icon theme."""
+    UNTHEMED_ICON_DIR.mkdir(parents=True, exist_ok=True)
+    published = 0
+    for icon_name, alias in TRAY_ICON_ALIASES.items():
+        source = OUTPUT_DIR / f"{alias}.png"
+        if not source.is_file():
+            continue
+        shutil.copyfile(source, UNTHEMED_ICON_DIR / f"{icon_name}.png")
+        published += 1
+    return published
+
+
+def rebuild(aliases: dict[str, Path], color: str) -> tuple[int, int]:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    for old_file in OUTPUT_DIR.iterdir():
+        if old_file.is_file() or old_file.is_symlink():
+            old_file.unlink()
+
+    rendered: dict[Path, Path] = {}
+    failed_sources: set[Path] = set()
+    for source in sorted(set(aliases.values()), key=str):
+        source_hash = hashlib.sha256(str(source).encode()).hexdigest()[:16]
+        destination = OUTPUT_DIR / f"_source-{source_hash}.png"
+        if render_source(source, destination, color):
+            rendered[source] = destination
+        else:
+            failed_sources.add(source)
+
+    linked = 0
+    for alias, source in aliases.items():
+        rendered_source = rendered.get(source)
+        if rendered_source is None:
+            continue
+        alias_path = OUTPUT_DIR / f"{alias}.png"
+        if alias_path == rendered_source:
+            continue
+        try:
+            alias_path.symlink_to(rendered_source.name)
+            linked += 1
+        except FileExistsError:
+            pass
+
+    subprocess.run(
+        ["gtk-update-icon-cache", "-f", "-t", str(THEME_DIR)],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    publish_tray_icons()
+    return linked, len(failed_sources)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--color", default="#8D69D5")
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--quiet", action="store_true")
+    args = parser.parse_args()
+
+    ensure_theme_layout()
+
+    icon_theme = Gtk.IconTheme.get_default()
+    if icon_theme is None:
+        print("waybar-mono-icons: GTK icon theme is unavailable", file=sys.stderr)
+        return 1
+
+    aliases = collect_aliases(icon_theme)
+    signature = source_signature(aliases, args.color)
+    previous_signature = ""
+    try:
+        previous_signature = SIGNATURE_FILE.read_text(encoding="ascii").strip()
+    except OSError:
+        pass
+
+    if not args.force and previous_signature == signature and any(OUTPUT_DIR.glob("*.png")):
+        publish_tray_icons()
+        if not args.quiet:
+            print(f"WaybarMono is current ({len(aliases)} aliases)")
+        return 0
+
+    linked, failures = rebuild(aliases, args.color)
+    SIGNATURE_FILE.write_text(signature + "\n", encoding="ascii")
+    if not args.quiet:
+        print(f"WaybarMono rebuilt: {linked} aliases, {failures} failed sources")
+    return 0 if linked else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

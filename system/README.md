@@ -10,12 +10,17 @@
 |---|---|
 | `hk-translator/hk-translator.py` | `/opt/hk-translator/` |
 | `hk-translator/hk-translator.service` | `/etc/systemd/system/` |
+| `hk-translator/service.d/override.conf` | `/etc/systemd/system/hk-translator.service.d/` |
 | `kbd-layout-toggle/kbd-layout-toggle.py` | `/opt/kbd-layout-toggle/` |
 | `kbd-layout-toggle/kbd-layout-toggle.service` | `/etc/systemd/system/` |
+| `kbd-layout-toggle/service.d/override.conf` | `/etc/systemd/system/kbd-layout-toggle.service.d/` |
 | `ddcci/ddcci-bind.sh` | `/usr/local/bin/` |
 | `ddcci/ddcci-bind.service` | `/etc/systemd/system/` |
 | `udev/99-ddcci-backlight.rules` | `/etc/udev/rules.d/` |
 | `modules-load/ddcci.conf` | `/etc/modules-load.d/` |
+| `modules-load/ddcci-modprobe.conf` | `/etc/modprobe.d/ddcci.conf` |
+| `modules-load/btusb-modprobe.conf` | `/etc/modprobe.d/btusb.conf` |
+| `ssh/10-billy.conf` | `/etc/ssh/sshd_config.d/10-billy.conf` |
 
 Всё это делает `restore-config.sh`, руками копировать не нужно.
 

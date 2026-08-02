@@ -16,7 +16,7 @@
 #     * ghostty >= 1.2  — сам читает портал, theme = light:...,dark:...
 #     * Qt6             — QT_QPA_PLATFORMTHEME=xdgdesktopportal
 #
-#   Требуют явного пинка (делаем ниже): hyprland, nvim, VSCode, Codex CLI
+#   Требуют явного пинка (делаем ниже): Rofi, hyprland, nvim, VSCode, Codex CLI
 #
 #   НЕ переключаются вживую вообще: Chromium/Chrome/Brave/Electron.
 #   Они уходят в тёмную тему по сигналу портала, но обратно в светлую
@@ -29,6 +29,7 @@ set -u
 
 STATE_FILE="$HOME/.config/hypr/.theme-state"
 WAYBAR_DIR="$HOME/.config/waybar"
+ROFI_ACCENT_SCRIPT="$WAYBAR_DIR/scripts/accent.sh"
 SWAYNC_DIR="$HOME/.config/swaync"
 WEZTERM_THEME="$HOME/.config/wezterm/theme.txt"
 GTK3_INI="$HOME/.config/gtk-3.0/settings.ini"
@@ -127,6 +128,11 @@ fi
 gsettings set org.gnome.desktop.interface color-scheme "$COLOR_SCHEME"
 gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME_NAME"
 
+# Rofi и SVG-иконки Waybar не слушают портал: пересобираем их под новую тему.
+if [[ -x "$ROFI_ACCENT_SCRIPT" ]]; then
+    "$ROFI_ACCENT_SCRIPT" refresh
+fi
+
 # --- 2. settings.ini для GTK3 -------------------------------------------
 # Приложения читают его при старте (портал потом перекрывает). Держим в
 # синхроне, чтобы свежезапущенное GTK3-приложение не мигало чужой темой.
@@ -201,17 +207,5 @@ echo "$MODE" > "$STATE_FILE"
 
 # --- 8. Codex CLI: обновить палитру уже запущенного TUI -----------------
 refresh_codex_tui_palette
-
-# --- 9. Предупреждение про Chromium -------------------------------------
-# Переход dark -> light Chromium-приложения не отрабатывают (баг апстрима).
-# Перезапуск порталов тут НЕ помогает (проверено), помогает только рестарт
-# самого приложения. Поэтому просто предупреждаем.
-if [ "$MODE" = "light" ] && command -v notify-send >/dev/null 2>&1; then
-    if pgrep -x chrome >/dev/null 2>&1 || pgrep -x brave >/dev/null 2>&1 || pgrep -x electron >/dev/null 2>&1; then
-        notify-send -a "theme" -u low "Тема: light" \
-            "Chromium/Electron не умеют возвращаться в светлую тему на лету — перезапусти браузер." \
-            9>&- 2>/dev/null &
-    fi
-fi
 
 exit 0

@@ -1,20 +1,22 @@
-/* Gruvbox Dark - Power Menu */
+/* Borderless power menu; colors.rasi follows system theme/accent. */
+
+@import "colors.rasi"
 
 * {
-    bg: #282828;
-    bg-alt: #3c3836;
-    fg: #ebdbb2;
-    accent: #a89984;
+    bg: @rofi-bg;
+    bg-alt: @rofi-surface;
+    fg: @rofi-fg;
+    accent: @rofi-accent;
 
     background-color: transparent;
     text-color: @fg;
-    font: "MapleMono NF CN 12";
+    font: "SF Pro Display, Semi-Bold 12";
 }
 
 window {
+    transparency: "real";
     background-color: @bg;
-    border: 2px solid;
-    border-color: @accent;
+    border: 0px;
     border-radius: 16px;
     padding: 20px;
     width: 320px;
@@ -36,7 +38,7 @@ message {
 textbox {
     horizontal-align: 0.5;
     text-color: @accent;
-    font: "MapleMono NF CN Bold 14";
+    font: "SF Pro Display, Bold 14";
 }
 
 listview {
@@ -55,10 +57,12 @@ element {
 
 element selected {
     background-color: @accent;
-    text-color: @bg;
+    text-color: @rofi-selected-fg;
 }
 
 element-text {
     horizontal-align: 0.5;
-    font: "MapleMono NF CN 22";
+    font: "JetBrainsMono Nerd Font 22";
+    background-color: inherit;
+    text-color: inherit;
 }

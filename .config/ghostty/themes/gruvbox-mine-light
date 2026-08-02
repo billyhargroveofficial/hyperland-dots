@@ -1,9 +1,9 @@
 foreground = 1d2021
-background = f5f0e8
-background-opacity = 0.9
-# На светлом фоне Regular выглядит тонким — берём весовую грань Medium.
+background = ffffff
+background-opacity = 0.7
+# На светлом фоне используем JetBrains Mono SemiBold (вес 600).
 # В тёмной теме этого ключа нет: там вес откатывается на Regular из config.
-font-style = Medium
+font-style = SemiBold
 selection-foreground = 1d2021
 selection-background = d5c4a1
 cursor-color = d65d0e

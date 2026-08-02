@@ -62,6 +62,13 @@ fi
 # Save to cache
 echo "$fullpath" > "$CACHE_FILE"
 
+# Явный выбор картинки отключает видео и обновляет кнопку Waybar.
+if [[ -x "$HOME/.config/waybar/scripts/video-wallpaper.sh" ]]; then
+    "$HOME/.config/waybar/scripts/video-wallpaper.sh" off
+elif [[ -x "$HOME/.local/bin/nv-wallpaperctl" ]]; then
+    "$HOME/.local/bin/nv-wallpaperctl" off
+fi
+
 # Set wallpaper with cool animation
 awww img "$fullpath" \
     --transition-type grow \

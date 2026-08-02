@@ -12,6 +12,8 @@ echo "Restarting Hyprland services..."
 # Restart waybar
 pkill waybar 2>/dev/null
 sleep 0.5
+ACCENT_SCRIPT="$HOME/.config/waybar/scripts/accent.sh"
+[[ -x "$ACCENT_SCRIPT" ]] && "$ACCENT_SCRIPT" refresh
 WAYBAR_BIN="$HOME/.local/bin/waybar"
 [[ -x "$WAYBAR_BIN" ]] || WAYBAR_BIN=waybar
 "$WAYBAR_BIN" &disown

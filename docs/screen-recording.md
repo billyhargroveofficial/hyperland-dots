@@ -1,6 +1,7 @@
 # Запись экрана — wf-recorder + NVENC
 
-Кнопка в waybar (`custom/recorder`), скрипт `.config/waybar/scripts/recorder.sh`.
+Кнопка в waybar (`image#recorder` с Lucide SVG), скрипт
+`.config/waybar/scripts/recorder.sh`.
 Клик — старт, повторный клик — стоп, файл в `~/records/*.mp4`.
 
 ## Флага `-s` у wf-recorder нет

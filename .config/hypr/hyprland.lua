@@ -66,9 +66,11 @@ end
 
 -------------------------------------------------------------------- ПРОГРАММЫ
 
-local terminal = "ghostty"
+-- Ghostty's detected single-instance IPC creates a surface without a shell
+-- when launched from this Lua dispatcher. Force a real process per window.
+local terminal = "ghostty --gtk-single-instance=false"
 local fileManager = "nautilus"
-local menu = "rofi -show drun -show-icons -icon-theme Papirus-Dark -theme ~/.config/rofi/launcher.rasi"
+local menu = "~/.config/rofi/launcher.sh"
 local browser = "google-chrome-stable --enable-features=UseOzonePlatform --ozone-platform=wayland --gtk-version=4"
 
 ---------------------------------------------------------------------- ОБОИ --
@@ -102,7 +104,7 @@ end)
 ------------------------------------------------------------------- АВТОЗАПУСК
 
 hl.on("hyprland.start", function()
-	hl.exec_cmd("pgrep -x waybar >/dev/null || { test ! -x \"$HOME/.local/bin/waybar\" || exec \"$HOME/.local/bin/waybar\"; exec waybar; }")
+	hl.exec_cmd("pgrep -x waybar >/dev/null || { \"$HOME/.config/waybar/scripts/accent.sh\" refresh; test ! -x \"$HOME/.local/bin/waybar\" || exec \"$HOME/.local/bin/waybar\"; exec waybar; }")
 	-- awww-daemon НЕ уходит в фон (ключа --daemonize у него нет), поэтому
 	-- `awww-daemon && awww img ...` никогда не доходило до второй команды: &&
 	-- ждёт завершения демона. Обои не ставились вообще — `awww query` показывал
@@ -121,6 +123,12 @@ hl.on("hyprland.start", function()
 	-- Вернуть: раскомментировать строку и layer-правила для nwg-dock ниже.
 	-- hl.exec_cmd('sleep 3 && nwg-dock-hyprland -d -l overlay -p bottom -i 48 -nolauncher -o DP-3 -m -iw "1,2,3,4,5,6,7,8,9,10"')
 	hl.exec_cmd("hyprctl setcursor mcmojave-cursors 20")
+end)
+
+-- Видео запускается только вручную кнопкой Waybar; при выходе не оставляем
+-- пользовательский сервис жить после Wayland-сессии.
+hl.on("hyprland.shutdown", function()
+	hl.exec_cmd("systemctl --user stop nv-wallpaper.target")
 end)
 
 -- hyprshell убран по просьбе: его оверлей вылезал на Alt+Tab и был не нужен.
@@ -164,18 +172,18 @@ hl.env("QT_QPA_PLATFORMTHEME", "xdgdesktopportal")
 
 hl.config({
 	general = {
-		gaps_in = 5,
-		-- В hyprlang это было `gaps_out = 5, 10, 10, 10` — порядок как в CSS:
-		-- сверху, справа, снизу, слева. Lua требует либо число, либо таблицу
+		gaps_in = 20,
+		-- Увеличенные в 4 раза внешние отступы; порядок как в CSS: сверху,
+		-- справа, снизу, слева. Lua требует либо число, либо таблицу
 		-- с именованными полями; строка со списком не принимается.
-		gaps_out = { top = 5, right = 10, bottom = 10, left = 10 },
+		gaps_out = { top = 20, right = 40, bottom = 40, left = 40 },
 
 		col = {
 			active_border = "rgba(cba6f7ff)",
 			inactive_border = "rgba(28282800)",
 		},
 
-		border_size = 1,
+		border_size = 0,
 		resize_on_border = true,
 		allow_tearing = false,
 
@@ -403,10 +411,10 @@ end)
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 
 -- cliphist прибит к SUPER, а не к mainMod: на mainMod = ALT он занимал Alt+V и
--- съедал его до терминала, а Alt+V нужен CLI-агентам (claude/codex/qwen/opencode/
--- kimi) — ghostty шлёт по нему сырой ^V, по которому агент забирает из буфера
+-- съедал его до терминала, а Alt+V нужен совместимым CLI-агентам: ghostty
+-- шлёт по нему сырой ^V, по которому агент забирает из буфера
 -- картинку. Явный SUPER переживает переключение mainMod по F10.
-hl.bind("SUPER + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))
+hl.bind("SUPER + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu -theme ~/.config/rofi/launcher.rasi | cliphist decode | wl-copy"))
 
 -- Переключение раскладки по Alt+Shift делает сервис kbd-layout-toggle
 -- (/opt/kbd-layout-toggle, читает evdev без перехвата и дёргает
@@ -469,12 +477,6 @@ hl.bind(
 	hl.dsp.exec_cmd("~/.config/hypr/scripts/brightness.sh down"),
 	{ repeating = true }
 )
-
--- Голосовой ввод удалён по просьбе пользователя. Он висел на голом F11 и
--- глобально съедал фуллскрин в браузерах и видеоплеерах. Скрипт voice-input.sh
--- и его venv остались на диске — вернуть можно так:
--- hl.bind("F11", hl.dsp.exec_cmd("~/.config/hypr/scripts/voice-input.sh start"))
--- hl.bind("F11", hl.dsp.exec_cmd("~/.config/hypr/scripts/voice-input.sh stop"), { release = true })
 
 -- Обои
 hl.bind("CTRL + ALT + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/wall-next.sh"))
@@ -545,12 +547,13 @@ for i = 1, wsPerMonitor do
 	end)
 end
 
--- Колесо: вниз — следующий стол, вверх — предыдущий, как было до scrolling.
+-- Колесо с зажатым модификатором следует направлению ленты: вверх/вперёд —
+-- следующий стол справа, вниз/назад — предыдущий слева.
 hl.bind(wsMod .. " + mouse_down", function()
-	hyprWsCycle(1)
+	hyprWsCycle(-1)
 end)
 hl.bind(wsMod .. " + mouse_up", function()
-	hyprWsCycle(-1)
+	hyprWsCycle(1)
 end)
 
 -- Горизонтальная прокрутка ленты колесом удалена по просьбе пользователя. Она
@@ -589,6 +592,30 @@ hl.window_rule({
 	name = "vscode-opacity",
 	match = { class = "code" },
 	opacity = "0.85 override 0.85 override",
+})
+
+-- Flov рисует pill внутри прозрачной поверхности 800x200. Глобальные blur,
+-- opacity, rounding и border иначе проявляют прямоугольник всей поверхности.
+hl.window_rule({
+	name = "flov-pill",
+	match = {
+		class = "^flov_app$",
+		title = "^flov$",
+	},
+	float = true,
+	pin = true,
+	no_focus = true,
+	no_initial_focus = true,
+	render_unfocused = true,
+	no_anim = true,
+	no_blur = true,
+	no_shadow = true,
+	decorate = false,
+	border_size = 0,
+	rounding = 0,
+	opacity = "1 override 1 override",
+	size = "800 200",
+	move = "monitor_w/2-400 monitor_h-224",
 })
 
 ----------------------------------------------------------- ПРАВИЛА СЛОЁВ ----

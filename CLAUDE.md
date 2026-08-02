@@ -9,7 +9,7 @@ hyperland-dots/
 ├── .zshrc                    # Zsh конфиг (Oh My Zsh + Powerlevel10k + алиасы)
 ├── .p10k.zsh                 # Powerlevel10k конфиг
 ├── restore-config.sh         # Скрипт полной установки системы
-├── AGENTS.md                 # Вход для Codex/Qwen/Kimi/OpenCode → этот документ
+├── AGENTS.md                 # Вход в проектные инструкции AI-харнессов
 ├── README.md                 # Документация
 ├── CLAUDE.md                 # Этот файл
 ├── docs/                     # Грабли и замечания — читать ПЕРЕД правкой
@@ -17,23 +17,17 @@ hyperland-dots/
 │   ├── screen-recording.md   #   wf-recorder + NVENC
 │   ├── notifications.md      #   swaync и переключение тем
 │   ├── hyprland.md           #   Alt+Tab без оверлея, два монитора
-│   ├── ai-harnesses.md       #   проверка control plane харнессов
 │   ├── bluetooth-audio.md    #   наушники: кодек AAC вместо LDAC, баг WirePlumber
 │   └── private-state.md      #   секреты и runtime, которые бэкапятся отдельно
-├── .local/bin/mcp-sync       # Генератор нативных AI-конфигов
-├── .local/bin/gemini-search-mcp  # Обёртка поиска только для ручного Hermes
 ├── .local/bin/bt-audio-*     # Автопереключение звука на BT и его починка
-├── .grok/config.toml         # Grok выведен 2026-07-26, вне control plane
+├── .local/share/fonts/InterTight/ # Свободный fallback UI-шрифта + OFL
 │
 └── .config/
-    ├── agents/               # Канон rules/MCP/skills без секретов
-    ├── systemd/user/         # AI-демоны, bt-audio, обратный SSH-туннель
+    ├── systemd/user/         # bt-audio и обратный SSH-туннель
     ├── hypr/                 # Hyprland конфиг
     │   ├── hyprland.lua      # Основной конфиг (Lua, с 0.55; см. docs/hyprland.md)
     │   └── scripts/          # Скрипты автоматизации
     │       ├── toggle-theme.sh       # Dark/Light theme toggle (Ctrl+Y)
-    │       ├── voice-input.sh        # Voice-to-text (Ctrl+Super)
-    │       ├── transcribe.py         # faster-whisper CUDA транскрибация
     │       ├── gpu-fan-control.sh    # NVIDIA fan control
     │       ├── singbox-toggle.sh     # VPN toggle
     │       ├── restart_hyprland.sh   # Restart waybar + awww + Hyprland
@@ -45,19 +39,21 @@ hyperland-dots/
     │   ├── style-dark.css    # Тёмная тема
     │   ├── style-light.css   # Светлая тема
     │   ├── style.css         # Симлинк на активную тему
+    │   ├── icons/            # Единый Lucide SVG-набор для image-модулей
     │   └── scripts/          # Скрипты для модулей
     │       ├── cpu.py             # CPU: загрузка + топ по CPU в попапе
     │       ├── memory.py          # Память: занято/всего + топ по RSS
     │       ├── disk.py            # Диск: занято/всего + крупнейшие каталоги
+    │       ├── telemetry.py       # Кэшированный CPU/GPU/RAM/VRAM/SSD
+    │       ├── svg-icons.sh       # SVG: акцент, theme и runtime-состояния
     │       ├── recorder.sh        # Запись экрана 720p60 -> ~/records
-    │       ├── singbox-status.sh  # sing-box status
     │       └── leave.sh           # Power menu
     │
     ├── ghostty/              # Ghostty терминал
     │   ├── config            # Основной конфиг
-    │   └── themes/           # Gruvbox темы
-    │       ├── dark.conf     # Gruvbox Dark (opacity 0.8)
-    │       └── light.conf    # Gruvbox Light (opacity 0.3)
+    │   └── themes/           # Активные gruvbox-mine темы
+    │       ├── gruvbox-mine-dark   # opacity 0.7
+    │       └── gruvbox-mine-light  # opacity 0.7
     │
     ├── Code/User/            # VSCode настройки
     │   ├── settings.json     # Gruvbox Dark Hard / Bearded Milkshake Mint
@@ -66,21 +62,21 @@ hyperland-dots/
     ├── sing-box/             # VPN конфиг
     │   └── config.json.example  # Шаблон (без реальных данных!)
     │
-    ├── swaync/               # Уведомления (оформлены под палитру waybar)
+    ├── swaync/               # Уведомления (SF Pro Display + динамический акцент waybar)
     │   ├── config.json       # SwayNC конфиг
     │   ├── style-dark.css    # Тёмная тема
     │   ├── style-light.css   # Светлая тема
+    │   ├── style-common.css  # Общая геометрия карточек без action-кнопок
+    │   ├── accent.css        # Генерируется accent.sh вместе с waybar/rofi
     │   └── style.css         # Симлинк на активную (swaync портал НЕ слушает)
     │
-    ├── rofi/                 # App launcher (Gruvbox темы)
-    ├── niri/                 # Niri compositor конфиг
+    ├── rofi/                 # Borderless light/dark launcher + общий акцент
     ├── kitty/                # Kitty терминал
     ├── alacritty/            # Alacritty терминал
     ├── gtk-3.0/              # GTK3 темы
     ├── gtk-4.0/              # GTK4 темы
     ├── neofetch/             # System info
     ├── swaykbdd/             # Per-window keyboard layout
-    ├── cship.toml            # statusline для Claude Code (см. раздел ниже)
     └── scripts/              # Общие скрипты
 
 └── system/                   # то, что ставится ВНЕ $HOME — см. system/README.md
@@ -98,59 +94,21 @@ hyperland-dots/
 |------|----------|
 | `.config/hypr/hyprland.lua` | Основной конфиг Hyprland — формат Lua |
 | `.config/hypr/scripts/toggle-theme.sh` | Переключение dark/light (Ctrl+Y) |
-| `.config/hypr/scripts/voice-input.sh` | Voice-to-text (Ctrl+Super) |
-| `.config/hypr/scripts/transcribe.py` | faster-whisper транскрибация |
 | `.config/waybar/config` | Waybar модули и layout |
 | `.config/ghostty/config` | Ghostty терминал конфиг |
 | `.config/Code/User/settings.json` | VSCode настройки |
 | `.zshrc` | Shell конфиг + алиасы |
-| `.config/cship.toml` | Statusline Claude Code (папка, модель, контекст, лимиты) |
-| `.config/agents/.rulesync/` | Общие AI rules, MCP и Agent Skills |
-| `.local/bin/mcp-sync` | Синхронизация во все поддерживаемые харнессы |
-| `.local/bin/gemini-search-mcp` | Обёртка MCP-поиска для отдельного ручного конфига Hermes |
 | `.local/bin/bt-audio-autoswitch` | Звук на BT-наушники при подключении (`docs/bluetooth-audio.md`) |
 | `.local/bin/bt-audio-recover` | Обход бага WirePlumber с потерей BlueZ-endpoints |
-| `scripts/install-ai-harnesses.sh` | Отдельный bootstrap AI-системы |
 | `restore-config.sh` | Скрипт установки |
 
-## Общая система AI-харнессов
+## AI-харнессы
 
-Единый source of truth находится в `.config/agents/.rulesync/`:
-
-- `rules/overview.md` — user-scope инструкции и курируемая память;
-- `mcp.jsonc` — shared/tool-scoped MCP;
-- `skills/<name>/SKILL.md` — переносимые Agent Skills;
-- `../rulesync.jsonc` — targets Rulesync.
-
-Под управлением **шесть харнессов** — Claude Code, Codex CLI, Kimi Code,
-OpenCode, Pi и Qwen Code. Pi получает rules/skills через Rulesync, а MCP через
-`pi-mcp-adapter`. Grok выведен 2026-07-26 и target-ом не является:
-`.grok/config.toml` в репозитории остаётся только заготовкой. Подробности и
-чек-лист живой системы — [docs/ai-harnesses.md](docs/ai-harnesses.md).
-
-Не добавляй в репозиторий `secrets.env`, `telegram-service.env` или generated
-vendor-конфиги. Старый `qwen-service.env` удаляется `mcp-sync`: Qwen Code
-активен как CLI, но его user-демоны выведены. Для применения:
-
-```bash
-./scripts/install-ai-harnesses.sh --no-network
-mcp-sync --check
-```
-
-Три вещи, на которых тут проще всего обжечься:
-
-1. **Канон замещает, а не мержит.** Секция MCP-серверов в нативном конфиге
-   переписывается целиком: дописанный руками сервер исчезнет при следующем
-   `mcp-sync`. Сервер для одного харнесса — блоком `<target>.mcpServers`.
-2. **Bootstrap делает `rm -rf ~/.config/agents/.rulesync`.** Правку живого
-   канона всегда зеркаль в репозиторий, иначе следующий прогон её снесёт.
-3. **Репозиторий публичный.** Значение секрета в канон не пишется никогда —
-   только `${VAR}` или нативное поле с именем переменной. Codex и Kimi имеют
-   отдельные tool-scoped поля для GitHub-токена.
-
-`gemini-search` отключён в rulesync шести основных харнессов 2026-07-30.
-Обёртка сохранена только для отдельного ручного конфига Hermes; обратно в
-rulesync её не возвращать без явного решения владельца.
+На машине поддерживаются Codex CLI и OpenCode. Нативные настройки, MCP,
+авторизация и история Codex живут в `~/.codex/`; состояние OpenCode — в
+`~/.opencode/`, `~/.config/opencode/` и `~/.local/share/opencode/`. Dotfiles не
+устанавливают и не генерируют их. OpenCode не удалять и не вырезать из `PATH`
+без нового явного запроса владельца.
 
 ## Тема (Gruvbox)
 
@@ -158,13 +116,13 @@ rulesync её не возвращать без явного решения вл�
 
 | Компонент | Dark | Light |
 |-----------|------|-------|
-| Ghostty | Gruvbox Dark (0.8 opacity) | Gruvbox Light (0.3 opacity) |
-| Waybar | розовая на чёрном | розовая на белом |
+| Ghostty | Gruvbox Dark (0.7 opacity) | Gruvbox Light (0.7 opacity) |
+| Waybar | чёрные островки + выбранный акцент | белые островки + выбранный акцент |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Hyprland border | White (#ffffffcc) | White (#ffffffcc) |
 | GTK | **`Adwaita-dark`** | `Adwaita` |
 | Nvim | gruvbox-material (transparent) | gruvbox-material (transparent) |
-| Rofi | Gruvbox Dark (muted #a89984) | — |
+| Rofi | чёрный полупрозрачный + акцент | белый полупрозрачный + акцент |
 | SwayNC | палитра waybar | палитра waybar |
 
 ### Правила, которые нельзя нарушать
@@ -209,25 +167,6 @@ rulesync её не возвращать без явного решения вл�
 | `ddcci` | яркость внешнего монитора через `/sys/class/backlight` |
 | `ssh` | key-only sshd и обратный туннель через `nareshka.ru:2223` |
 
-## Voice Input (faster-whisper) — ОТКЛЮЧЁН
-
-**Сейчас выключен**: бинд висел на голом `F11`, то есть глобально съедал фуллскрин
-в браузерах и видеоплеерах. Вернуть — раскомментировать `setup_voice_input` в
-`main()` и бинды в `hyprland.lua`, но перевесить на комбинацию с модификатором.
-
-Speech-to-text через CTRL+Super (toggle: первое нажатие — запись, второе — транскрибация).
-
-- **Модель**: large-v3-turbo на CUDA (float16)
-- **Venv**: `~/.local/share/voice-input/venv`
-- **Индикатор**: красный ● в waybar (запись), жёлтый ● (обработка)
-- **Вставка**: wl-copy + wtype (Ctrl+V в активное поле)
-
-### Известные проблемы и решения
-
-- **libcublas.so.12 not found**: ctranslate2 собран под CUDA 12, а в системе CUDA 13. Решение: `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12` в venv, скрипт transcribe.py загружает их через ctypes перед импортом.
-- **bindr не работает с Super_L**: `bindr = CTRL, Super_L` не срабатывает на отпускание. Решение: toggle-скрипт вместо hold-to-record (одно нажатие старт, второе стоп).
-- **wtype не установлен**: текст попадает в буфер (wl-copy), но не вставляется. Решение: `sudo pacman -S wtype`.
-
 ## Ghostty — важные особенности
 
 - **Тему переключать не надо руками.** В конфиге стоит
@@ -244,13 +183,13 @@ Speech-to-text через CTRL+Super (toggle: первое нажатие — з
 
 ## Вставка картинок в CLI-агентов — Alt+V
 
-`Alt+V` вставляет картинку из буфера в claude code / codex / qwen code / opencode /
-kimi cli. Работает и в кириллице — hk-translator при зажатом Alt гонит буквы
+`Alt+V` передаёт картинку из буфера совместимым терминальным AI-клиентам.
+Работает и в кириллице — hk-translator при зажатом Alt гонит буквы
 латиницей, так что Alt+М это тот же Alt+V. Скриншот сразу в буфер — `Print`
 (`hyprshot -m region -c`), история картинок — `Super+V` (cliphist).
 
-Все пять агентов слушают **`Ctrl+V`, то есть байт `0x16`**, и дальше читают буфер
-сами (`wl-paste --type image/png`; у codex — arboard/wl-clipboard). Терминал
+Совместимые клиенты слушают **`Ctrl+V`, то есть байт `0x16`**, и дальше читают
+буфер сами (`wl-paste --type image/png` или аналогом). Терминал
 картинку не передаёт и не может: его дело — доставить нажатие.
 
 Нажатие съедалось дважды, поэтому нужны обе правки сразу:
@@ -273,115 +212,8 @@ Ghostty перечитывает конфиг по `Ctrl+Shift+,` (или `pkill
 
 Проверка, что дело не в буфере: `wl-paste --list-types` должен показать `image/png`.
 Учти, что **XWayland-мост буфера мёртв** — `xclip` не видит даже текст из `wl-copy`.
-Всем пяти агентам это безразлично, у них fallback на `wl-paste`, но X11-приложения
+Терминальным клиентам с Wayland-fallback это безразлично, но X11-приложения
 картинку из буфера не получат.
-
-Вставленные картинки Claude Code складывает в `~/.claude/image-cache/<session-id>/`
-и сам их не удаляет.
-
-## Statusline Claude Code (cship)
-
-Нижняя строка в Claude Code. Ставится в `restore-config.sh` → `install_cship`.
-
-```
-📁 proj ● Opus 5 1M max 340k ● 5h 37% 2h4m ● 7d 62% 2d19h
-```
-
-| Что | Где |
-|---|---|
-| Бинарь | `~/.local/bin/cship` (Rust, static musl, из GitHub Releases) |
-| Обёртка | `~/.local/bin/cship-wrap` ← репа `.local/bin/cship-wrap` |
-| Конфиг | `~/.config/cship.toml` ← репа `.config/cship.toml` |
-| Подключение | ключ `statusLine` в `~/.claude/settings.json` → **`cship-wrap`**, не `cship` |
-
-**Строку рисует обёртка, а не cship напрямую.** `cship-wrap` — это `jq`, который
-правит stdin-JSON от Claude Code и передаёт дальше. Через него делаются три
-вещи, которых у cship нет вообще (перебраны `truncation_length`, `basename`,
-`truncate_to_repo`, алиасы модели — неизвестные ключи cship молча игнорирует,
-так что отсутствие эффекта и есть отсутствие опции):
-
-| Правка | Зачем |
-|---|---|
-| `workspace.current_dir` → basename | в строке нужна папка, а не весь путь |
-| `model.display_name` → без `(… context)` | `Opus 5 (1M context)` → `Opus 5 1M` |
-| `context_window.total_input_tokens` ÷ 1000 | `227977 tok` → `228k`, букву `k` дописывает формат |
-
-Из последней строки следует **запрет**: подставлять в `lines`
-`$cship.context_window.used_tokens` или `$cship.context_bar` больше нельзя — они
-посчитают проценты от тысяч и наврут. Нужны — убрать деление из обёртки.
-
-**`~/.claude/settings.json` в репозитории нет намеренно.** Claude Code
-переписывает его сам на каждый `/model` и `/config` — в репе он давал бы вечный
-грязный diff. `install_cship` дописывает туда `statusLine` мержем через python.
-
-**Не ставить через `curl -fsSL https://cship.dev/install.sh | bash`.** На шаге 4
-он делает `sudo apt-get install libsecret-tools` (на Arch падает), на шаге 5 тянет
-Starship ещё одним `curl | sh`. Скрипт качает бинарь напрямую.
-
-**Почему не ccstatusline**, хотя у него 12k звёзд против 406: он запускается как
-`npx -y ccstatusline@latest` — замер `npx --version` дал 68 мс, и это на КАЖДУЮ
-отрисовку. У голого cship — 1 мс, с обёрткой `cship-wrap` — 8 мс (замер: три
-серии по 50 прогонов, цифра не плавала). Плата за `jq` и за фоллбэк в обёртке:
-JSON читается в переменную отдельным `cat`, иначе подстраховки не сделать. Всё
-равно на порядок дешевле npx.
-
-**Лимиты берутся из stdin-JSON**, который Claude Code отдаёт сам (поля
-`rate_limits.five_hour` / `.seven_day`). Прогон с `unshare -rn` даёт байт-в-байт
-тот же вывод — сети в горячем пути нет. В API cship ходит только когда лимитов в
-stdin ещё нет (первые секунды сессии), с кэшем `ttl = 60`.
-
-### Грабли формата cship (проверено эмпирически)
-
-- **Переменные разделяются пробелом или `$`.** Парсер жадный: `<$cship.model>`
-  съедает `>` в имя переменной и печатает пустоту. `$cship.model$cship.effort`
-  работает и стыкует блоки без зазора.
-- **`format` отменяет автоприменение `style`.** Надо писать явно:
-  `format = "[$value]($style)"`. Просто `format = "$value"` даст текст без цвета.
-- **Внутрь `[текст](стиль)` переменную не подставить** — `[ $cship.model ]`
-  напечатает буквально `$cship.model`. Разметка красит только литералы.
-- **Внутренних плейсхолдеров нет**, только `$value`. `$used`, `$total`, `$pct`,
-  `$bar` — все пустые.
-- **`5h` и `7d` — один модуль `usage_limits`.** Отдельных переменных под них нет,
-  поэтому пороги `warn/critical` красят обе половины разом по максимальному
-  проценту. Развести их в разные цвета можно только вшив ANSI прямо в
-  `separator` через TOML-escape ``, но тогда пороги ломаются — выбрано
-  сохранить пороги.
-- **Процент из `context_bar` не убрать**: `show_percentage` игнорируется. Бар в
-  итоге убран из строки целиком, но если вернёшь — процент вернётся с ним.
-- **Преобразований нет никаких.** Ни обрезки пути, ни сокращения чисел, ни
-  замены текста в имени модели. Всё это делает `cship-wrap` (см. выше).
-  Единственное сокращение внутри cship — `used_tokens`, но он жёстко отдаёт
-  `34%(340k/1000k)` целиком, формат у него не настраивается.
-- **Литерал можно приклеить к значению вторым блоком.** `$value` и `k` в одной
-  скобке слипнутся в имя переменной `$valuek`, а
-  `[$value]($style)[k]($style)` печатает `228k`.
-- **Неизвестное имя цвета роняет ВЕСЬ стиль молча.** Не красит ничем, не
-  ругается, в `configerrors` не попадает — таких у cship нет. Из-за этого
-  `fg:bright-black` в старом конфиге не работал никогда: разделители `●` и
-  счётчик токенов выводились дефолтным цветом, хотя в конфиге было написано
-  иначе, и это никак не проявлялось. Проверять перебором:
-  `cship --config <(printf '[cship]\nlines = ["[XXX](fg:ИМЯ)"]\n') <<< '{}' | cat -v`
-
-  | Работает | Молчит |
-  |---|---|
-  | `fg:black` … `fg:white` (8 базовых имён) | `bright-black`, `brightblack`, `bright_black` |
-  | `fg:0` … `fg:255` | `grey`, `gray` |
-  | `dimmed` (атрибут, не цвет) | `fg:dimmed` |
-
-  Яркая половина палитры задаётся только номером: **8 и есть bright-black**.
-  Номер, а не хекс — 0..15 берутся из палитры терминала и переключаются вместе
-  с темой по Ctrl+Y.
-- **`fg:black` невидим в обеих темах.** Палитра 0 у обеих gruvbox-тем занята
-  под фон, а не под текст: light — `fbf1c7` на фоне `f5f0e8`, dark — `282828`
-  на фоне `000000`. Серый для статуслайна — это `fg:8` (`665c54` / `a89984`).
-
-Вся строка одного цвета (`fg:8`) и одной жирности — по прямой просьбе
-владельца. Поэтому порогов `warn/critical` в конфиге нет вообще: на 90% квота
-покраснела бы и строка снова стала бы разноцветной. Порогов контекста тоже
-нет — они жили на `context_bar`, а он убран.
-
-Рядом валяется `~/.config/cship.toml.compact-variant` — старый черновик на
-хексовых цветах, не используется и под тему Ctrl+Y не подстраивается.
 
 ## Синхронизация конфигов
 
@@ -395,7 +227,6 @@ stdin ещё нет (первые секунды сессии), с кэшем `t
 
 | Алиас | Описание |
 |-------|----------|
-| `cu` | Claude Code usage (лимиты API) |
 | `disk` | Обзор дисков |
 | `space` | Топ-20 по размеру в текущей папке |
 | `vpn-log` | Sing-box лог в реалтайме |

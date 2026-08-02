@@ -8,31 +8,28 @@
 
 ## Особенности
 
-- **Waybar** — панель со своими модулями CPU/памяти/диска: в тексте занято/всего,
-  в попапе при наведении — кто больше всех потребляет, живым списком
+- **Waybar** — три островка: безымянные рабочие столы без app-иконок, Lucide SVG
+  для CPU/GPU/RAM/VRAM/SSD и системных индикаторов, монохромные tray-иконки;
+  слева SVG-переключатели акцента и dark/light
 - **Запись экрана кнопкой** — 720p60, h264_nvenc, в `~/records` (см. `docs/screen-recording.md`)
+- **Видеообои вручную** — отдельная play/pause-кнопка Waybar для Vulkan-рендерера
+  `nv-wallpaper`, без автозапуска и правил по активным окнам (см. `docs/video-wallpaper.md`)
 - **Два монитора**, столы делятся по экранам и выбираются по курсору (`docs/hyprland.md`)
 - **Конфиг Hyprland на Lua** — формат с 0.55, бинды умеют произвольные функции
 - **Единая тема** — ghostty, waybar, VSCode, nvim, GTK, rofi, swaync
+- **Единый UI-шрифт** — SF Pro Display SemiBold в Waybar, Rofi, SwayNC, GTK и Chrome
 - **Dark/Light toggle** — переключение всех тем по Ctrl+Y
-- **Voice Input** — speech-to-text через faster-whisper на CUDA (Ctrl+Super)
 - **Плавные анимации** — настроенные bezier curves для окон и workspaces
 - **VPN с split tunneling** — sing-box (VLESS + Reality), .ru домены напрямую
 - **NVIDIA GPU fan control** — динамическое управление вентиляторами на Wayland
 - **LazyVim** — nvim с прозрачным gruvbox-material
-- **SwayNC** — уведомления в палитре панели, две темы, переключаются вместе со всем
-- **Statusline Claude Code** — cship: папка, модель, effort, контекст в токенах,
-  5h и недельная квота с таймерами сброса (8 мс на отрисовку против 70 у npx)
-- **AI-агенты во вкладках tmux** — иконка харнесса и состояние
-  (работает / ждёт ввода / готово) прямо в сегменте вкладки, для всех
-  семи: Claude Code, Codex, OpenCode, Qwen, Kimi, Pi и Hermes
-  (см. `harness-hooks/README.md`)
-- **Hermes Agent** — Telegram-гейтвей как systemd user-сервис, модель
-  через Alibaba Token Plan, все MCP из канона
+- **SwayNC** — чистые уведомления без action-кнопок, SF Pro Display и динамический акцент панели
+- **Codex во вкладках tmux** — иконка и состояния агента с запасным детектом
+  процесса по полной командной строке (см. `harness-hooks/README.md`)
 - **Обратный SSH-туннель** — постоянный доступ через `nareshka.ru:2223`,
   без password login и без restart-loop при занятом удалённом порте
-- **Общий AI control plane** — единые AGENTS/CLAUDE/QWEN rules, MCP и skills для
-  Claude, Codex, Qwen, Kimi, OpenCode и Pi через Rulesync
+- **Codex CLI и OpenCode** — поддерживаемые AI-харнессы; их нативное состояние
+  не управляется dotfiles
 
 ## Быстрая установка
 
@@ -43,8 +40,19 @@ chmod +x restore-config.sh
 ./restore-config.sh
 ```
 
-Скрипт установит зависимости, настроит desktop и общий AI control
-plane. Voice Input сейчас намеренно отключён.
+Скрипт установит зависимости и настроит desktop.
+
+Кнопка видеообоев входит в dotfiles, а сам `nv-wallpaper` остаётся отдельным
+репозиторием и автоматически не клонируется. Если он уже лежит в
+`~/nv-wallpaper`, пользовательская установка выглядит так:
+
+```bash
+cd ~/nv-wallpaper
+./scripts/install-user.sh /absolute/path/to/video.mov DP-2,DP-3
+```
+
+После этого воспроизведение включается только вручную кнопкой play в Waybar.
+Обычный статичный фон `awww` всё время остаётся под видео.
 
 Запускать **обычным пользователем**, не от root — скрипт сам зовёт `sudo` там, где нужно.
 Он продолжает работу после единичного сбоя сети, собирает все `[WARN]` и
@@ -70,36 +78,22 @@ Actions разрешены в настройках репозитория.
 
 | | |
 |---|---|
-| [`docs/waybar.md`](docs/waybar.md) | свои модули CPU/памяти/диска, отступы у иконок, почему `interval: once` не перечитывается, анимации в GTK3 |
+| [`docs/waybar.md`](docs/waybar.md) | островки, SVG-телеметрия, монохромные app/tray-иконки, выбор акцента и особенности GTK3 |
+| [`docs/video-wallpaper.md`](docs/video-wallpaper.md) | ручная play/pause-кнопка, установка отдельного Vulkan-рендерера и сохранение позиции |
 | [`docs/hyprland.md`](docs/hyprland.md) | конфиг на Lua и что миграция ломает молча, два монитора, Alt+Tab |
 | [`docs/screen-recording.md`](docs/screen-recording.md) | wf-recorder + NVENC: несуществующие флаги, диапазон яркости |
 | [`docs/notifications.md`](docs/notifications.md) | swaync и почему он не следует за системной темой сам |
-| [`docs/ai-harnesses.md`](docs/ai-harnesses.md) | чек-лист живой проверки control plane |
+| [`docs/fonts.md`](docs/fonts.md) | все точки замены единого системного шрифта, включая Chrome |
 | [`docs/bluetooth-audio.md`](docs/bluetooth-audio.md) | наушники: заикания на LDAC и почему кодек прибит к AAC, потеря BlueZ-endpoints |
 | [`docs/private-state.md`](docs/private-state.md) | что намеренно не лежит в публичной репе и нужно бэкапить отдельно |
 
 ## AI-харнессы
 
-Канонические общие правила, MCP и skills хранятся в
-`.config/agents/.rulesync/`. `mcp-sync` обслуживает шесть харнессов: Claude
-Code, Codex CLI, Qwen Code, Kimi Code, OpenCode и Pi. У Pi правила и skills
-генерирует Rulesync, а MCP даёт `pi-mcp-adapter`.
+На машине поддерживаются Codex CLI и OpenCode. Dotfiles не устанавливают их и
+не генерируют нативные каталоги `~/.codex/`, `~/.opencode/`,
+`~/.config/opencode/` и `~/.local/share/opencode/`: авторизация, MCP, история и
+другие runtime-данные остаются локальными.
 
-Отдельная установка без полного системного restore:
-
-```bash
-cd ~/hyperland-dots
-./scripts/install-ai-harnesses.sh
-$EDITOR ~/.config/agents/secrets.env
-mcp-sync
-```
-
-Секреты никогда не лежат в Git: bootstrap создаёт локальный
-`~/.config/agents/secrets.env` из шаблона и генерирует отдельные env-файлы
-user-systemd. Полная схема описана в `.config/agents/README.md`.
-
-Grok Build выведен из эксплуатации и bootstrap его не устанавливает.
-`.grok/config.toml` хранится только как заготовка на случай явного возврата.
 
 ## Драйвер NVIDIA — проприетарный, не open
 
@@ -245,7 +239,7 @@ DHCP при этом продолжает работать, адрес прос�
 | `Alt + Ctrl + H/J/K/L` | Resize окна |
 | `Alt + 1-9, 0` | Стол 1-10 **того монитора, где курсор** |
 | `Alt + Ctrl + 1-9, 0` | Перенести окно на этот стол (в т.ч. на соседний экран) |
-| `Alt + колесо` | Столы того монитора, где курсор; по кругу внутри его десятка |
+| `Alt + колесо` | Столы монитора под курсором: вперёд — вправо, назад — влево; по кругу внутри десятка |
 
 > Цифра выбирает стол по монитору **под курсором**: над `DP-2` это столы 1-10,
 > над `DP-3` — 11-20. Курсор, а не клавиатурный фокус — при `follow_mouse = 1`
@@ -338,13 +332,13 @@ bright 1                              # диапазон 1-100, шаг коле�
 
 | Компонент | Dark | Light |
 |-----------|------|-------|
-| Ghostty | `gruvbox-mine-dark` (0.9 opacity) | `gruvbox-mine-light` (0.9 opacity) |
-| Waybar | Gruvbox Dark monochrome | Gruvbox Light monochrome |
+| Ghostty | `gruvbox-mine-dark` (0.7 opacity) | `gruvbox-mine-light` (0.7 opacity) |
+| Waybar | чёрные островки + выбранный акцент | белые островки + выбранный акцент |
 | VSCode | Gruvbox Dark Hard | Bearded Theme Milkshake Mint |
 | Nvim | gruvbox-material transparent | gruvbox-material transparent |
 | GTK | **`Adwaita-dark`** | `Adwaita` |
-| Rofi | Gruvbox Dark (muted) | — |
-| SwayNC | Gruvbox Dark | — |
+| Rofi | чёрный полупрозрачный без рамки + акцент | белый полупрозрачный без рамки + акцент |
+| SwayNC | тёмная поверхность + выбранный акцент | светлая поверхность + выбранный акцент |
 
 ### Три вещи, которые ломали переключение
 
@@ -389,8 +383,8 @@ gsettings `Adwaita:dark` ищется как буквальное имя тем�
 **Chromium, Chrome, Brave, Electron не возвращаются из тёмной темы в светлую.**
 Баг апстрима ([chromium/40268108](https://issues.chromium.org/issues/40268108)):
 light→dark на лету работает, обратно — нет. Ни перезапуск порталов, ни смена
-бэкенда не помогают, только рестарт приложения. `toggle-theme.sh` про это
-честно предупреждает уведомлением.
+бэкенда не помогают, только рестарт приложения. `toggle-theme.sh` остаётся
+молчаливым; при необходимости браузер нужно перезапустить вручную.
 
 ### Chrome: голубой тулбар на светлой теме
 
@@ -461,32 +455,6 @@ systemctl is-active hk-translator kbd-layout-toggle
 journalctl -u hk-translator -n 20      # какие устройства захвачены
 hyprctl devices | grep -A1 Keyboard    # раскладки не должны разъезжаться
 ```
-
-## Voice Input — ОТКЛЮЧЁН
-
-Speech-to-text через faster-whisper large-v3-turbo на CUDA. **Сейчас выключен.**
-
-Причина: бинд висел на голом `F11`, а это **фуллскрин в любом браузере и
-видеоплеере** — он съедался глобально, во всей системе. Плюс venv на 2.7 ГБ
-с CUDA-библиотеками пересобирался при каждом прогоне установки.
-
-Вернуть: раскомментировать `setup_voice_input` в `main()` и бинды `F11` в
-`.config/hypr/hyprland.lua`. Если возвращаешь — перевесь на комбинацию с
-модификатором, иначе снова потеряешь фуллскрин.
-
-- **Ctrl+Super** — первое нажатие начинает запись (красный ● в waybar)
-- **Ctrl+Super** — второе нажатие останавливает и транскрибирует (жёлтый ●)
-- Текст автоматически вставляется в активное поле через wtype
-- Venv: `~/.local/share/voice-input/venv`
-
-### Troubleshooting
-
-| Проблема | Решение |
-|----------|---------|
-| `libcublas.so.12 not found` | `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12` в venv (CUDA 13 в системе, ctranslate2 собран под CUDA 12) |
-| Текст не вставляется | `sudo pacman -S wtype` — нужен для имитации Ctrl+V на Wayland |
-| `bindr` не работает с Super_L | Используется toggle вместо hold-to-record |
-| Первый запуск долгий | Модель (~1.6GB) скачивается при первом использовании |
 
 ## Ghostty
 
@@ -577,19 +545,16 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 
 ```
 .config/
-├── agents/               # единый source of truth для AI rules/MCP/skills
-├── systemd/user/         # AI-демоны, bt-audio, обратный SSH-туннель
+├── systemd/user/         # bt-audio и обратный SSH-туннель
 ├── hypr/                 # Hyprland + скрипты (theme toggle, вентиляторы, обои)
-├── waybar/               # Панель (Gruvbox dark/light CSS, звук + яркость)
+├── waybar/               # Панель (Lucide SVG, телеметрия, акценты, dark/light CSS)
 ├── ghostty/              # Терминал + themes/gruvbox-mine-{dark,light}
 ├── Code/User/            # VSCode settings + keybindings
-├── swaync/               # Уведомления (Gruvbox)
+├── swaync/               # Уведомления (SF Pro Display, динамический акцент Waybar)
 ├── sing-box/             # VPN (только шаблон!)
-├── rofi/                 # Launcher темы (Gruvbox)
-├── niri/                 # Niri compositor
+├── rofi/                 # Borderless launcher: light/dark + общий акцент Waybar
 ├── kitty/                # Терминал
 ├── alacritty/            # Терминал
-├── cship.toml            # Statusline Claude Code (см. CLAUDE.md)
 ├── gtk-3.0/              # GTK темы
 └── gtk-4.0/              # GTK темы
 
@@ -600,6 +565,5 @@ system/                   # то, что живёт вне $HOME — см. syste
 ├── udev/                 # права на /sys/class/backlight
 └── modules-load/         # автозагрузка i2c-dev и ddcci-backlight
 
-scripts/
-└── install-ai-harnesses.sh # отдельный bootstrap AI control plane
+scripts/                  # вспомогательные системные скрипты
 ```
