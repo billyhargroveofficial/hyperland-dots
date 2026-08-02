@@ -208,16 +208,4 @@ echo "$MODE" > "$STATE_FILE"
 # --- 8. Codex CLI: обновить палитру уже запущенного TUI -----------------
 refresh_codex_tui_palette
 
-# --- 9. Предупреждение про Chromium -------------------------------------
-# Переход dark -> light Chromium-приложения не отрабатывают (баг апстрима).
-# Перезапуск порталов тут НЕ помогает (проверено), помогает только рестарт
-# самого приложения. Поэтому просто предупреждаем.
-if [ "$MODE" = "light" ] && command -v notify-send >/dev/null 2>&1; then
-    if pgrep -x chrome >/dev/null 2>&1 || pgrep -x brave >/dev/null 2>&1 || pgrep -x electron >/dev/null 2>&1; then
-        notify-send -a "theme" -u low "Тема: light" \
-            "Chromium/Electron не умеют возвращаться в светлую тему на лету — перезапусти браузер." \
-            9>&- 2>/dev/null &
-    fi
-fi
-
 exit 0
