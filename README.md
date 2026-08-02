@@ -562,7 +562,6 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 ├── swaync/               # Уведомления (Gruvbox)
 ├── sing-box/             # VPN (только шаблон!)
 ├── rofi/                 # Borderless launcher: light/dark + общий акцент Waybar
-├── niri/                 # Niri compositor
 ├── kitty/                # Терминал
 ├── alacritty/            # Терминал
 ├── gtk-3.0/              # GTK темы

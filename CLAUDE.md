@@ -68,7 +68,6 @@ hyperland-dots/
     │   └── style.css         # Симлинк на активную (swaync портал НЕ слушает)
     │
     ├── rofi/                 # Borderless light/dark launcher + общий акцент
-    ├── niri/                 # Niri compositor конфиг
     ├── kitty/                # Kitty терминал
     ├── alacritty/            # Alacritty терминал
     ├── gtk-3.0/              # GTK3 темы

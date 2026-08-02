@@ -47,7 +47,6 @@
 !.config/sing-box/config.json.example
 # Exclude real config with sensitive data
 .config/sing-box/config.json
-!.config/niri/**
 !.config/zellij/
 !.config/zellij/**
 !.config/swaync/

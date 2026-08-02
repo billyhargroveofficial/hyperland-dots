@@ -886,7 +886,6 @@ copy_configs() {
         ".config/sing-box"
         ".config/waybar"
         ".config/rofi"
-        ".config/niri"
         ".config/gtk-3.0"
         ".config/gtk-4.0"
         ".config/fontconfig"
