@@ -3,8 +3,9 @@
 * {
   border: none;
   border-radius: 0;
-  font-family: "Inter Variable", "JetBrainsMono Nerd Font", sans-serif;
-  font-size: 13px;
+  font-family: "SF Pro Display", sans-serif;
+  font-size: 14px;
+  letter-spacing: -0.1px;
   min-height: 0;
   font-weight: 600;
 }
@@ -48,14 +49,14 @@ window#waybar {
 .modules-right {
   background-color: rgba(0, 0, 0, 0.95);
   border-radius: 25px;
-  padding: 0 15px;
+  padding: 0 20px 0 15px;
   border: none;
 }
 
 .modules-center {
   background-color: rgba(0, 0, 0, 0.95);
   border-radius: 25px;
-  padding: 0 5px;
+  padding: 0 8px;
   border: none;
 }
 
@@ -93,62 +94,46 @@ window#waybar {
   border-radius: 6px;
 }
 
-/* Анонимные воркспейсы: без цифр, внутри — иконки запущенных окон. */
+/* Анонимные воркспейсы: маленькие круги без текста и app-иконок. */
 #workspaces button {
-  padding: 0 7px;
-  margin: 4px 3px;
-  border-radius: 15px;
+  min-width: 14px;
+  min-height: 14px;
+  padding: 0;
+  margin: 7px 5px;
+  border-radius: 50%;
   border: none;
-  box-shadow: none;
-  color: @waybar_accent_dark;
-  background: alpha(@waybar_accent_dark, 0.18);
+  box-shadow: inset 0 0 0 1px alpha(@waybar_accent_dark, 0.24);
+  color: transparent;
+  background: alpha(@waybar_accent_dark, 0.22);
   opacity: 1;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.20s ease, box-shadow 0.20s ease, opacity 0.20s ease;
+}
+
+#workspaces button label {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 0;
 }
 
 #workspaces button:hover {
-  background: alpha(@waybar_accent_dark, 0.30);
+  background: alpha(@waybar_accent_dark, 0.40);
+  box-shadow: 0 0 0 3px alpha(@waybar_accent_dark, 0.12);
   opacity: 1;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #workspaces button.active {
-  min-width: 32px;
-  color: #1A1012;
+  color: transparent;
   background: @waybar_accent_dark;
+  box-shadow: 0 0 0 3px alpha(@waybar_accent_dark, 0.22);
   opacity: 1;
-  font-weight: 700;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #workspaces button.urgent {
   background: #C0392B;
-  color: #FFFFFF;
-  opacity: 1;
-}
-
-#workspaces .taskbar-window {
-  min-width: 20px;
-  padding: 0 3px;
-  margin: 0 1px;
-  border: none;
-  border-radius: 10px;
-  box-shadow: none;
-  color: inherit;
-  background: transparent;
-  opacity: 0.82;
-}
-
-#workspaces .taskbar-window:hover {
-  min-width: 20px;
-  background: transparent;
-  opacity: 1;
-}
-
-#workspaces .taskbar-window.active {
-  min-width: 20px;
-  color: #1A1012;
-  background: transparent;
+  color: transparent;
+  box-shadow: 0 0 0 3px alpha(#C0392B, 0.24);
   opacity: 1;
 }
 
@@ -156,14 +141,6 @@ window#waybar {
   color: #D6959D;
   font-size: 16px;
   padding: 0 15px;
-}
-
-#custom-power {
-  color: #C9808A;
-  font-family: "JetBrainsMono Nerd Font";
-  font-size: 15px;
-  padding: 0 4px;
-  margin: 0;
 }
 
 /* Style for specific icons/modules that need it */
@@ -180,7 +157,6 @@ window#waybar {
 #custom-brightness-down {
   color: #fabd2f;
   padding: 0 5px;
-  font-weight: bold;
 }
 
 #network {
@@ -196,7 +172,6 @@ window#waybar {
 
 #clock {
   color: #D6959D;
-  font-weight: bold;
 }
 
 /* Hide sliders by default */
@@ -229,7 +204,6 @@ window#waybar {
 #custom-vpn {
   color: #C9808A;
   padding: 0 10px;
-  font-weight: bold;
 }
 
 #custom-vpn.connected {
@@ -263,7 +237,6 @@ window#waybar {
 #custom-singbox {
   color: #C9808A;
   padding: 0 2px 0 7px;
-  font-weight: bold;
 }
 
 #custom-singbox.connected {
@@ -283,7 +256,6 @@ window#waybar {
 #custom-recorder {
   color: #C9808A;
   padding: 0 10px;
-  font-weight: bold;
 }
 
 #custom-recorder.recording {
@@ -335,7 +307,8 @@ window#waybar {
 }
 
 #tray {
-  margin: 0 5px;
+  padding: 0;
+  margin: 0;
 }
 
 /* Языковой индикатор */
@@ -344,7 +317,6 @@ window#waybar {
   margin: 0;
   border-radius: 6px;
   color: #855058;
-  font-weight: bold;
 }
 
 /* Слайдер громкости */
@@ -376,7 +348,11 @@ window#waybar {
 
 /* Старые по-модульные правила имеют ID-специфичность. Перекрываем их здесь,
    чтобы выбранный акцент действительно применялся ко всему интерфейсу. */
-#custom-telemetry,
+#custom-telemetry-cpu,
+#custom-telemetry-gpu,
+#custom-telemetry-ram,
+#custom-telemetry-vram,
+#custom-telemetry-ssd,
 #clock,
 #pulseaudio,
 #custom-mic-volume,
@@ -416,9 +392,7 @@ window#waybar {
   color: @waybar_accent_dark;
 }
 
-#workspaces button.active,
-#workspaces button.active .taskbar-window,
-#workspaces .taskbar-window.active {
+#workspaces button.active {
   color: #1A1012;
 }
 
@@ -426,65 +400,112 @@ window#waybar {
   color: #FFFFFF;
 }
 
-#custom-accent-purple,
-#custom-accent-purple * {
-  color: #8D69D5;
-}
-
-#custom-accent-blue,
-#custom-accent-blue * {
-  color: #4B8FD3;
-}
-
-#custom-accent-teal,
-#custom-accent-teal * {
-  color: #36A99B;
-}
-
-#custom-accent-amber,
-#custom-accent-amber * {
-  color: #C78C24;
-}
-
-#custom-accent-purple,
-#custom-accent-blue,
-#custom-accent-teal,
-#custom-accent-amber {
-  padding: 0 4px;
-  font-size: 14px;
-  opacity: 0.55;
-}
-
-#custom-accent-purple.active,
-#custom-accent-blue.active,
-#custom-accent-teal.active,
-#custom-accent-amber.active {
-  font-size: 17px;
-  opacity: 1;
-}
-
-#custom-theme-toggle {
-  color: @waybar_accent_dark;
-  font-family: "JetBrainsMono Nerd Font";
-  font-size: 15px;
-  margin-left: 5px;
-  padding: 0 2px 0 7px;
-}
-
-/* Keep the final controls visually paired without widening the whole island. */
-#clock {
-  padding-right: 4px;
-  margin-right: 0;
-}
-
-#custom-power {
-  padding: 0 4px;
+/* Native SVG image modules: every pictogram comes from one Lucide set. */
+#image {
+  padding: 0;
   margin: 0;
 }
 
+#image.accent-purple,
+#image.accent-blue,
+#image.accent-teal,
+#image.accent-amber {
+  padding: 0 2px;
+  margin: 0 1px;
+}
+
+#image.theme-toggle {
+  padding: 0 2px;
+  margin: 0 1px 0 5px;
+}
+
+#image.telemetry-cpu,
+#image.telemetry-gpu,
+#image.telemetry-ram,
+#image.telemetry-vram,
+#image.telemetry-ssd {
+  padding: 0;
+  margin: 0 3px 0 7px;
+}
+
+#image.telemetry-cpu {
+  margin-left: 2px;
+}
+
+#image.telemetry-ram,
+#image.telemetry-ssd {
+  margin-left: 8px;
+}
+
+#custom-telemetry-cpu,
+#custom-telemetry-gpu,
+#custom-telemetry-ram,
+#custom-telemetry-vram,
+#custom-telemetry-ssd {
+  padding: 4px 2px 4px 0;
+  margin: 0;
+}
+
+#image.network {
+  margin: 0 3px 0 4px;
+}
+
+#image.vpn,
+#image.bluetooth {
+  margin: 0 3px;
+}
+
+#image.volume {
+  margin: 0 3px 0 4px;
+}
+
+#pulseaudio {
+  padding: 4px 3px 4px 0;
+  margin: 0;
+}
+
+#image.brightness {
+  margin: 0 3px 0 6px;
+}
+
+#custom-brightness {
+  padding: 0 3px 0 0;
+  margin: 0;
+}
+
+#image.recorder {
+  margin: 0 5px;
+}
+
+#image.wallpaper {
+  margin: 0 5px;
+}
+
+#clock {
+  padding: 4px 3px 4px 4px;
+  margin: 0;
+}
+
+#custom-power-button {
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin: 0 0 0 4px;
+  color: transparent;
+  background-image: url("../../.cache/waybar-svg-icons/power.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+}
+
 tooltip {
-  border-radius: 15px;
-  background-color: #111111;
-  color: @waybar_accent_dark;
+  opacity: 0;
+  background-color: transparent;
+  color: transparent;
   border: none;
+  box-shadow: none;
+}
+
+tooltip label {
+  opacity: 0;
 }

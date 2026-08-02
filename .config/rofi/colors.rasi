@@ -2,9 +2,9 @@
 * {
     rofi-bg: rgba(255, 255, 255, 0.92);
     rofi-surface: rgba(0, 0, 0, 0.05);
-    rofi-hover: rgba(111, 74, 200, 0.14);
-    rofi-accent-hover: rgba(111, 74, 200, 0.22);
-    rofi-accent: #6F4AC8;
+    rofi-hover: rgba(40, 103, 178, 0.14);
+    rofi-accent-hover: rgba(40, 103, 178, 0.22);
+    rofi-accent: #2867B2;
     rofi-fg: #211927;
     rofi-fg-dim: #655D6C;
     rofi-selected-fg: #FFFFFF;

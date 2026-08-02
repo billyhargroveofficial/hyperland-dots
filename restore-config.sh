@@ -251,6 +251,18 @@ install_aur_packages() {
 install_fonts() {
     log_info "Установка шрифтов..."
 
+    # Текущий UI использует установленный локально SF Pro Display. Inter Tight
+    # хранится в репозитории как свободный переносимый fallback для машины, на
+    # которой SF Pro отсутствует; проприетарные файлы SF Pro в Git не кладём.
+    if [[ -f "$SCRIPT_DIR/.local/share/fonts/InterTight/InterTight[wght].ttf" ]]; then
+        install -Dm644 \
+            "$SCRIPT_DIR/.local/share/fonts/InterTight/InterTight[wght].ttf" \
+            "$HOME/.local/share/fonts/InterTight/InterTight[wght].ttf"
+        install -Dm644 \
+            "$SCRIPT_DIR/.local/share/fonts/InterTight/OFL.txt" \
+            "$HOME/.local/share/fonts/InterTight/OFL.txt"
+    fi
+
     # Playpen Sans
     if ! fc-list | grep -qi "playpen"; then
         log_info "Установка Playpen Sans..."
@@ -273,6 +285,8 @@ install_fonts() {
 
     # Emoji шрифт (для waybar иконок)
     sudo pacman -S --needed --noconfirm noto-fonts-emoji 2>/dev/null || true
+
+    fc-cache -f >/dev/null 2>&1
 
     log_info "Шрифты установлены"
 }
@@ -922,6 +936,20 @@ copy_configs() {
         fi
     done
 
+    # Штатный /usr/bin/google-chrome-stable читает обычный файл флагов, а
+    # репозиторий хранит переносимый шаблон без зашитого имени пользователя.
+    if [[ -f "$SCRIPT_DIR/.config/chrome-flags.conf.template" ]]; then
+        local chrome_flags_tmp
+        chrome_flags_tmp=$(mktemp "$HOME/.config/.chrome-flags.conf.XXXXXX")
+        sed "s|@HOME@|$HOME|g" \
+            "$SCRIPT_DIR/.config/chrome-flags.conf.template" > "$chrome_flags_tmp"
+        mv -f "$chrome_flags_tmp" "$HOME/.config/chrome-flags.conf"
+    fi
+
+    command -v update-desktop-database >/dev/null 2>&1 \
+        && update-desktop-database "$HOME/.local/share/applications" 2>/dev/null \
+        || true
+
     log_info "Конфиги скопированы"
 }
 
@@ -1000,6 +1028,9 @@ main() {
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'
     gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita'
     gsettings set org.gnome.desktop.interface icon-theme 'Papirus'
+    gsettings set org.gnome.desktop.interface font-name 'SF Pro Display, Semi-Bold 11'
+    gsettings set org.gnome.desktop.interface document-font-name 'SF Pro Display, Semi-Bold 11'
+    gsettings set org.gnome.desktop.wm.preferences titlebar-font 'SF Pro Display, Semi-Bold 11'
     # Цель относительная, а не полный путь: оба каталога лежат в git, и
     # абсолютная ссылка зашила бы в репу /home/<текущий юзер>.
     ln -sfn "style-light.css" "$HOME/.config/waybar/style.css"
@@ -1010,7 +1041,7 @@ main() {
     ln -sfn "style-light.css" "$HOME/.config/swaync/style.css"
     echo "light" > "$HOME/.config/hypr/.theme-state"
     "$HOME/.config/waybar/scripts/accent.sh" refresh \
-        || log_warn "Монохромная тема иконок Waybar не сгенерировалась"
+        || log_warn "SVG и монохромная тема иконок Waybar не сгенерировались"
     log_info "Светлая тема установлена (переключение: Ctrl+Y)"
 
     # Перезагрузка Hyprland конфига и перезапуск панели/обоев

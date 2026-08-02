@@ -1,0 +1,239 @@
+* {
+  border: none;
+  box-shadow: none;
+  font-family: "SF Pro Display", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+
+.floating-notifications,
+.blank-window,
+.notification-row,
+.notification-group,
+.control-center-list,
+.widget-buttons-grid {
+  background: transparent;
+}
+
+.notification-row {
+  outline: none;
+}
+
+.notification-row .notification-background {
+  padding: 4px 8px;
+}
+
+/* Align popup cards with Hyprland's current outer gaps: the usable area
+ * starts below Waybar, so 20px here matches windows at y = 68 + 20. */
+.floating-notifications .notification-row .notification-background {
+  padding: 16px 40px 4px 8px;
+}
+
+.notification-row .notification-background .notification {
+  background: @swaync_surface;
+  border: none;
+  border-radius: 20px;
+  box-shadow: none;
+  margin: 4px 0;
+  padding: 0;
+}
+
+.notification-row .notification-background .notification.critical {
+  border: 1px solid @swaync_accent;
+}
+
+.notification-row .notification-background .notification .notification-default-action {
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  color: @swaync_accent;
+  padding: 4px;
+}
+
+.notification-row .notification-background .notification .notification-default-action:hover {
+  background: @swaync_accent_faint;
+}
+
+.notification-content {
+  color: @swaync_accent;
+  padding: 10px 28px 10px 14px;
+}
+
+.summary {
+  color: @swaync_accent;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.body {
+  color: @swaync_accent_dim;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.time {
+  color: @swaync_accent_muted;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.image,
+.app-icon {
+  margin: 4px;
+}
+
+/* Notification cards stay clean: actions are filtered in config.json.
+ * These zero-sized rules also cover providers that request inline controls. */
+.notification-alt-actions,
+.notification-action,
+.inline-reply,
+.close-button {
+  border: none;
+  margin: 0;
+  min-height: 0;
+  min-width: 0;
+  opacity: 0;
+  padding: 0;
+}
+
+.notification-group-headers,
+.notification-group-icon,
+.notification-group-close-button {
+  color: @swaync_accent;
+  font-weight: 600;
+}
+
+.notification-group-headers {
+  margin: 4px 12px;
+}
+
+.notification-group-close-button {
+  background: transparent;
+  border: none;
+  margin: 4px;
+  padding: 2px;
+}
+
+.notification-group-close-button:hover {
+  background: @swaync_accent;
+  color: @swaync_on_accent;
+}
+
+.control-center {
+  background: @swaync_surface;
+  border: none;
+  border-radius: 25px;
+  box-shadow: none;
+  color: @swaync_accent;
+  padding: 8px;
+}
+
+.control-center-list-placeholder,
+.widget-label,
+.widget-mpris-subtitle {
+  color: @swaync_accent_dim;
+}
+
+.control-center .notification-row .notification-background .notification,
+.widget-mpris,
+.widget-mpris-player {
+  background: @swaync_accent_faint;
+}
+
+.widget-title,
+.widget-dnd,
+.widget-mpris-title,
+.widget-volume,
+.widget-slider,
+.per-app-volume {
+  color: @swaync_accent;
+  font-weight: 600;
+}
+
+.widget-title,
+.widget-dnd,
+.widget-label,
+.widget-volume,
+.widget-slider,
+.per-app-volume {
+  margin: 8px 12px;
+}
+
+.widget-title > button,
+.widget-buttons-grid > flowbox > flowboxchild > button {
+  background: @swaync_accent_soft;
+  border: none;
+  color: @swaync_accent;
+}
+
+.widget-title > button {
+  border-radius: 12px;
+  padding: 4px 12px;
+}
+
+.widget-buttons-grid {
+  padding: 4px;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button {
+  border-radius: 16px;
+  margin: 4px;
+  padding: 8px;
+}
+
+.widget-title > button:hover,
+.widget-buttons-grid > flowbox > flowboxchild > button:hover {
+  background: @swaync_accent;
+  color: @swaync_on_accent;
+}
+
+.widget-dnd > switch {
+  background: @swaync_accent_soft;
+  border: none;
+  border-radius: 12px;
+}
+
+.widget-dnd > switch:checked,
+highlight {
+  background: @swaync_accent;
+}
+
+.widget-dnd > switch slider,
+slider {
+  background: @swaync_accent;
+  border-radius: 50%;
+}
+
+.widget-dnd > switch:checked slider {
+  background: @swaync_on_accent;
+}
+
+.widget-mpris,
+.widget-mpris-player {
+  border-radius: 20px;
+  color: @swaync_accent;
+  margin: 8px;
+  padding: 8px;
+}
+
+.widget-mpris-subtitle {
+  font-size: 11px;
+}
+
+trough {
+  background: @swaync_accent_soft;
+  border-radius: 12px;
+  min-height: 10px;
+}
+
+highlight {
+  border-radius: 12px;
+  min-height: 10px;
+}
+
+slider {
+  min-height: 12px;
+  min-width: 12px;
+}

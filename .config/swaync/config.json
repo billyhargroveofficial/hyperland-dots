@@ -18,5 +18,13 @@
   "transition-time": 200,
   "hide-on-clear": true,
   "hide-on-action": true,
-  "script-fail-notify": true
+  "script-fail-notify": true,
+  "notification-2fa-action": false,
+  "notification-inline-replies": false,
+  "notification-action-filter": {
+    "hide-all-actions": {
+      "use-regex": true,
+      "id-matcher": ".*"
+    }
+  }
 }

@@ -12,7 +12,7 @@
 
     background-color: transparent;
     text-color: @fg;
-    font: "JetBrainsMono Nerd Font 11";
+    font: "SF Pro Display, Semi-Bold 11";
 }
 
 window {
@@ -40,7 +40,7 @@ inputbar {
 
 prompt {
     text-color: @accent;
-    font: "JetBrainsMono Nerd Font Bold 12";
+    font: "SF Pro Display, Bold 12";
 }
 
 entry {
@@ -79,7 +79,7 @@ element-icon {
 
 element-text {
     horizontal-align: 0.5;
-    font: "JetBrainsMono Nerd Font 9";
+    font: "SF Pro Display, Semi-Bold 9";
     background-color: inherit;
     text-color: inherit;
 }

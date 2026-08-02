@@ -553,12 +553,13 @@ for i = 1, wsPerMonitor do
 	end)
 end
 
--- Колесо: вниз — следующий стол, вверх — предыдущий, как было до scrolling.
+-- Колесо с зажатым модификатором следует направлению ленты: вверх/вперёд —
+-- следующий стол справа, вниз/назад — предыдущий слева.
 hl.bind(wsMod .. " + mouse_down", function()
-	hyprWsCycle(1)
+	hyprWsCycle(-1)
 end)
 hl.bind(wsMod .. " + mouse_up", function()
-	hyprWsCycle(-1)
+	hyprWsCycle(1)
 end)
 
 -- Горизонтальная прокрутка ленты колесом удалена по просьбе пользователя. Она

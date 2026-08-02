@@ -8,22 +8,23 @@
 
 ## Особенности
 
-- **Waybar** — три островка: безымянные рабочие столы с монохромными иконками
-  приложений слева, текстовая телеметрия по центру и системные индикаторы справа;
-  рядом переключатели акцента и dark/light
+- **Waybar** — три островка: безымянные рабочие столы без app-иконок, Lucide SVG
+  для CPU/GPU/RAM/VRAM/SSD и системных индикаторов, монохромные tray-иконки;
+  слева SVG-переключатели акцента и dark/light
 - **Запись экрана кнопкой** — 720p60, h264_nvenc, в `~/records` (см. `docs/screen-recording.md`)
 - **Видеообои вручную** — отдельная play/pause-кнопка Waybar для Vulkan-рендерера
   `nv-wallpaper`, без автозапуска и правил по активным окнам (см. `docs/video-wallpaper.md`)
 - **Два монитора**, столы делятся по экранам и выбираются по курсору (`docs/hyprland.md`)
 - **Конфиг Hyprland на Lua** — формат с 0.55, бинды умеют произвольные функции
 - **Единая тема** — ghostty, waybar, VSCode, nvim, GTK, rofi, swaync
+- **Единый UI-шрифт** — SF Pro Display SemiBold в Waybar, Rofi, SwayNC, GTK и Chrome
 - **Dark/Light toggle** — переключение всех тем по Ctrl+Y
 - **Voice Input** — speech-to-text через faster-whisper на CUDA (Ctrl+Super)
 - **Плавные анимации** — настроенные bezier curves для окон и workspaces
 - **VPN с split tunneling** — sing-box (VLESS + Reality), .ru домены напрямую
 - **NVIDIA GPU fan control** — динамическое управление вентиляторами на Wayland
 - **LazyVim** — nvim с прозрачным gruvbox-material
-- **SwayNC** — уведомления в палитре панели, две темы, переключаются вместе со всем
+- **SwayNC** — чистые уведомления без action-кнопок, SF Pro Display и динамический акцент панели
 - **AI-агенты во вкладках tmux** — нейтральный индикатор с локально задаваемыми
   процессами, иконками и hooks (см. `harness-hooks/README.md`)
 - **Обратный SSH-туннель** — постоянный доступ через `nareshka.ru:2223`,
@@ -78,11 +79,12 @@ Actions разрешены в настройках репозитория.
 
 | | |
 |---|---|
-| [`docs/waybar.md`](docs/waybar.md) | островки, телеметрия, монохромные иконки приложений, выбор акцента и особенности GTK3 |
+| [`docs/waybar.md`](docs/waybar.md) | островки, SVG-телеметрия, монохромные app/tray-иконки, выбор акцента и особенности GTK3 |
 | [`docs/video-wallpaper.md`](docs/video-wallpaper.md) | ручная play/pause-кнопка, установка отдельного Vulkan-рендерера и сохранение позиции |
 | [`docs/hyprland.md`](docs/hyprland.md) | конфиг на Lua и что миграция ломает молча, два монитора, Alt+Tab |
 | [`docs/screen-recording.md`](docs/screen-recording.md) | wf-recorder + NVENC: несуществующие флаги, диапазон яркости |
 | [`docs/notifications.md`](docs/notifications.md) | swaync и почему он не следует за системной темой сам |
+| [`docs/fonts.md`](docs/fonts.md) | все точки замены системного шрифта и отдельный override Chrome |
 | [`docs/bluetooth-audio.md`](docs/bluetooth-audio.md) | наушники: заикания на LDAC и почему кодек прибит к AAC, потеря BlueZ-endpoints |
 | [`docs/private-state.md`](docs/private-state.md) | что намеренно не лежит в публичной репе и нужно бэкапить отдельно |
 
@@ -237,7 +239,7 @@ DHCP при этом продолжает работать, адрес прос�
 | `Alt + Ctrl + H/J/K/L` | Resize окна |
 | `Alt + 1-9, 0` | Стол 1-10 **того монитора, где курсор** |
 | `Alt + Ctrl + 1-9, 0` | Перенести окно на этот стол (в т.ч. на соседний экран) |
-| `Alt + колесо` | Столы того монитора, где курсор; по кругу внутри его десятка |
+| `Alt + колесо` | Столы монитора под курсором: вперёд — вправо, назад — влево; по кругу внутри десятка |
 
 > Цифра выбирает стол по монитору **под курсором**: над `DP-2` это столы 1-10,
 > над `DP-3` — 11-20. Курсор, а не клавиатурный фокус — при `follow_mouse = 1`
@@ -336,7 +338,7 @@ bright 1                              # диапазон 1-100, шаг коле�
 | Nvim | gruvbox-material transparent | gruvbox-material transparent |
 | GTK | **`Adwaita-dark`** | `Adwaita` |
 | Rofi | чёрный полупрозрачный без рамки + акцент | белый полупрозрачный без рамки + акцент |
-| SwayNC | Gruvbox Dark | — |
+| SwayNC | тёмная поверхность + выбранный акцент | светлая поверхность + выбранный акцент |
 
 ### Три вещи, которые ломали переключение
 
@@ -571,10 +573,10 @@ timeout 25 sudo sing-box run -D ~/.config/sing-box -c ~/.config/sing-box/config.
 .config/
 ├── systemd/user/         # bt-audio и обратный SSH-туннель
 ├── hypr/                 # Hyprland + скрипты (theme toggle, вентиляторы, обои)
-├── waybar/               # Панель (островки, телеметрия, акценты, dark/light CSS)
+├── waybar/               # Панель (Lucide SVG, телеметрия, акценты, dark/light CSS)
 ├── ghostty/              # Терминал + themes/gruvbox-mine-{dark,light}
 ├── Code/User/            # VSCode settings + keybindings
-├── swaync/               # Уведомления (Gruvbox)
+├── swaync/               # Уведомления (SF Pro Display, динамический акцент Waybar)
 ├── sing-box/             # VPN (только шаблон!)
 ├── rofi/                 # Borderless launcher: light/dark + общий акцент Waybar
 ├── kitty/                # Терминал

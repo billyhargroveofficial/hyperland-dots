@@ -66,21 +66,13 @@ refresh() { pkill -RTMIN+9 -x waybar 2>/dev/null || true; }
 case "${1:-get}" in
     get)
         t=$(target)
-        if   [ "$t" -ge 67 ]; then icon="󰃠"
-        elif [ "$t" -ge 34 ]; then icon="󰃟"
-        else                       icon="󰃞"
-        fi
-        # Три пробела после иконки не опечатка: глифы Nerd Font рисуются шире
-        # своей ячейки и наезжают на пробел. В остальных модулях хватает двух,
-        # но глиф солнца (U+F00E0) самый широкий из используемых — замер по
-        # скриншоту давал 2px зазора против 7px у соседей.
         if [ "${#DEVS[@]}" -gt 1 ]; then
             tip="Яркость мониторов (${#DEVS[@]}): $t%"
         else
             tip="Яркость монитора: $t%"
         fi
-        printf '{"text":"%s   %s%%","tooltip":"%s","class":"brightness"}\n' \
-            "$icon" "$t" "$tip"
+        printf '{"text":"%s%%","tooltip":"%s","class":"brightness"}\n' \
+            "$t" "$tip"
         exit 0
         ;;
     up|down|set) ;;

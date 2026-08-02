@@ -128,9 +128,9 @@ fi
 gsettings set org.gnome.desktop.interface color-scheme "$COLOR_SCHEME"
 gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME_NAME"
 
-# Rofi не слушает портал: генерируем общие переменные для следующего запуска.
+# Rofi и SVG-иконки Waybar не слушают портал: пересобираем их под новую тему.
 if [[ -x "$ROFI_ACCENT_SCRIPT" ]]; then
-    "$ROFI_ACCENT_SCRIPT" rofi-refresh
+    "$ROFI_ACCENT_SCRIPT" refresh
 fi
 
 # --- 2. settings.ini для GTK3 -------------------------------------------
@@ -152,6 +152,10 @@ fi
 # на другой машине ссылка оказалась бы битой. Плюс репа и система тогда
 # расходятся при каждом переключении темы.
 ln -sfn "style-${MODE}.css" "$WAYBAR_DIR/style.css"
+
+# Перечитать SVG image-модули: их файлы только что получили оттенок новой
+# темы. SIGUSR2 делает штатный reload Waybar без убийства процесса.
+pkill -USR2 -x waybar 2>/dev/null || true
 
 # --- 3b. swaync ---------------------------------------------------------
 # Уведомления оформлены под waybar и держат две темы теми же файлами:

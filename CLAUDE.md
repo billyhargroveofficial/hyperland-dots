@@ -20,6 +20,7 @@ hyperland-dots/
 │   ├── bluetooth-audio.md    #   наушники: кодек AAC вместо LDAC, баг WirePlumber
 │   └── private-state.md      #   секреты и runtime, которые бэкапятся отдельно
 ├── .local/bin/bt-audio-*     # Автопереключение звука на BT и его починка
+├── .local/share/fonts/InterTight/ # Свободный fallback UI-шрифта + OFL
 │
 └── .config/
     ├── systemd/user/         # bt-audio и обратный SSH-туннель
@@ -40,12 +41,14 @@ hyperland-dots/
     │   ├── style-dark.css    # Тёмная тема
     │   ├── style-light.css   # Светлая тема
     │   ├── style.css         # Симлинк на активную тему
+    │   ├── icons/            # Единый Lucide SVG-набор для image-модулей
     │   └── scripts/          # Скрипты для модулей
     │       ├── cpu.py             # CPU: загрузка + топ по CPU в попапе
     │       ├── memory.py          # Память: занято/всего + топ по RSS
     │       ├── disk.py            # Диск: занято/всего + крупнейшие каталоги
+    │       ├── telemetry.py       # Кэшированный CPU/GPU/RAM/VRAM/SSD
+    │       ├── svg-icons.sh       # SVG: акцент, theme и runtime-состояния
     │       ├── recorder.sh        # Запись экрана 720p60 -> ~/records
-    │       ├── singbox-status.sh  # sing-box status
     │       └── leave.sh           # Power menu
     │
     ├── ghostty/              # Ghostty терминал
@@ -61,10 +64,12 @@ hyperland-dots/
     ├── sing-box/             # VPN конфиг
     │   └── config.json.example  # Шаблон (без реальных данных!)
     │
-    ├── swaync/               # Уведомления (оформлены под палитру waybar)
+    ├── swaync/               # Уведомления (SF Pro Display + динамический акцент waybar)
     │   ├── config.json       # SwayNC конфиг
     │   ├── style-dark.css    # Тёмная тема
     │   ├── style-light.css   # Светлая тема
+    │   ├── style-common.css  # Общая геометрия карточек без action-кнопок
+    │   ├── accent.css        # Генерируется accent.sh вместе с waybar/rofi
     │   └── style.css         # Симлинк на активную (swaync портал НЕ слушает)
     │
     ├── rofi/                 # Borderless light/dark launcher + общий акцент

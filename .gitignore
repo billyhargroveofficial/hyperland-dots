@@ -72,6 +72,10 @@
 !.local/bin/bt-audio-recover
 !.local/bin/mujik-ssh-tunnel
 !.local/bin/waybar-mono-icons
+!.local/share/
+!.local/share/fonts/
+!.local/share/fonts/InterTight/
+!.local/share/fonts/InterTight/**
 
 # Скрипты установки
 !scripts/

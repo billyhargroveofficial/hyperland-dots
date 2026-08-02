@@ -5,7 +5,8 @@
 #
 # Вызовы:
 #   recorder.sh          — переключить запись (on-click в waybar)
-#   recorder.sh status   — JSON для модуля custom/recorder
+#   recorder.sh status   — текстовый JSON-статус для ручной диагностики;
+#                          штатную SVG-иконку рисует scripts/svg-icons.sh
 #
 # Почему именно так (каждый пункт чинит реальную поломку, не менять вслепую):
 #
@@ -47,7 +48,7 @@ LOGFILE="$RUNTIME_DIR/wf-recorder.log"
 FPS=60
 SCALE="1280:720"
 CODEC="h264_nvenc"   # hevc_nvenc — файл меньше, но хуже совместимость плееров
-WAYBAR_SIGNAL=10     # обязан совпадать с "signal" в custom/recorder
+WAYBAR_SIGNAL=10     # обязан совпадать с "signal" в image#recorder
 
 notify() {
     command -v notify-send >/dev/null 2>&1 || return 0
@@ -70,11 +71,11 @@ rec_pid() {
 # --- статус для waybar --------------------------------------------------
 if [ "${1:-toggle}" = "status" ]; then
     if rec_pid >/dev/null; then
-        printf '{"text":"󰑊  Rec","class":"recording","tooltip":"Идёт запись — клик, чтобы остановить"}\n'
+        printf '{"text":"Rec","class":"recording","tooltip":"Идёт запись — клик, чтобы остановить"}\n'
     elif command -v wf-recorder >/dev/null 2>&1; then
-        printf '{"text":"󰻃","class":"idle","tooltip":"Запись экрана 720p60 → ~/records"}\n'
+        printf '{"text":"","class":"idle","tooltip":"Запись экрана 720p60 → ~/records"}\n'
     else
-        printf '{"text":"󰻃","class":"missing","tooltip":"wf-recorder не установлен: sudo pacman -S wf-recorder"}\n'
+        printf '{"text":"","class":"missing","tooltip":"wf-recorder не установлен: sudo pacman -S wf-recorder"}\n'
     fi
     exit 0
 fi

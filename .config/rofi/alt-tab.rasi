@@ -19,6 +19,7 @@ configuration {
     fg: @rofi-fg;
     fg-dim: @rofi-fg-dim;
     radius: 18px;
+    font: "SF Pro Display, Semi-Bold 10";
 }
 
 window {
@@ -75,6 +76,6 @@ element-text {
     horizontal-align: 0.5;
     background-color: inherit;
     text-color: inherit;
-    font: "JetBrainsMono Nerd Font 9";
+    font: "SF Pro Display, Semi-Bold 9";
     cursor: inherit;
 }

@@ -10,21 +10,31 @@
     "group/accent"
   ],
   "modules-center": [
-    "custom/telemetry"
+    "image#telemetry-cpu",
+    "custom/telemetry-cpu",
+    "image#telemetry-gpu",
+    "custom/telemetry-gpu",
+    "image#telemetry-ram",
+    "custom/telemetry-ram",
+    "image#telemetry-vram",
+    "custom/telemetry-vram",
+    "image#telemetry-ssd",
+    "custom/telemetry-ssd"
   ],
   "modules-right": [
     "tray",
-    "network",
-    "custom/singbox",
+    "image#network",
+    "image#vpn",
     "hyprland/language",
-    "bluetooth",
-    "pulseaudio",
+    "image#bluetooth",
+    "image#volume",
     "pulseaudio/slider",
+    "image#brightness",
     "custom/brightness",
     "image#wallpaper",
-    "custom/recorder",
+    "image#recorder",
     "clock",
-    "custom/power"
+    "custom/power-button"
   ],
   "group/workspaces-island": {
     "orientation": "horizontal",
@@ -35,95 +45,54 @@
   "group/accent": {
     "orientation": "horizontal",
     "modules": [
-      "custom/accent-purple",
-      "custom/accent-blue",
-      "custom/accent-teal",
-      "custom/accent-amber",
-      "custom/theme-toggle"
+      "image#accent-purple",
+      "image#accent-blue",
+      "image#accent-teal",
+      "image#accent-amber",
+      "image#theme-toggle"
     ]
   },
-  "custom/accent-purple": {
-    "exec": "~/.config/waybar/scripts/accent.sh status purple",
-    "return-type": "json",
-    "interval": 5,
+  "image#accent-purple": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh accent purple",
+    "size": 17,
+    "tooltip": false,
     "on-click": "~/.config/waybar/scripts/accent.sh set purple"
   },
-  "custom/accent-blue": {
-    "exec": "~/.config/waybar/scripts/accent.sh status blue",
-    "return-type": "json",
-    "interval": 5,
+  "image#accent-blue": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh accent blue",
+    "size": 17,
+    "tooltip": false,
     "on-click": "~/.config/waybar/scripts/accent.sh set blue"
   },
-  "custom/accent-teal": {
-    "exec": "~/.config/waybar/scripts/accent.sh status teal",
-    "return-type": "json",
-    "interval": 5,
+  "image#accent-teal": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh accent teal",
+    "size": 17,
+    "tooltip": false,
     "on-click": "~/.config/waybar/scripts/accent.sh set teal"
   },
-  "custom/accent-amber": {
-    "exec": "~/.config/waybar/scripts/accent.sh status amber",
-    "return-type": "json",
-    "interval": 5,
+  "image#accent-amber": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh accent amber",
+    "size": 17,
+    "tooltip": false,
     "on-click": "~/.config/waybar/scripts/accent.sh set amber"
   },
-  "custom/theme-toggle": {
-    "exec": "~/.config/waybar/scripts/accent.sh theme-status",
-    "return-type": "json",
-    "interval": 2,
+  "image#theme-toggle": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh theme",
+    "size": 16,
+    "tooltip": false,
     "on-click": "~/.config/hypr/scripts/toggle-theme.sh"
-  },
-  "custom/sep": {
-    "format": "|",
-    "tooltip": false
-  },
-  "custom/sep2": {
-    "format": "|",
-    "tooltip": false
-  },
-  "custom/sep3": {
-    "format": "|",
-    "tooltip": false
   },
   "hyprland/language": {
     "format": "{}",
     "format-en": "EN",
-    "format-ru": "RU"
-  },
-  "pulseaudio": {
-    "tooltip": false,
-    "scroll-step": 5,
-    "format": "{icon}  {volume}%",
-    "format-muted": "󰖁  {volume}%",
-    "on-click": "pavucontrol",
-    "format-icons": {
-      "default": [
-        "󰕿",
-        "󰖀",
-        "󰕾"
-      ]
-    }
+    "format-ru": "RU",
+    "tooltip": false
   },
   "pulseaudio/slider": {
     "min": 0,
     "max": 100,
     "orientation": "horizontal",
     "expand": false
-  },
-  "network": {
-    "format-wifi": "󰤨",
-    "format-ethernet": "󰈀",
-    "tooltip-format": "{essid} ({signalStrength}%)",
-    "format-linked": "󰈀",
-    "format-disconnected": "󰤭",
-    "format-alt": "{ifname}: {ipaddr}/{cidr}"
-  },
-  "bluetooth": {
-    "format": "󰂯  {status}",
-    "on-click": "blueman-manager",
-    "format-disabled": "",
-    "format-connected": "󰂱  {num_connections}",
-    "format-no-controller": "",
-    "tooltip-format": "{controller_alias} {controller_address}"
   },
   "tray": {
     "icon-size": 18,
@@ -135,73 +104,110 @@
     }
   },
   "clock": {
-    "format": "󰃰  {:%d.%m.%Y   %H:%M}",
-    "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>"
+    "format": "{:%d.%m.%Y   %H:%M}",
+    "tooltip": false
   },
-  "custom/telemetry": {
-    "exec": "~/.config/waybar/scripts/telemetry.py",
+  "image#telemetry-cpu": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh path cpu",
+    "size": 15,
+    "tooltip": false
+  },
+  "custom/telemetry-cpu": {
+    "exec": "~/.config/waybar/scripts/telemetry.py cpu",
     "return-type": "json",
     "interval": 5,
     "format": "{}",
-    "tooltip": true
+    "tooltip": false
   },
-  "custom/cpu-temp": {
-    "exec": "sensors k10temp-pci-00c3 | grep 'Tctl:' | awk '{print $2}' | sed 's/+//;s/°C//'",
-    "format": "󰔏  {}°C",
-    "interval": 5
+  "image#telemetry-gpu": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh path gpu",
+    "size": 16,
+    "tooltip": false
   },
-  "custom/gpu-temp": {
-    "exec": "nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits",
-    "format": "󰢮  {}°C",
-    "interval": 5
-  },
-  "custom/gpu-fan": {
-    "exec": "nvidia-smi --query-gpu=fan.speed --format=csv,noheader,nounits",
-    "format": "󰈐  {}%",
-    "interval": 5,
-    "tooltip": true,
-    "tooltip-format": "GPU Fan Speed"
-  },
-  "custom/gpu-vram": {
-    "exec": "nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits | awk -F', ' '{printf \"%.1f/%.1fG\", $1/1024, $2/1024}'",
-    "format": "󰍛  {}",
-    "interval": 5,
-    "tooltip": true,
-    "tooltip-format": "GPU VRAM Usage"
-  },
-  "custom/fan": {
-    "exec": "sensors asusec-isa-000a | grep 'Chipset:' | awk 'NR==1{print $2}' | sed 's/RPM//'",
-    "format": "󰈐  {} RPM",
-    "interval": 5
-  },
-  "custom/cpu": {
-    "exec": "~/.config/waybar/scripts/cpu.py",
+  "custom/telemetry-gpu": {
+    "exec": "~/.config/waybar/scripts/telemetry.py gpu",
     "return-type": "json",
+    "interval": 5,
+    "format": "{}",
+    "tooltip": false
+  },
+  "image#telemetry-ram": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh path memory-stick",
+    "size": 16,
+    "tooltip": false
+  },
+  "custom/telemetry-ram": {
+    "exec": "~/.config/waybar/scripts/telemetry.py ram",
+    "return-type": "json",
+    "interval": 5,
+    "format": "{}",
+    "tooltip": false,
+    "hide-empty-text": true
+  },
+  "image#telemetry-vram": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh path microchip",
+    "size": 15,
+    "tooltip": false
+  },
+  "custom/telemetry-vram": {
+    "exec": "~/.config/waybar/scripts/telemetry.py vram",
+    "return-type": "json",
+    "interval": 5,
+    "format": "{}",
+    "tooltip": false
+  },
+  "image#telemetry-ssd": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh path hard-drive",
+    "size": 16,
+    "tooltip": false
+  },
+  "custom/telemetry-ssd": {
+    "exec": "~/.config/waybar/scripts/telemetry.py ssd",
+    "return-type": "json",
+    "interval": 5,
+    "format": "{}",
+    "tooltip": false
+  },
+  "image#network": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh network",
+    "size": 16,
     "interval": 3,
-    "format": "{}",
-    "tooltip": true
+    "tooltip": false
   },
-  "custom/memory": {
-    "exec": "~/.config/waybar/scripts/memory.py",
-    "return-type": "json",
-    "interval": 10,
-    "format": "{}",
-    "tooltip": true
+  "image#vpn": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh vpn",
+    "size": 15,
+    "interval": 3,
+    "tooltip": false
   },
-  "custom/disk": {
-    "exec": "~/.config/waybar/scripts/disk.py /home",
-    "return-type": "json",
-    "interval": 60,
-    "format": "{}",
-    "tooltip": true
+  "image#bluetooth": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh bluetooth",
+    "size": 15,
+    "interval": 5,
+    "tooltip": false,
+    "on-click": "blueman-manager"
   },
-  "custom/recorder": {
-    "exec": "~/.config/waybar/scripts/recorder.sh status",
-    "return-type": "json",
+  "image#volume": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh volume",
+    "size": 16,
+    "interval": 2,
+    "tooltip": false,
+    "on-click": "pavucontrol"
+  },
+  "image#brightness": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh path sun",
+    "size": 16,
+    "tooltip": false,
+    "on-scroll-up": "~/.config/hypr/scripts/brightness.sh up",
+    "on-scroll-down": "~/.config/hypr/scripts/brightness.sh down"
+  },
+  "image#recorder": {
+    "exec": "~/.config/waybar/scripts/svg-icons.sh recorder",
+    "size": 16,
     "interval": 30,
     "signal": 10,
-    "on-click": "~/.config/waybar/scripts/recorder.sh",
-    "format": "{}"
+    "tooltip": false,
+    "on-click": "~/.config/waybar/scripts/recorder.sh"
   },
   "image#wallpaper": {
     "exec": "~/.config/waybar/scripts/video-wallpaper-icon.sh",
@@ -211,13 +217,14 @@
     "tooltip": false,
     "on-click": "~/.config/waybar/scripts/video-wallpaper.sh toggle"
   },
-  "custom/power": {
-    "format": "⏻",
-    "on-click": "bash ~/.config/waybar/scripts/leave.sh",
-    "tooltip": "Power Menu"
+  "custom/power-button": {
+    "format": " ",
+    "tooltip": false,
+    "on-click": "bash ~/.config/waybar/scripts/leave.sh"
   },
   "hyprland/workspaces": {
-    "format": "{icon}{windows}",
+    "format": "{icon}",
+    "tooltip": false,
     "format-icons": {
       "active": " ",
       "visible": " ",
@@ -225,29 +232,11 @@
       "empty": " ",
       "default": " "
     },
-    "workspace-taskbar": {
-      "enable": true,
-      "update-active-window": true,
-      "format": "{icon}",
-      "icon-size": 16,
-      "icon-theme": [
-        "WaybarMono"
-      ],
-      "on-click-window": "hyprctl eval 'local target = hl.get_window(\"address:{address}\"); if target then return hl.dispatch(hl.dsp.focus({ window = target })) end'"
-    },
     "all-outputs": false,
     "show-special": false,
     "sort-by": "number",
     "on-scroll-up": "hyprctl dispatch '(function() hyprWsCycle(1) return hl.dsp.no_op() end)()'",
     "on-scroll-down": "hyprctl dispatch '(function() hyprWsCycle(-1) return hl.dsp.no_op() end)()'"
-  },
-  "custom/singbox": {
-    "exec": "~/.config/waybar/scripts/singbox-status.sh",
-    "return-type": "json",
-    "interval": 3,
-    "on-click": "~/.config/hypr/scripts/singbox-toggle.sh",
-    "format": "{}",
-    "tooltip": true
   },
   "custom/brightness": {
     "exec": "~/.config/hypr/scripts/brightness.sh get",
@@ -255,7 +244,7 @@
     "interval": "once",
     "signal": 9,
     "format": "{}",
-    "tooltip": true,
+    "tooltip": false,
     "on-scroll-up": "~/.config/hypr/scripts/brightness.sh up",
     "on-scroll-down": "~/.config/hypr/scripts/brightness.sh down"
   }
